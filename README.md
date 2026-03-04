@@ -6,28 +6,54 @@ Your Claude Code sidekick — a knowledge base, workflow toolkit, and feature re
 
 ```
 .
-├── CLAUDE.md                              # Loaded every session — feature index + workflow skills
-├── _implementation_plan_template_v6.md    # V6 implementation plan template (used by /serious-plan)
-├── .claude/skills/                        # Auto-loading skills
-│   ├── serious-init/SKILL.md              # /serious-init — scaffold a new project
-│   ├── serious-research/SKILL.md          # /serious-research — structured research workflow
-│   ├── serious-plan/SKILL.md              # /serious-plan — implementation plan generation
-│   ├── hooks/SKILL.md                     # 17 feature-specific skills
-│   ├── subagents/SKILL.md
-│   ├── mcp-integration/SKILL.md
-│   ├── permissions/SKILL.md
-│   └── ...and 13 more
+├── CLAUDE.md                              # Loaded every session — rules + feature index
+├── _implementation_plan_template_v6.md    # V6 plan template (used by /serious-plan)
+├── context.md                             # Session continuity context
+├── README.md                              # Project documentation (markdown)
+├── README.html                            # Project documentation (HTML with light/dark mode)
+├── .claude/
+│   ├── skills/                            # 22 auto-loading skills
+│   │   ├── serious-init/SKILL.md          # /serious-init — scaffold a new project
+│   │   ├── serious-conversation/SKILL.md  # /serious-conversation — persona panel ideation
+│   │   │   └── personas/                  # 10 built-in persona prompt files
+│   │   │       ├── architect.md, skeptic.md, pragmatist.md
+│   │   │       ├── product-thinker.md, debugger.md, security-mind.md
+│   │   │       └── dx-advocate.md, mentor.md, optimizer.md, historian.md
+│   │   ├── serious-research/SKILL.md      # /serious-research — structured research
+│   │   ├── serious-plan/SKILL.md          # /serious-plan — implementation planning
+│   │   ├── serious-code/SKILL.md          # /serious-code — plan execution with Agent Teams
+│   │   ├── hooks/SKILL.md                 # 17 feature-specific auto-loader skills
+│   │   ├── subagents/SKILL.md
+│   │   ├── mcp-integration/SKILL.md
+│   │   ├── permissions/SKILL.md
+│   │   └── ...and 13 more
+│   └── agents/                            # 5 Agent Teams agents (used by /serious-code)
+│       ├── serious-code-implementer.md    # TDD implementation (RED→GREEN→VERIFY)
+│       ├── serious-code-reviewer.md       # Code review, security, plan adherence
+│       ├── serious-code-test-runner.md    # Static analysis + full test suite
+│       ├── serious-code-runtime-checker.md # Runtime behavior verification
+│       └── serious-code-qa.md             # Adversarial QA spot-check
 └── Claude Code Features/                  # 38 research folders + master README
     ├── README.md                          # Categorized & chronological index
     ├── 01_Core_CLI/research.md
-    ├── 02_CLAUDE_md/research.md
     ├── ...through...
     └── 38_Enterprise_and_Managed_Settings/research.md
 ```
 
 ## Workflow Skills
 
-The template includes two powerful workflow skills that work together:
+The template includes five workflow skills that form a pipeline:
+
+### `/serious-conversation` — Persona Panel
+
+Think out loud with a panel of personas before committing to research or planning. Pick from 10 built-in personas (Architect, Skeptic, Pragmatist, Product Thinker, Debugger, Security Mind, DX Advocate, Mentor, Optimizer, Historian) or create custom ones. Hub-and-spoke model: personas respond independently via sub-agents, the Orchestrator synthesizes, you refine.
+
+Each round produces versioned artifacts — persona responses (`response_vN.md`), synthesized results (`result_vN.md`), and a conversation log. Personas can read each other's previous responses in later rounds to converge.
+
+**Additional features:**
+- **Topic pivot** — shift topics mid-conversation without restarting (logs a shift marker, re-proposes personas)
+- **Persona library** — custom personas saved to `Research/conversations/_personas/` for reuse across conversations
+- **Stop hook tracking** — uses `.active-conversation` breadcrumb to track `conversation.md` across tool calls
 
 ### `/serious-research` — Structured Research
 
@@ -38,7 +64,7 @@ Runs a structured research operation with two modes:
 | **Quick** | Single-threaded research, persona reviews, markdown deliverable | Bug diagnosis, focused investigation, clear single-angle questions |
 | **Deep** | Parallel thread agents, evidence grading (A-F), adversarial verification, QA citation checking, HTML report | Architecture decisions, competitive analysis, multi-dimensional topics |
 
-The mode is auto-detected based on your request, or you can force it with `--quick` or `--deep`.
+The mode is auto-detected based on your request, or you can force it with `--quick` or `--deep`. A Stop hook uses the `.active-research` breadcrumb to track `notebook.md` across tool calls.
 
 **What it creates:**
 ```
@@ -57,16 +83,42 @@ Generates a v6 implementation plan from research, a PRD, or even a verbal descri
 
 **Key features:**
 - TDD protocol (RED→GREEN→VERIFY per acceptance criterion)
-- Adaptive Persona Pipeline (selects relevant reviewers based on what the plan touches)
+- Adaptive Persona Pipeline with severity-weighted convergence:
+  - Severity levels: Critical / Major / Minor
+  - Any critical → re-review, 3+ majors → re-review, minors only → done, max 3 rounds
 - Inline QA Protocol v6 (every criterion gets independent QA sub-agent verification)
 - Split-Agent Verification (4 parallel agents: Code Review, Static+Tests, Runtime, QA Spot-Check)
+- Single plan (3-7 tasks) or multiple plans with `phase_map.md` for parallel execution
+- Cross-plan integration review: Integration Architect + Merge Strategist personas (+ optional Concurrency Engineer)
+  - Same convergence rules, max 3 integration rounds
+  - If integration fixes change a plan → one more individual review round
 - Evidence reports per task
+
+### `/serious-code` — Plan Execution
+
+Executes implementation plans produced by `/serious-plan`. Uses a 3-level agent architecture:
+
+**Orchestrator → Plan Agents → Agent Teams**
+- **Orchestrator** manages phases, user approval, and cross-plan coordination
+- **Plan Agents** (one per plan per phase) execute via git worktrees for isolation
+- **Agent Teams** (5 agents per task): implementer (TDD), code reviewer, test runner, runtime checker, QA spot-checker
+
+**Key features:**
+- **Multi-plan execution:** Reads `phase_map.md` and runs plans in parallel phases via git worktrees
+- **Phase-by-phase approval:** User approves each phase before execution begins
+- **Two-level tracking:** `execution_log.md` (orchestrator level) + per-plan `progress.md`
+- **Evidence generation:** Every task produces implementation, review, test, runtime, and QA reports
+- **Failure handling:** Failed plans stop immediately; other parallel plans continue; user decides to fix, skip, rollback, or abort
+- **Resume mode:** Reads `execution_log.md` + `progress.md` to find the stopping point and pick up where it left off
+- **Completion report:** Generated at end of execution with full evidence summary
+- **Stop hook tracking:** Uses `.active-code` breadcrumb to track `execution_log.md` across tool calls
 
 **Typical workflow:**
 ```
-/serious-research [topic]     →  Research phase
+/serious-conversation [topic] →  Ideation & exploration with persona panel
+/serious-research [topic]     →  Structured investigation with evidence
 /serious-plan                 →  Plan generation (auto-finds research)
-                              →  Implementation follows the plan
+/serious-code                 →  Execution with TDD, verification, evidence
 ```
 
 ## Knowledge Layers
@@ -76,7 +128,7 @@ Generates a v6 implementation plan from research, a PRD, or even a verbal descri
 | Layer | What | When it loads | Context cost |
 |-------|------|---------------|--------------|
 | **CLAUDE.md** | Feature index + workflow skill references | Every session, survives compaction | Minimal — always present |
-| **Skills** | How-to guides for 17 features + 3 workflow skills | On-demand when the topic comes up | Only when relevant |
+| **Skills** | How-to guides for 17 features + 5 workflow skills | On-demand when the topic comes up | Only when relevant |
 | **Research docs** | Deep-dive documentation with citations | When Claude reads the file | Only when explicitly needed |
 
 ## Quick Start
@@ -121,7 +173,7 @@ Once installed, Claude Code gains awareness of its own features at three levels:
 Every session, Claude sees the feature index and knows about `/serious-research` and `/serious-plan`. If you ask "can you use hooks for this?", it knows hooks exist and where to find the details.
 
 **2. Deep knowledge on demand (Skills)**
-Claude knows about its features from training data, but frequently gets specifics wrong — incorrect syntax, outdated flags, missing options, wrong defaults. The 17 feature auto-loader skills fix this. Each is a concise cheat sheet (quick reference, configuration syntax, common patterns) that gets injected into context automatically when the topic comes up. If you mention MCP servers, the MCP skill loads with the correct transport types, scope precedence, and CLI flags. If you ask about permissions, Claude gets the exact rule evaluation order and path pattern syntax. The workflow skills (`/serious-init`, `/serious-research`, `/serious-plan`) load when you invoke them.
+Claude knows about its features from training data, but frequently gets specifics wrong — incorrect syntax, outdated flags, missing options, wrong defaults. The 17 feature auto-loader skills fix this. Each is a concise cheat sheet (quick reference, configuration syntax, common patterns) that gets injected into context automatically when the topic comes up. If you mention MCP servers, the MCP skill loads with the correct transport types, scope precedence, and CLI flags. If you ask about permissions, Claude gets the exact rule evaluation order and path pattern syntax. The workflow skills (`/serious-init`, `/serious-conversation`, `/serious-research`, `/serious-plan`, `/serious-code`) load when you invoke them.
 
 **3. Full reference when needed (Research docs)**
 For edge cases or deep configuration, Claude can read the full `research.md` which includes official documentation excerpts, all configuration options, and source URLs.
@@ -142,13 +194,15 @@ For edge cases or deep configuration, Claude can read the full `research.md` whi
 | **Tools** | Built-in Tools, Git Worktrees, Checkpointing/Rewind, Context Management, Headless Mode |
 | **Infrastructure** | Cloud Providers, Multi-Model Support, Cost Management |
 
-### 20 skills (17 feature + 3 workflow)
+### 22 skills (17 feature + 5 workflow)
 
 | Skill | Triggers when you discuss... |
 |-------|------------------------------|
 | `serious-init` | `/serious-init`, bootstrap, scaffold, setup new project |
+| `serious-conversation` | `/serious-conversation`, brainstorm, ideation, think through |
 | `serious-research` | `/serious-research`, research, investigation, deep research |
 | `serious-plan` | `/serious-plan`, implementation plan, planning |
+| `serious-code` | `/serious-code`, execute plan, start coding, implement |
 | `hooks` | lifecycle events, pre/post tool use, automation |
 | `skills-and-commands` | creating custom commands, SKILL.md files |
 | `mcp-integration` | MCP servers, external tools, databases |

@@ -2,6 +2,16 @@
 name: serious-research
 description: "Structured research with two modes — quick (single-threaded, persona reviews) or deep (parallel agents, evidence grading, adversarial verification, HTML report). Use when the user says 'research this properly', 'serious research', 'deep research', or wants thorough investigation of a bug, feature, or open question."
 user-invocable: true
+hooks:
+  Stop:
+    - matcher: "*"
+      handler:
+        type: prompt
+        prompt: |
+          If a serious research session is active (check for .active-research file in project root),
+          read the research folder path from it, then append a summary of the latest exchange
+          to notebook.md in that folder. Include timestamp and key points. Keep it concise.
+          This ensures findings survive context compaction.
 ---
 
 # Serious Research
@@ -116,6 +126,7 @@ Research/
 - Create `Research/` and the relevant subdirectory at the project root if they don't exist.
 - `{descriptive-slug}` should be short, descriptive, kebab-case (e.g., `auth-token-expiry`, `notification-architecture-eval`).
 - If the slug isn't obvious from context, ask the user.
+- **Write `.active-research`** to the project root containing the full path to the research folder. The Stop hook reads this to know where to append to `notebook.md`.
 
 ### 1b. Initialize common files
 
@@ -661,6 +672,8 @@ Report to the user:
 - QA pass rate
 - Personas that reviewed
 - Recommended next step (usually: `/serious-plan`)
+
+**Cleanup:** Remove the `.active-research` breadcrumb file from the project root.
 
 ---
 

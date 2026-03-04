@@ -14,7 +14,12 @@
 6. **DO NOT** commit, push, create PRs, or perform any GitHub action without **explicit user consent**.
 7. **PROVE IT WORKS.** Nothing is "done" without evidence — test output, screenshots, or demonstrated behavior from the user's perspective.
 8. **ANSWER FIRST.** If the user asks a question, answer it **before** doing anything else.
-9. **PROVIDE OPTIONS.** When raising open questions or decisions, **DO NOT** leave them hanging. Always provide 2-3 concrete options with trade-offs so the user can choose.
+9. **ONE QUESTION AT A TIME.** When you need input, ask **one question per message**. Format it as:
+   - **Your recommended option** — with a short explanation of why
+   - **3-5 other options** — with brief trade-offs for each
+   - **Why you didn't pick them** — what made the recommended option better
+
+   Do NOT dump multiple questions in one message. Wait for the answer before asking the next question.
 
 ---
 
@@ -22,12 +27,14 @@
 
 ## Workflow Skills
 
-This project includes two workflow skills for structured development:
+This project includes five workflow skills for structured development:
 
+- **`/serious-conversation`** — Think out loud with a panel of personas (hub-and-spoke model). Pick from 10 built-in personas or create custom ones. Each round: personas respond independently via sub-agents, Orchestrator synthesizes, user refines. Creates versioned artifacts in `Research/conversations/`.
 - **`/serious-research`** — Structured research with two modes (quick or deep). Creates a `Research/` folder with findings, evidence grading, and persona reviews. Use for bugs, features, or exploratory questions.
-- **`/serious-plan`** — Generates an implementation plan from research, a PRD, or a description. Uses the v6 template at `./_implementation_plan_template_v6.md`. Includes TDD protocol, persona pipeline, inline QA, and split-agent verification.
+- **`/serious-plan`** — Generates an implementation plan from research, a PRD, or a description. Uses the v6 template at `./_implementation_plan_template_v6.md`. Includes TDD protocol, persona pipeline, inline QA, and split-agent verification. Supports single or multiple plans with a phase map for parallel execution.
+- **`/serious-code`** — Executes implementation plans from `/serious-plan`. Orchestrates parallel plan execution via git worktrees, manages TDD cycles through 5 Agent Teams agents (implementer, reviewer, test-runner, runtime-checker, qa), handles phase-by-phase verification, and generates evidence reports.
 
-**Typical workflow:** `/serious-research` → `/serious-plan` → implement
+**Typical workflow:** `/serious-conversation` → `/serious-research` → `/serious-plan` → `/serious-code` → done
 
 ## Claude Code Feature Reference
 
