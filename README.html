@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Serious Sidekick</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f8f9fb;
+    --bg-tertiary: #f0f2f5;
+    --text: #1a1a2e;
+    --text-secondary: #555770;
+    --text-muted: #8888a0;
+    --accent: #6c5ce7;
+    --accent-light: #a29bfe;
+    --accent-bg: #f0eeff;
+    --border: #e2e4ea;
+    --border-light: #eff0f3;
+    --code-bg: #f4f5f8;
+    --code-text: #e84393;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --card-shadow-hover: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+    --green: #00b894;
+    --green-bg: #eafaf5;
+    --blue: #0984e3;
+    --blue-bg: #e8f4fd;
+    --orange: #e17055;
+    --orange-bg: #fdf0ed;
+    --yellow: #fdcb6e;
+    --yellow-bg: #fef9e7;
+    --red: #d63031;
+    --red-bg: #fdeaea;
+    --diagram-node: #6c5ce7;
+    --diagram-node-text: #ffffff;
+    --diagram-arrow: #a29bfe;
+    --diagram-label: #555770;
+    --tag-workflow: #6c5ce7;
+    --tag-feature: #0984e3;
+  }
+
+  [data-theme="dark"] {
+    --bg: #0f0f1a;
+    --bg-secondary: #1a1a2e;
+    --bg-tertiary: #22223a;
+    --text: #e8e8f0;
+    --text-secondary: #a0a0b8;
+    --text-muted: #6868880;
+    --accent: #a29bfe;
+    --accent-light: #6c5ce7;
+    --accent-bg: #1e1b3a;
+    --border: #2a2a45;
+    --border-light: #222238;
+    --code-bg: #1a1a30;
+    --code-text: #fd79a8;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --card-shadow-hover: 0 4px 12px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.2);
+    --green: #55efc4;
+    --green-bg: #0d2b22;
+    --blue: #74b9ff;
+    --blue-bg: #0d1f2d;
+    --orange: #fab1a0;
+    --orange-bg: #2d1a15;
+    --yellow: #ffeaa7;
+    --yellow-bg: #2d2a15;
+    --red: #ff7675;
+    --red-bg: #2d1515;
+    --diagram-node: #a29bfe;
+    --diagram-node-text: #0f0f1a;
+    --diagram-arrow: #6c5ce7;
+    --diagram-label: #a0a0b8;
+    --tag-workflow: #a29bfe;
+    --tag-feature: #74b9ff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* Theme Toggle */
+  .theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    z-index: 100;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s;
+  }
+  .theme-toggle:hover { box-shadow: var(--card-shadow-hover); }
+  .theme-toggle span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 16px;
+    transition: all 0.3s;
+  }
+  .theme-toggle span.active {
+    background: var(--accent);
+    color: white;
+  }
+
+  /* Layout */
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 60px 32px 80px;
+  }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 40px 0 48px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent-bg);
+    color: var(--accent);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+  .hero h1 .highlight { color: var(--accent); }
+  .hero p {
+    font-size: 18px;
+    color: var(--text-secondary);
+    max-width: 640px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* Stats */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin: 32px 0 0;
+  }
+  .stat {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-number {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .stat-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  /* Section */
+  section { margin-bottom: 48px; }
+  h2 {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: -0.3px;
+  }
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  p { margin-bottom: 12px; color: var(--text-secondary); }
+  p + ul, p + ol { margin-top: -4px; }
+
+  /* File Tree */
+  .file-tree {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 13.5px;
+    line-height: 1.9;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .file-tree .comment { color: var(--text-muted); }
+  .file-tree .folder { color: var(--accent); font-weight: 600; }
+  .file-tree .file { color: var(--text); }
+
+  /* Diagrams */
+  .diagram-container {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin: 24px 0;
+    overflow-x: auto;
+  }
+  .diagram-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+
+  /* Workflow Diagram */
+  .workflow-diagram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+  .workflow-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .workflow-node {
+    width: 180px;
+    padding: 16px;
+    border-radius: 12px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 14px;
+    position: relative;
+  }
+  .workflow-node.init {
+    background: var(--green-bg);
+    border: 2px solid var(--green);
+    color: var(--green);
+  }
+  .workflow-node.research {
+    background: var(--blue-bg);
+    border: 2px solid var(--blue);
+    color: var(--blue);
+  }
+  .workflow-node.plan {
+    background: var(--orange-bg);
+    border: 2px solid var(--orange);
+    color: var(--orange);
+  }
+  .workflow-node.implement {
+    background: var(--accent-bg);
+    border: 2px solid var(--accent);
+    color: var(--accent);
+  }
+  .workflow-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    max-width: 160px;
+  }
+  .workflow-arrow {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    color: var(--diagram-arrow);
+    font-size: 24px;
+    margin-top: -20px;
+  }
+
+  /* Knowledge Layers Diagram */
+  .layers-diagram {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .layer {
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 24px;
+    position: relative;
+    margin-bottom: -1px;
+  }
+  .layer:first-child { border-radius: 12px 12px 4px 4px; }
+  .layer:last-child { border-radius: 4px 4px 12px 12px; }
+  .layer:not(:first-child):not(:last-child) { border-radius: 4px; }
+  .layer-1 {
+    background: var(--green-bg);
+    border-color: var(--green);
+    z-index: 3;
+  }
+  .layer-2 {
+    background: var(--blue-bg);
+    border-color: var(--blue);
+    z-index: 2;
+  }
+  .layer-3 {
+    background: var(--orange-bg);
+    border-color: var(--orange);
+    z-index: 1;
+  }
+  .layer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .layer-name {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text);
+  }
+  .layer-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .layer-1 .layer-badge { background: var(--green); color: white; }
+  .layer-2 .layer-badge { background: var(--blue); color: white; }
+  .layer-3 .layer-badge { background: var(--orange); color: white; }
+  .layer-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  /* Cards */
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  .card:hover {
+    box-shadow: var(--card-shadow-hover);
+    border-color: var(--accent-light);
+  }
+  .card h4 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .card p { font-size: 13.5px; margin: 0; }
+
+  /* Mode Cards (research) */
+  .mode-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .mode-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .mode-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+  }
+  .mode-card.quick::before { background: var(--green); }
+  .mode-card.deep::before { background: var(--accent); }
+  .mode-card h4 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .mode-card .mode-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+  .mode-card.quick .mode-label { color: var(--green); }
+  .mode-card.deep .mode-label { color: var(--accent); }
+  .mode-card ul {
+    list-style: none;
+    padding: 0;
+  }
+  .mode-card li {
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    padding: 3px 0 3px 18px;
+    position: relative;
+  }
+  .mode-card li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--text-muted);
+  }
+  .mode-card .when {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    font-size: 12.5px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* Plan features */
+  .feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0;
+  }
+  .feature-list li {
+    padding: 8px 0 8px 28px;
+    position: relative;
+    color: var(--text-secondary);
+    font-size: 14.5px;
+  }
+  .feature-list li::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 14px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  thead th {
+    background: var(--bg-tertiary);
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-secondary);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--bg-secondary); }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .tag-workflow { background: var(--accent-bg); color: var(--tag-workflow); }
+  .tag-feature { background: var(--blue-bg); color: var(--tag-feature); }
+
+  /* Category Grid */
+  .category-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .category-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .category-card h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .category-card p {
+    font-size: 12.5px;
+    line-height: 1.5;
+    margin: 0;
+    color: var(--text-secondary);
+  }
+
+  /* Code blocks */
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 13px;
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 2px 7px;
+    border-radius: 5px;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    margin: 12px 0;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  /* Quick Start */
+  .quickstart-option {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .quickstart-option h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .recommended-badge {
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--green);
+    color: white;
+    padding: 2px 10px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Research Folder Tree */
+  .folder-tree-small {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    margin: 12px 0;
+  }
+
+  /* Doc structure list */
+  .doc-structure {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .doc-structure li {
+    padding: 8px 14px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: var(--text-secondary);
+  }
+  .doc-structure li strong { color: var(--text); }
+
+  /* Info box */
+  .info-box {
+    background: var(--blue-bg);
+    border: 1px solid var(--blue);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+  .info-box strong { color: var(--text); }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 32px 0;
+    border-top: 1px solid var(--border);
+    margin-top: 32px;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .container { padding: 32px 16px 60px; }
+    .hero h1 { font-size: 28px; }
+    .hero p { font-size: 16px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .card-grid, .mode-cards { grid-template-columns: 1fr; }
+    .category-grid { grid-template-columns: 1fr 1fr; }
+    .workflow-diagram { flex-direction: column; }
+    .workflow-arrow { transform: rotate(90deg); padding: 4px 0; }
+    .doc-structure { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .stats { grid-template-columns: 1fr 1fr; }
+    .category-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Theme Toggle -->
+<button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+  <span id="light-icon" class="active">&#9788;</span>
+  <span id="dark-icon">&#9790;</span>
+</button>
+
+<div class="container">
+
+  <!-- Hero -->
+  <header class="hero">
+    <div class="hero-badge">&#9670; Serious Sidekick</div>
+    <h1>Serious <span class="highlight">Sidekick</span></h1>
+    <p>Your Claude Code sidekick — a knowledge base, workflow toolkit, and feature reference you drop into any project.</p>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-number">38</div>
+        <div class="stat-label">Documented Features</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">20</div>
+        <div class="stat-label">Auto-loading Skills</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">9</div>
+        <div class="stat-label">Feature Categories</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">3</div>
+        <div class="stat-label">Workflow Skills</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Workflow Diagram -->
+  <section>
+    <h2>Workflow</h2>
+    <p>Three workflow skills form a pipeline from setup to implementation:</p>
+
+    <div class="diagram-container">
+      <div class="diagram-title">Serious Workflow Pipeline</div>
+      <div class="workflow-diagram">
+        <div class="workflow-step">
+          <div class="workflow-node init">/serious-init</div>
+          <div class="workflow-desc">Scaffold project with knowledge base &amp; skills</div>
+        </div>
+        <div class="workflow-arrow">&#10230;</div>
+        <div class="workflow-step">
+          <div class="workflow-node research">/serious-research</div>
+          <div class="workflow-desc">Investigate bugs, features, or questions</div>
+        </div>
+        <div class="workflow-arrow">&#10230;</div>
+        <div class="workflow-step">
+          <div class="workflow-node plan">/serious-plan</div>
+          <div class="workflow-desc">Generate implementation plan from research</div>
+        </div>
+        <div class="workflow-arrow">&#10230;</div>
+        <div class="workflow-step">
+          <div class="workflow-node implement">Implement</div>
+          <div class="workflow-desc">Execute the plan with TDD &amp; QA verification</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- What's Inside -->
+  <section>
+    <h2>What's Inside</h2>
+    <div class="file-tree"><span class="folder">.</span>
+├── <span class="file">CLAUDE.md</span>                              <span class="comment"># Loaded every session — rules + feature index</span>
+├── <span class="file">_implementation_plan_template_v6.md</span>    <span class="comment"># V6 plan template (used by /serious-plan)</span>
+├── <span class="folder">.claude/skills/</span>                        <span class="comment"># 20 auto-loading skills</span>
+│   ├── <span class="file">serious-init/SKILL.md</span>              <span class="comment"># /serious-init — scaffold a new project</span>
+│   ├── <span class="file">serious-research/SKILL.md</span>          <span class="comment"># /serious-research — structured research</span>
+│   ├── <span class="file">serious-plan/SKILL.md</span>              <span class="comment"># /serious-plan — implementation planning</span>
+│   ├── <span class="file">hooks/SKILL.md</span>                     <span class="comment"># 17 feature-specific skills</span>
+│   ├── <span class="file">subagents/SKILL.md</span>
+│   ├── <span class="file">mcp-integration/SKILL.md</span>
+│   ├── <span class="file">permissions/SKILL.md</span>
+│   └── <span class="comment">...and 13 more</span>
+└── <span class="folder">Claude Code Features/</span>                  <span class="comment"># 38 research folders + master README</span>
+    ├── <span class="file">README.md</span>                          <span class="comment"># Categorized &amp; chronological index</span>
+    ├── <span class="file">01_Core_CLI/research.md</span>
+    ├── <span class="comment">...through...</span>
+    └── <span class="file">38_Enterprise_and_Managed_Settings/research.md</span></div>
+  </section>
+
+  <!-- Research Modes -->
+  <section>
+    <h2>/serious-research</h2>
+    <p>Runs a structured research operation. Mode is auto-detected based on your request, or force it with <code>--quick</code> or <code>--deep</code>.</p>
+
+    <div class="mode-cards">
+      <div class="mode-card quick">
+        <div class="mode-label">Quick Mode</div>
+        <h4>Focused Investigation</h4>
+        <ul>
+          <li>Single-threaded research</li>
+          <li>Persona reviews</li>
+          <li>Markdown deliverable</li>
+        </ul>
+        <div class="when">Bug diagnosis, focused investigation, clear single-angle questions</div>
+      </div>
+      <div class="mode-card deep">
+        <div class="mode-label">Deep Mode</div>
+        <h4>Comprehensive Analysis</h4>
+        <ul>
+          <li>Parallel thread agents</li>
+          <li>Evidence grading (A-F)</li>
+          <li>Adversarial verification</li>
+          <li>QA citation checking</li>
+          <li>HTML report</li>
+        </ul>
+        <div class="when">Architecture decisions, competitive analysis, multi-dimensional topics</div>
+      </div>
+    </div>
+
+    <p>Research output is organized by type:</p>
+    <div class="folder-tree-small">Research/
+├── bugs/
+│   └── {slug}/          <span style="color:var(--text-muted)"># notebook.md, research.md, evidence, report.html</span>
+├── features/
+│   └── {slug}/
+└── exploratory/
+    └── {slug}/</div>
+  </section>
+
+  <!-- Serious Plan -->
+  <section>
+    <h2>/serious-plan</h2>
+    <p>Generates a v6 implementation plan from research, a PRD, or even a verbal description. Auto-detects existing <code>/serious-research</code> output or asks what input you have.</p>
+
+    <ul class="feature-list">
+      <li><strong>TDD protocol</strong> — RED &#8594; GREEN &#8594; VERIFY per acceptance criterion</li>
+      <li><strong>Adaptive Persona Pipeline</strong> — selects relevant reviewers based on what the plan touches</li>
+      <li><strong>Inline QA Protocol v6</strong> — every criterion gets independent QA sub-agent verification</li>
+      <li><strong>Split-Agent Verification</strong> — 4 parallel agents: Code Review, Static+Tests, Runtime, QA Spot-Check</li>
+      <li><strong>Evidence reports</strong> — markdown evidence generated per task</li>
+    </ul>
+  </section>
+
+  <!-- Knowledge Layers -->
+  <section>
+    <h2>Knowledge Layers</h2>
+    <p>Three layers, each serving a different purpose and loading at a different time:</p>
+
+    <div class="diagram-container">
+      <div class="diagram-title">Context Loading Strategy</div>
+      <div class="layers-diagram">
+        <div class="layer layer-1">
+          <div class="layer-header">
+            <span class="layer-name">CLAUDE.md</span>
+            <span class="layer-badge">Always loaded</span>
+          </div>
+          <p class="layer-desc">Feature index + mandatory rules + workflow skill references. Survives compaction. Minimal context cost.</p>
+        </div>
+        <div class="layer layer-2">
+          <div class="layer-header">
+            <span class="layer-name">Skills (20 auto-loaders)</span>
+            <span class="layer-badge">On demand</span>
+          </div>
+          <p class="layer-desc">Cheat sheets with correct syntax, config, and patterns. Loaded when the topic comes up. Prevents hallucinated details.</p>
+        </div>
+        <div class="layer layer-3">
+          <div class="layer-header">
+            <span class="layer-name">Research docs (38 folders)</span>
+            <span class="layer-badge">When needed</span>
+          </div>
+          <p class="layer-desc">Deep-dive documentation with official excerpts, all config options, and source URLs. Only loaded when explicitly read.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section>
+    <h2>How It Works</h2>
+
+    <div class="card-grid">
+      <div class="card">
+        <h4>1. Always Aware</h4>
+        <p>Every session, Claude sees the feature index and knows what exists. Ask "can you use hooks for this?" — it knows hooks exist and where to find details.</p>
+      </div>
+      <div class="card">
+        <h4>2. Accurate on Demand</h4>
+        <p>Claude knows features from training data but gets specifics wrong. The 17 auto-loader skills inject correct syntax, flags, and patterns when the topic comes up.</p>
+      </div>
+      <div class="card">
+        <h4>3. Deep When Needed</h4>
+        <p>For edge cases, Claude reads the full <code>research.md</code> with official documentation excerpts, all configuration options, and source URLs.</p>
+      </div>
+      <div class="card">
+        <h4>4. Workflow Skills</h4>
+        <p><code>/serious-init</code>, <code>/serious-research</code>, and <code>/serious-plan</code> load when invoked — providing step-by-step protocols for rigorous development.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Start -->
+  <section>
+    <h2>Quick Start</h2>
+
+    <div class="quickstart-option">
+      <h3>Option A: Setup command <span class="recommended-badge">Recommended</span></h3>
+      <p>Install the global skill, then open Claude Code in any project and run:</p>
+      <pre><code>/serious-init</code></pre>
+      <p>This copies everything into your current project: CLAUDE.md (appends if one exists), all 20 skills, 38 feature documentation folders, and the v6 implementation plan template.</p>
+      <p style="margin-top: 12px;"><strong>Variants:</strong></p>
+      <pre><code>/serious-init --skills-only     # Just skills, no docs or template
+/serious-init --docs-only       # Just docs + CLAUDE.md, no skills
+/serious-init --no-claude-md    # Skip CLAUDE.md if you have one</code></pre>
+    </div>
+
+    <div class="quickstart-option">
+      <h3>Option B: Copy manually</h3>
+      <pre><code>cp /path/to/template/CLAUDE.md ./CLAUDE.md
+cp -r /path/to/template/.claude/skills/* .claude/skills/
+cp -r "/path/to/template/Claude Code Features" "./Claude Code Features"
+cp /path/to/template/_implementation_plan_template_v6.md ./_implementation_plan_template_v6.md</code></pre>
+    </div>
+  </section>
+
+  <!-- Features Covered -->
+  <section>
+    <h2>38 Features Across 9 Categories</h2>
+
+    <div class="category-grid">
+      <div class="category-card">
+        <h4>Foundation</h4>
+        <p>Core CLI, CLAUDE.md, Memory System, Session Management</p>
+      </div>
+      <div class="category-card">
+        <h4>Configuration</h4>
+        <p>Settings, Keybindings, Status Line, Output Styles, Themes</p>
+      </div>
+      <div class="category-card">
+        <h4>Extensibility</h4>
+        <p>Hooks, Skills & Slash Commands, MCP Integration, Plugins</p>
+      </div>
+      <div class="category-card">
+        <h4>Orchestration</h4>
+        <p>Subagents, Agent Teams, Agent SDK</p>
+      </div>
+      <div class="category-card">
+        <h4>Modes</h4>
+        <p>Plan Mode, Vim Mode, Fast Mode, Interactive Features</p>
+      </div>
+      <div class="category-card">
+        <h4>Security</h4>
+        <p>Permissions, Sandboxing, Enterprise &amp; Managed Settings</p>
+      </div>
+      <div class="category-card">
+        <h4>Platforms</h4>
+        <p>IDE Extensions, Chrome, Desktop, Web, GitHub Actions, Slack, Remote</p>
+      </div>
+      <div class="category-card">
+        <h4>Tools</h4>
+        <p>Built-in Tools, Git Worktrees, Checkpointing, Context Mgmt, Headless</p>
+      </div>
+      <div class="category-card">
+        <h4>Infrastructure</h4>
+        <p>Cloud Providers, Multi-Model Support, Cost Management</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Skills Table -->
+  <section>
+    <h2>All 20 Skills</h2>
+    <p>3 workflow skills you invoke directly + 17 feature cheat sheets that auto-load when the topic comes up.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Skill</th>
+          <th>Type</th>
+          <th>Triggers when you discuss...</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>serious-init</code></td><td><span class="tag tag-workflow">workflow</span></td><td>bootstrap, scaffold, setup new project</td></tr>
+        <tr><td><code>serious-research</code></td><td><span class="tag tag-workflow">workflow</span></td><td>research, investigation, deep research</td></tr>
+        <tr><td><code>serious-plan</code></td><td><span class="tag tag-workflow">workflow</span></td><td>implementation plan, planning</td></tr>
+        <tr><td><code>hooks</code></td><td><span class="tag tag-feature">feature</span></td><td>lifecycle events, pre/post tool use, automation</td></tr>
+        <tr><td><code>skills-and-commands</code></td><td><span class="tag tag-feature">feature</span></td><td>custom commands, SKILL.md files</td></tr>
+        <tr><td><code>mcp-integration</code></td><td><span class="tag tag-feature">feature</span></td><td>MCP servers, external tools, databases</td></tr>
+        <tr><td><code>subagents</code></td><td><span class="tag tag-feature">feature</span></td><td>multi-agent workflows, parallel agents</td></tr>
+        <tr><td><code>plan-mode</code></td><td><span class="tag tag-feature">feature</span></td><td>read-only exploration, planning</td></tr>
+        <tr><td><code>worktrees</code></td><td><span class="tag tag-feature">feature</span></td><td>parallel branches, isolated development</td></tr>
+        <tr><td><code>permissions</code></td><td><span class="tag tag-feature">feature</span></td><td>allow/deny rules, security, sandboxing</td></tr>
+        <tr><td><code>headless-mode</code></td><td><span class="tag tag-feature">feature</span></td><td>scripting, CI/CD, -p flag</td></tr>
+        <tr><td><code>plugins</code></td><td><span class="tag tag-feature">feature</span></td><td>plugin creation, marketplace, distribution</td></tr>
+        <tr><td><code>agent-teams</code></td><td><span class="tag tag-feature">feature</span></td><td>multi-agent swarms, collaboration</td></tr>
+        <tr><td><code>chrome-integration</code></td><td><span class="tag tag-feature">feature</span></td><td>browser automation, debugging</td></tr>
+        <tr><td><code>fast-mode</code></td><td><span class="tag tag-feature">feature</span></td><td>/fast toggle, speed</td></tr>
+        <tr><td><code>checkpointing</code></td><td><span class="tag tag-feature">feature</span></td><td>rewind, undo, restoring code</td></tr>
+        <tr><td><code>remote-control</code></td><td><span class="tag tag-feature">feature</span></td><td>mobile access, teleport</td></tr>
+        <tr><td><code>keybindings</code></td><td><span class="tag tag-feature">feature</span></td><td>keyboard shortcuts, chords</td></tr>
+        <tr><td><code>output-styles</code></td><td><span class="tag tag-feature">feature</span></td><td>explanatory/learning mode, custom styles</td></tr>
+        <tr><td><code>status-line</code></td><td><span class="tag tag-feature">feature</span></td><td>status bar, footer customization</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Browsing the Docs -->
+  <section>
+    <h2>Browsing the Documentation</h2>
+    <p>Each of the 38 folders in <code>Claude Code Features/</code> contains a <code>research.md</code> with:</p>
+
+    <ul class="doc-structure">
+      <li><strong>Overview</strong> — What the feature does</li>
+      <li><strong>Key Capabilities</strong> — Bullet-point summary</li>
+      <li><strong>Configuration</strong> — How to enable and configure</li>
+      <li><strong>Usage Examples</strong> — Practical patterns</li>
+      <li><strong>Important Details</strong> — Gotchas and limitations</li>
+      <li><strong>References</strong> — Source URLs and citations</li>
+    </ul>
+  </section>
+
+  <!-- Keeping Updated -->
+  <section>
+    <h2>Keeping It Updated</h2>
+    <div class="info-box">
+      <strong>Compiled March 2026.</strong> Claude Code evolves rapidly. To refresh:
+      <ol style="margin-top: 8px; padding-left: 20px;">
+        <li>Open Claude Code in the template directory</li>
+        <li>Ask Claude to update specific research files with the latest docs</li>
+        <li>Run <code>/serious-init</code> again in your projects to pick up changes</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Prerequisites -->
+  <section>
+    <h2>Prerequisites</h2>
+    <ul class="feature-list">
+      <li><a href="https://docs.anthropic.com/en/docs/claude-code/overview" style="color:var(--accent);text-decoration:none;">Claude Code</a> installed (<code>npm install -g @anthropic-ai/claude-code</code>)</li>
+      <li>A Claude account (Pro, Max, Team, or Enterprise)</li>
+      <li>For <code>/serious-init</code>: the global skill at <code>~/.claude/skills/serious-init/SKILL.md</code></li>
+    </ul>
+  </section>
+
+  <footer class="footer">
+    Serious Sidekick &middot; Built with <a href="https://docs.anthropic.com/en/docs/claude-code/overview">Claude Code</a>
+  </footer>
+
+</div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    document.getElementById('light-icon').classList.toggle('active', !isDark);
+    document.getElementById('dark-icon').classList.toggle('active', isDark);
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+  }
+
+  // Load saved theme or detect system preference
+  (function() {
+    const saved = localStorage.getItem('theme');
+    if (saved) {
+      document.documentElement.setAttribute('data-theme', saved);
+      document.getElementById('light-icon').classList.toggle('active', saved === 'light');
+      document.getElementById('dark-icon').classList.toggle('active', saved === 'dark');
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.getElementById('light-icon').classList.remove('active');
+      document.getElementById('dark-icon').classList.add('active');
+    }
+  })();
+</script>
+
+</body>
+</html>
