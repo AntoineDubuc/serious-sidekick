@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Serious Sidekick — Get Started in 5 Minutes</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --bg2: #ffffff;
+    --bg3: #f3f4f6;
+    --text: #111827;
+    --text2: #4b5563;
+    --text3: #9ca3af;
+    --accent: #6c5ce7;
+    --accent2: #a29bfe;
+    --accent-bg: rgba(108,92,231,0.08);
+    --border: #e5e7eb;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+    --card-hover: 0 8px 30px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+    --green: #10b981;
+    --green-bg: #ecfdf5;
+    --blue: #3b82f6;
+    --blue-bg: #eff6ff;
+    --amber: #f59e0b;
+    --amber-bg: #fffbeb;
+    --orange: #f97316;
+    --orange-bg: #fff7ed;
+    --purple: #8b5cf6;
+    --purple-bg: #f5f3ff;
+    --red: #ef4444;
+    --glow: rgba(108,92,231,0.15);
+    --toggle-bg: #e5e7eb;
+    --prompt-bg: #1e1b2e;
+    --prompt-text: #e2e0f0;
+    --prompt-accent: #a29bfe;
+    --prompt-dim: #6b6890;
+  }
+  [data-theme="dark"] {
+    --bg: #09090b;
+    --bg2: #18181b;
+    --bg3: #1f1f23;
+    --text: #f4f4f5;
+    --text2: #a1a1aa;
+    --text3: #52525b;
+    --accent: #a29bfe;
+    --accent2: #6c5ce7;
+    --accent-bg: rgba(162,155,254,0.1);
+    --border: #27272a;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    --card-hover: 0 8px 30px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.2);
+    --green: #34d399;
+    --green-bg: rgba(16,185,129,0.1);
+    --blue: #60a5fa;
+    --blue-bg: rgba(59,130,246,0.1);
+    --amber: #fbbf24;
+    --amber-bg: rgba(245,158,11,0.1);
+    --orange: #fb923c;
+    --orange-bg: rgba(249,115,22,0.1);
+    --purple: #a78bfa;
+    --purple-bg: rgba(139,92,246,0.1);
+    --red: #f87171;
+    --glow: rgba(162,155,254,0.12);
+    --toggle-bg: #27272a;
+    --prompt-bg: #0d0b1a;
+    --prompt-text: #d0cee0;
+    --prompt-accent: #a29bfe;
+    --prompt-dim: #4a4770;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    transition: background 0.4s ease, color 0.3s ease;
+    overflow-x: hidden;
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  /* ── Theme Toggle ── */
+  .theme-toggle {
+    position: fixed; top: 20px; right: 24px; z-index: 100;
+    width: 48px; height: 26px; border-radius: 13px;
+    background: var(--toggle-bg); border: none; cursor: pointer;
+    transition: background 0.3s;
+    display: flex; align-items: center; padding: 3px;
+  }
+  .theme-toggle::after {
+    content: '';
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--accent);
+    transition: transform 0.3s cubic-bezier(0.68,-0.55,0.27,1.55);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  [data-theme="dark"] .theme-toggle::after { transform: translateX(22px); }
+  .theme-label {
+    position: fixed; top: 50px; right: 24px; z-index: 100;
+    font-size: 10px; color: var(--text3); letter-spacing: 0.5px;
+    text-align: center; width: 48px;
+    transition: opacity 0.3s;
+  }
+
+  /* ── Layout ── */
+  .container { max-width: 780px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── Reveal animation ── */
+  .reveal {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .reveal.delay-1 { transition-delay: 0.1s; }
+  .reveal.delay-2 { transition-delay: 0.2s; }
+  .reveal.delay-3 { transition-delay: 0.3s; }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 100px 0 60px;
+    text-align: center;
+    position: relative;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+    pointer-events: none;
+    animation: pulse 4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.5; transform: translateX(-50%) scale(1); }
+    50% { opacity: 1; transform: translateX(-50%) scale(1.05); }
+  }
+  .hero-tag {
+    display: inline-block;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-bg);
+    padding: 6px 14px; border-radius: 20px;
+    margin-bottom: 20px;
+    animation: slideDown 0.6s ease both;
+  }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .hero h1 {
+    font-size: clamp(32px, 5vw, 48px);
+    font-weight: 700; letter-spacing: -1px;
+    line-height: 1.15; margin-bottom: 16px;
+    animation: slideDown 0.6s ease 0.1s both;
+    position: relative;
+  }
+  .hero h1 span {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    font-size: 17px; color: var(--text2);
+    max-width: 520px; margin: 0 auto;
+    animation: slideDown 0.6s ease 0.2s both;
+    position: relative;
+  }
+  .hero-time {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 24px; padding: 8px 16px;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; font-size: 13px; color: var(--text2);
+    animation: slideDown 0.6s ease 0.3s both;
+    position: relative;
+  }
+  .hero-time .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green);
+    animation: blink 2s ease infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+  }
+
+  /* ── Section ── */
+  section { padding: 48px 0; }
+  .section-label {
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 8px;
+  }
+  section h2 {
+    font-size: 28px; font-weight: 700;
+    letter-spacing: -0.5px; margin-bottom: 8px;
+  }
+  section > .container > p { color: var(--text2); margin-bottom: 24px; }
+
+  /* ── Prompt Block (looks like a terminal) ── */
+  .prompt-block {
+    background: var(--prompt-bg);
+    border: 1px solid rgba(162,155,254,0.15);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .prompt-block:hover {
+    border-color: rgba(162,155,254,0.35);
+    box-shadow: 0 0 20px rgba(108,92,231,0.1);
+  }
+  .prompt-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 12px; padding-bottom: 10px;
+    border-bottom: 1px solid rgba(162,155,254,0.1);
+  }
+  .prompt-dots {
+    display: flex; gap: 5px;
+  }
+  .prompt-dots span {
+    width: 10px; height: 10px; border-radius: 50%;
+    opacity: 0.5;
+  }
+  .prompt-dots span:nth-child(1) { background: #ff5f57; }
+  .prompt-dots span:nth-child(2) { background: #ffbd2e; }
+  .prompt-dots span:nth-child(3) { background: #28c840; }
+  .prompt-title {
+    font-size: 11px; color: var(--prompt-dim);
+    letter-spacing: 0.5px; font-weight: 500;
+    margin-left: 4px;
+  }
+  .prompt-copy {
+    margin-left: auto;
+    background: rgba(162,155,254,0.15); border: none;
+    color: var(--prompt-accent); font-size: 11px; font-weight: 600;
+    padding: 3px 10px; border-radius: 5px; cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: all 0.2s;
+  }
+  .prompt-copy:hover { background: rgba(162,155,254,0.3); }
+  .prompt-copy.copied { background: rgba(16,185,129,0.2); color: #34d399; }
+  .prompt-text {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 13.5px; line-height: 1.7;
+    color: var(--prompt-text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .prompt-text .user-prompt {
+    color: var(--prompt-accent);
+  }
+  .prompt-text .comment {
+    color: var(--prompt-dim);
+    font-style: italic;
+  }
+
+  /* ── Step Cards ── */
+  .steps { display: flex; flex-direction: column; gap: 16px; }
+  .step {
+    display: flex; gap: 20px; align-items: flex-start;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 24px;
+    transition: all 0.3s ease;
+    cursor: default;
+  }
+  .step:hover {
+    border-color: var(--accent);
+    box-shadow: var(--card-hover), 0 0 0 1px var(--accent);
+    transform: translateY(-2px);
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--accent-bg); color: var(--accent);
+    font-size: 15px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s ease;
+  }
+  .step:hover .step-num {
+    background: var(--accent); color: white;
+    transform: scale(1.1) rotate(-3deg);
+  }
+  .step-content h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .step-content p { font-size: 14px; color: var(--text2); margin: 0; }
+  .step-content code {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12.5px; background: var(--bg3);
+    padding: 2px 7px; border-radius: 5px;
+    color: var(--accent); font-weight: 500;
+  }
+
+  /* ── Pipeline ── */
+  .pipeline {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; margin: 32px 0; flex-wrap: wrap;
+    position: relative;
+  }
+  .pipe-node {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    transition: transform 0.3s ease;
+  }
+  .pipe-node:hover { transform: translateY(-4px); }
+  .pipe-box {
+    padding: 12px 16px; border-radius: 10px;
+    font-size: 12.5px; font-weight: 600;
+    text-align: center; min-width: 100px;
+    border: 1.5px solid transparent;
+    transition: all 0.3s ease;
+  }
+  .pipe-node:hover .pipe-box { box-shadow: var(--card-hover); }
+  .pipe-box.c-green { background: var(--green-bg); color: var(--green); border-color: var(--green); }
+  .pipe-box.c-amber { background: var(--amber-bg); color: var(--amber); border-color: var(--amber); }
+  .pipe-box.c-blue  { background: var(--blue-bg);  color: var(--blue);  border-color: var(--blue); }
+  .pipe-box.c-orange { background: var(--orange-bg); color: var(--orange); border-color: var(--orange); }
+  .pipe-box.c-purple { background: var(--purple-bg); color: var(--purple); border-color: var(--purple); }
+  .pipe-label { font-size: 10.5px; color: var(--text3); text-align: center; max-width: 100px; }
+  .pipe-arrow {
+    color: var(--text3); font-size: 16px; padding: 0 6px;
+    margin-top: -18px;
+    animation: arrowPulse 2s ease infinite;
+  }
+  .pipe-arrow:nth-child(4) { animation-delay: 0.2s; }
+  .pipe-arrow:nth-child(6) { animation-delay: 0.4s; }
+  .pipe-arrow:nth-child(8) { animation-delay: 0.6s; }
+  .pipe-arrow:nth-child(10) { animation-delay: 0.8s; }
+  @keyframes arrowPulse {
+    0%, 100% { opacity: 0.4; } 50% { opacity: 1; }
+  }
+
+  /* ── Command Cards ── */
+  .cmd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .cmd-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px;
+    position: relative; overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: default;
+  }
+  .cmd-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 2px; transition: height 0.3s ease;
+  }
+  .cmd-card:hover::before { height: 3px; }
+  .cmd-card:hover {
+    border-color: transparent;
+    box-shadow: var(--card-hover);
+    transform: translateY(-2px);
+  }
+  .cmd-card.c-amber::before { background: var(--amber); }
+  .cmd-card.c-blue::before  { background: var(--blue); }
+  .cmd-card.c-orange::before { background: var(--orange); }
+  .cmd-card.c-green::before { background: var(--green); }
+  .cmd-card.c-purple::before { background: var(--purple); }
+  .cmd-name {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 14px; font-weight: 600; color: var(--text);
+    margin-bottom: 4px;
+  }
+  .cmd-desc { font-size: 13px; color: var(--text2); margin: 0; line-height: 1.5; }
+  .cmd-tag {
+    display: inline-block; margin-top: 10px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.5px;
+    text-transform: uppercase; padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .cmd-tag.t-amber  { background: var(--amber-bg);  color: var(--amber); }
+  .cmd-tag.t-blue   { background: var(--blue-bg);   color: var(--blue); }
+  .cmd-tag.t-orange  { background: var(--orange-bg);  color: var(--orange); }
+  .cmd-tag.t-green  { background: var(--green-bg);  color: var(--green); }
+  .cmd-tag.t-purple { background: var(--purple-bg); color: var(--purple); }
+
+  /* ── Layers ── */
+  .layers { display: flex; flex-direction: column; gap: 0; max-width: 500px; margin: 0 auto; }
+  .layer {
+    padding: 16px 20px; border: 1.5px solid var(--border);
+    position: relative; transition: all 0.3s ease;
+  }
+  .layer:hover { transform: scale(1.02); z-index: 10; }
+  .layer:first-child { border-radius: 12px 12px 4px 4px; }
+  .layer:last-child  { border-radius: 4px 4px 12px 12px; margin-top: -1px; }
+  .layer:nth-child(2) { border-radius: 4px; margin-top: -1px; }
+  .layer-1 { background: var(--green-bg); border-color: var(--green); z-index: 3; }
+  .layer-2 { background: var(--blue-bg); border-color: var(--blue); z-index: 2; }
+  .layer-3 { background: var(--orange-bg); border-color: var(--orange); z-index: 1; }
+  .layer-head { display: flex; align-items: center; justify-content: space-between; }
+  .layer-name { font-size: 14px; font-weight: 700; }
+  .layer-pill {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 2px 8px; border-radius: 8px; color: white;
+  }
+  .layer-1 .layer-pill { background: var(--green); }
+  .layer-2 .layer-pill { background: var(--blue); }
+  .layer-3 .layer-pill { background: var(--orange); }
+  .layer-desc { font-size: 12.5px; color: var(--text2); margin-top: 2px; }
+
+  /* ── Tip Box ── */
+  .tip {
+    background: var(--accent-bg); border: 1px solid var(--accent);
+    border-radius: 12px; padding: 16px 20px;
+    font-size: 14px; color: var(--text2);
+    margin: 24px 0; display: flex; gap: 12px; align-items: flex-start;
+    transition: transform 0.3s;
+  }
+  .tip:hover { transform: translateX(4px); }
+  .tip-icon {
+    flex-shrink: 0; width: 24px; height: 24px;
+    background: var(--accent); color: white;
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+  }
+  .tip strong { color: var(--text); }
+
+  /* ── Divider ── */
+  .divider {
+    height: 1px; background: var(--border);
+    margin: 0; opacity: 0.6;
+  }
+
+  /* ── Footer ── */
+  footer {
+    text-align: center; padding: 40px 0;
+    font-size: 13px; color: var(--text3);
+  }
+  footer a {
+    color: var(--accent); text-decoration: none;
+    transition: opacity 0.2s;
+  }
+  footer a:hover { opacity: 0.7; }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    .cmd-grid { grid-template-columns: 1fr; }
+    .pipeline { flex-direction: column; gap: 4px; }
+    .pipe-arrow { transform: rotate(90deg); padding: 2px 0; }
+    .step { flex-direction: column; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme"></button>
+<div class="theme-label">theme</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <header class="hero">
+    <div class="hero-tag">Tutorial</div>
+    <h1>Get started with<br><span>Serious Sidekick</span></h1>
+    <p>You have Claude Code running in VS Code. Three prompts and you're set up.</p>
+    <div class="hero-time">
+      <span class="dot"></span>
+      3 prompts &middot; 2 minutes
+    </div>
+  </header>
+
+  <div class="divider"></div>
+
+  <!-- Step 1: Clone -->
+  <section>
+    <div class="container">
+      <div class="reveal">
+        <div class="section-label">Step 1</div>
+        <h2>Clone the repo</h2>
+        <p>Paste this into Claude Code:</p>
+      </div>
+
+      <div class="prompt-block reveal delay-1">
+        <div class="prompt-header">
+          <div class="prompt-dots"><span></span><span></span><span></span></div>
+          <div class="prompt-title">Claude Code</div>
+          <button class="prompt-copy" onclick="copyPrompt(this)">Copy</button>
+        </div>
+        <div class="prompt-text"><span class="user-prompt">Clone https://github.com/AntoineDubuc/serious-sidekick to my home directory</span></div>
+      </div>
+
+      <div class="reveal delay-2" style="font-size:14px; color:var(--text2);">
+        Claude will run <code>git clone</code> and put the template at <code>~/serious-sidekick</code>.
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- Step 2: Install globally -->
+  <section>
+    <div class="container">
+      <div class="reveal">
+        <div class="section-label">Step 2</div>
+        <h2>Install the skills globally</h2>
+        <p>Paste this into Claude Code:</p>
+      </div>
+
+      <div class="prompt-block reveal delay-1">
+        <div class="prompt-header">
+          <div class="prompt-dots"><span></span><span></span><span></span></div>
+          <div class="prompt-title">Claude Code</div>
+          <button class="prompt-copy" onclick="copyPrompt(this)">Copy</button>
+        </div>
+        <div class="prompt-text"><span class="user-prompt">Copy all skills from ~/serious-sidekick/.claude/skills/ to ~/.claude/skills/ so they're available globally in every project. Also copy the agents from ~/serious-sidekick/.claude/agents/ to ~/.claude/agents/</span></div>
+      </div>
+
+      <div class="reveal delay-2" style="font-size:14px; color:var(--text2);">
+        This installs all 23 skills and 5 Agent Teams agents into your global Claude Code config. They'll be available in every session, in every project.
+      </div>
+
+      <div class="tip reveal delay-3">
+        <div class="tip-icon">!</div>
+        <div><strong>That's the setup.</strong> You now have <code>/serious-init</code> available everywhere. The next step is using it.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- Step 3: Use in a project -->
+  <section>
+    <div class="container">
+      <div class="reveal">
+        <div class="section-label">Step 3</div>
+        <h2>Set up any project</h2>
+        <p>Open Claude Code in whatever project you're working on and paste:</p>
+      </div>
+
+      <div class="prompt-block reveal delay-1">
+        <div class="prompt-header">
+          <div class="prompt-dots"><span></span><span></span><span></span></div>
+          <div class="prompt-title">Claude Code &mdash; your project</div>
+          <button class="prompt-copy" onclick="copyPrompt(this)">Copy</button>
+        </div>
+        <div class="prompt-text"><span class="user-prompt">/serious-init</span></div>
+      </div>
+
+      <div class="reveal delay-2" style="font-size:14px; color:var(--text2); margin-bottom:20px;">
+        This copies into your project:
+      </div>
+
+      <div class="steps">
+        <div class="step reveal">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h3>CLAUDE.md</h3>
+            <p>Rules + feature index. Loaded every session, survives context compaction.</p>
+          </div>
+        </div>
+        <div class="step reveal delay-1">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h3>23 Skills</h3>
+            <p>6 workflow skills + 17 feature cheat sheets that auto-load when topics come up.</p>
+          </div>
+        </div>
+        <div class="step reveal delay-2">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h3>38 Feature Docs</h3>
+            <p>Deep-dive references with official docs, config options, and source URLs.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- Pipeline -->
+  <section>
+    <div class="container">
+      <div class="reveal">
+        <div class="section-label">What you get</div>
+        <h2>The workflow pipeline</h2>
+        <p>Six skills. Use any one standalone or chain them together.</p>
+      </div>
+
+      <div class="pipeline reveal delay-1">
+        <div class="pipe-node">
+          <div class="pipe-box c-amber">/serious-conversation</div>
+          <div class="pipe-label">Ideate with personas</div>
+        </div>
+        <div class="pipe-arrow">&rarr;</div>
+        <div class="pipe-node">
+          <div class="pipe-box c-blue">/serious-research</div>
+          <div class="pipe-label">Investigate with evidence</div>
+        </div>
+        <div class="pipe-arrow">&rarr;</div>
+        <div class="pipe-node">
+          <div class="pipe-box c-orange">/serious-plan</div>
+          <div class="pipe-label">Generate plan</div>
+        </div>
+        <div class="pipe-arrow">&rarr;</div>
+        <div class="pipe-node">
+          <div class="pipe-box c-green">/serious-code</div>
+          <div class="pipe-label">Execute with TDD</div>
+        </div>
+        <div class="pipe-arrow">&rarr;</div>
+        <div class="pipe-node">
+          <div class="pipe-box c-purple">Done</div>
+          <div class="pipe-label">Evidence report</div>
+        </div>
+      </div>
+
+      <div class="cmd-grid">
+        <div class="cmd-card c-amber reveal">
+          <div class="cmd-name">/serious-conversation</div>
+          <div class="cmd-desc">Think out loud with a panel of personas. 10 built-in (Architect, Skeptic, Pragmatist...) or create your own.</div>
+          <div class="cmd-tag t-amber">Ideation</div>
+        </div>
+        <div class="cmd-card c-blue reveal delay-1">
+          <div class="cmd-name">/serious-research</div>
+          <div class="cmd-desc">Quick or Deep mode. Evidence grading, adversarial verification, citation checking. Outputs to <code>Research/</code>.</div>
+          <div class="cmd-tag t-blue">Investigation</div>
+        </div>
+        <div class="cmd-card c-orange reveal delay-2">
+          <div class="cmd-name">/serious-plan</div>
+          <div class="cmd-desc">V6 implementation plans with TDD protocol, persona review rounds, and multi-plan parallel execution.</div>
+          <div class="cmd-tag t-orange">Planning</div>
+        </div>
+        <div class="cmd-card c-green reveal delay-3">
+          <div class="cmd-name">/serious-code</div>
+          <div class="cmd-desc">Executes plans with 5 Agent Teams agents per task: implementer, reviewer, test runner, runtime checker, QA.</div>
+          <div class="cmd-tag t-green">Execution</div>
+        </div>
+        <div class="cmd-card c-purple reveal">
+          <div class="cmd-name">/serious-bananas</div>
+          <div class="cmd-desc">Generate images and diagrams via Gemini's Nano Banana API. 6-question interview, up to 4 variations.</div>
+          <div class="cmd-tag t-purple">Image Gen</div>
+        </div>
+        <div class="cmd-card c-green reveal delay-1">
+          <div class="cmd-name">/serious-init</div>
+          <div class="cmd-desc">Scaffold any project with the full toolkit. Run it once per project.</div>
+          <div class="cmd-tag t-green">Setup</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- Knowledge Layers -->
+  <section>
+    <div class="container">
+      <div class="reveal">
+        <div class="section-label">How it works</div>
+        <h2>Three knowledge layers</h2>
+        <p>Each loads at a different time to save context window space.</p>
+      </div>
+
+      <div class="layers reveal delay-1">
+        <div class="layer layer-1">
+          <div class="layer-head">
+            <span class="layer-name">CLAUDE.md</span>
+            <span class="layer-pill">Always</span>
+          </div>
+          <div class="layer-desc">Feature index + rules. Claude always knows what exists.</div>
+        </div>
+        <div class="layer layer-2">
+          <div class="layer-head">
+            <span class="layer-name">23 Skills</span>
+            <span class="layer-pill">On demand</span>
+          </div>
+          <div class="layer-desc">Correct syntax and patterns. Auto-loads when topics come up.</div>
+        </div>
+        <div class="layer layer-3">
+          <div class="layer-head">
+            <span class="layer-name">38 Research Docs</span>
+            <span class="layer-pill">When needed</span>
+          </div>
+          <div class="layer-desc">Full references with official docs, config, and URLs.</div>
+        </div>
+      </div>
+
+      <div class="tip reveal delay-2">
+        <div class="tip-icon">!</div>
+        <div><strong>Why this matters:</strong> Claude hallucinates feature details from training data. These layers inject correct syntax, flags, and patterns exactly when needed.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- Try It -->
+  <section>
+    <div class="container">
+      <div class="reveal">
+        <div class="section-label">Now what?</div>
+        <h2>Pick a starting point</h2>
+        <p>You don't need the full pipeline. Jump in anywhere.</p>
+      </div>
+
+      <div class="steps">
+        <div class="step reveal">
+          <div class="step-num" style="background:var(--amber-bg);color:var(--amber);">A</div>
+          <div class="step-content">
+            <h3>Got an idea? Start talking.</h3>
+            <p><code>/serious-conversation</code> &mdash; explore it with personas before committing to anything.</p>
+          </div>
+        </div>
+        <div class="step reveal delay-1">
+          <div class="step-num" style="background:var(--blue-bg);color:var(--blue);">B</div>
+          <div class="step-content">
+            <h3>Got a bug? Research it.</h3>
+            <p><code>/serious-research</code> &mdash; structured investigation with evidence grading.</p>
+          </div>
+        </div>
+        <div class="step reveal delay-2">
+          <div class="step-num" style="background:var(--orange-bg);color:var(--orange);">C</div>
+          <div class="step-content">
+            <h3>Know what to build? Plan it.</h3>
+            <p><code>/serious-plan</code> &mdash; describe it in words, get a v6 implementation plan.</p>
+          </div>
+        </div>
+        <div class="step reveal delay-3">
+          <div class="step-num" style="background:var(--green-bg);color:var(--green);">D</div>
+          <div class="step-content">
+            <h3>Have a plan? Build it.</h3>
+            <p><code>/serious-code</code> &mdash; TDD execution with 5 verification agents per task.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- That's it -->
+  <section style="text-align:center; padding:60px 0;">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-label">Done</div>
+        <h2 style="font-size:32px;">That's it. Go build something.</h2>
+        <p style="margin:12px auto 0; max-width:440px;">Full docs live in <code>README.md</code> and <code>README.html</code> inside the cloned repo.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Serious Sidekick &middot; <a href="https://github.com/AntoineDubuc/serious-sidekick">GitHub</a>
+  </footer>
+
+</div>
+
+<script>
+  // Theme
+  function toggleTheme() {
+    const d = document.documentElement;
+    const next = d.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    d.setAttribute('data-theme', next);
+    localStorage.setItem('ss-theme', next);
+  }
+  (function() {
+    const s = localStorage.getItem('ss-theme');
+    if (s) document.documentElement.setAttribute('data-theme', s);
+    else if (matchMedia('(prefers-color-scheme:dark)').matches)
+      document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+
+  // Copy prompt
+  function copyPrompt(btn) {
+    const text = btn.closest('.prompt-block').querySelector('.user-prompt').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  // Scroll reveal
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }});
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+</script>
+
+</body>
+</html>

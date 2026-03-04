@@ -689,7 +689,7 @@
         <div class="stat-label">Documented Features</div>
       </div>
       <div class="stat">
-        <div class="stat-number">22</div>
+        <div class="stat-number">23</div>
         <div class="stat-label">Auto-loading Skills</div>
       </div>
       <div class="stat">
@@ -697,7 +697,7 @@
         <div class="stat-label">Feature Categories</div>
       </div>
       <div class="stat">
-        <div class="stat-number">5</div>
+        <div class="stat-number">6</div>
         <div class="stat-label">Workflow Skills</div>
       </div>
     </div>
@@ -706,7 +706,7 @@
   <!-- Workflow Diagram -->
   <section>
     <h2>Workflow</h2>
-    <p>Four workflow skills form a pipeline from ideation to implementation:</p>
+    <p>Five workflow skills form a pipeline from ideation to implementation, plus one standalone image generation skill:</p>
 
     <div class="diagram-container">
       <div class="diagram-title">Serious Workflow Pipeline</div>
@@ -754,13 +754,14 @@
 ├── <span class="file">README.md</span>                              <span class="comment"># Project documentation (markdown)</span>
 ├── <span class="file">README.html</span>                            <span class="comment"># Project documentation (HTML with light/dark mode)</span>
 ├── <span class="folder">.claude/</span>
-│   ├── <span class="folder">skills/</span>                            <span class="comment"># 22 auto-loading skills</span>
+│   ├── <span class="folder">skills/</span>                            <span class="comment"># 23 auto-loading skills</span>
 │   │   ├── <span class="file">serious-init/SKILL.md</span>          <span class="comment"># /serious-init — scaffold a new project</span>
 │   │   ├── <span class="file">serious-conversation/SKILL.md</span> <span class="comment"># /serious-conversation — persona panel</span>
 │   │   │   └── <span class="folder">personas/</span>              <span class="comment"># 10 built-in persona prompt files</span>
 │   │   ├── <span class="file">serious-research/SKILL.md</span>      <span class="comment"># /serious-research — structured research</span>
 │   │   ├── <span class="file">serious-plan/SKILL.md</span>          <span class="comment"># /serious-plan — implementation planning</span>
 │   │   ├── <span class="file">serious-code/SKILL.md</span>          <span class="comment"># /serious-code — plan execution with Agent Teams</span>
+│   │   ├── <span class="file">serious-bananas/SKILL.md</span>       <span class="comment"># /serious-bananas — image generation via Gemini</span>
 │   │   ├── <span class="file">hooks/SKILL.md</span>                 <span class="comment"># 17 feature-specific auto-loader skills</span>
 │   │   ├── <span class="file">subagents/SKILL.md</span>
 │   │   ├── <span class="file">mcp-integration/SKILL.md</span>
@@ -898,6 +899,45 @@
     </ul>
   </section>
 
+  <!-- Serious Bananas -->
+  <section>
+    <h2>/serious-bananas</h2>
+    <p>Generate images (especially diagrams) using Google's Gemini native image generation API (Nano Banana). Interviews you with 6 questions, crafts an optimized prompt, and runs the API call.</p>
+
+    <h3>Interview questions</h3>
+    <ul class="feature-list">
+      <li><strong>What do you need?</strong> — plain language description of the image</li>
+      <li><strong>What type?</strong> — flowchart, architecture, sequence, ER, infographic, concept map, freeform</li>
+      <li><strong>Style?</strong> — clean/minimal, technical/blueprint, whiteboard sketch, polished/presentation-ready</li>
+      <li><strong>Aspect ratio?</strong> — 1:1, 16:9, 3:2, 9:16</li>
+      <li><strong>How many variations?</strong> — 1-4 (each a separate API call with the same prompt)</li>
+      <li><strong>Where to save?</strong> — current directory, ./images/, ~/Desktop, or custom path</li>
+    </ul>
+
+    <h3>Models</h3>
+    <div class="mode-cards">
+      <div class="mode-card quick">
+        <div class="mode-label">Pro</div>
+        <h4>gemini-3-pro-image-preview</h4>
+        <ul>
+          <li>Highest quality</li>
+          <li>Best for detailed diagrams</li>
+          <li>Default model</li>
+        </ul>
+      </div>
+      <div class="mode-card deep">
+        <div class="mode-label">Flash</div>
+        <h4>gemini-3.1-flash-image-preview</h4>
+        <ul>
+          <li>Faster generation</li>
+          <li>Lower cost</li>
+          <li>Good for quick iterations</li>
+        </ul>
+      </div>
+    </div>
+    <p>Requires <code>GEMINI_API_KEY</code> in <code>.env</code> and <code>pip install google-genai pillow</code>.</p>
+  </section>
+
   <!-- Knowledge Layers -->
   <section>
     <h2>Knowledge Layers</h2>
@@ -915,7 +955,7 @@
         </div>
         <div class="layer layer-2">
           <div class="layer-header">
-            <span class="layer-name">Skills (22 auto-loaders)</span>
+            <span class="layer-name">Skills (23 auto-loaders)</span>
             <span class="layer-badge">On demand</span>
           </div>
           <p class="layer-desc">Cheat sheets with correct syntax, config, and patterns. Loaded when the topic comes up. Prevents hallucinated details. Includes 10 persona prompts.</p>
@@ -950,7 +990,7 @@
       </div>
       <div class="card">
         <h4>4. Workflow Skills</h4>
-        <p><code>/serious-init</code>, <code>/serious-conversation</code>, <code>/serious-research</code>, <code>/serious-plan</code>, and <code>/serious-code</code> load when invoked — providing step-by-step protocols from ideation through implementation.</p>
+        <p><code>/serious-init</code>, <code>/serious-conversation</code>, <code>/serious-research</code>, <code>/serious-plan</code>, <code>/serious-code</code>, and <code>/serious-bananas</code> load when invoked — providing step-by-step protocols from ideation through implementation and image generation.</p>
       </div>
     </div>
   </section>
@@ -963,7 +1003,7 @@
       <h3>Option A: Setup command <span class="recommended-badge">Recommended</span></h3>
       <p>Install the global skill, then open Claude Code in any project and run:</p>
       <pre><code>/serious-init</code></pre>
-      <p>This copies everything into your current project: CLAUDE.md (appends if one exists), all 22 skills, 38 feature documentation folders, and the v6 implementation plan template.</p>
+      <p>This copies everything into your current project: CLAUDE.md (appends if one exists), all 23 skills, 38 feature documentation folders, and the v6 implementation plan template.</p>
       <p style="margin-top: 12px;"><strong>Variants:</strong></p>
       <pre><code>/serious-init --skills-only     # Just skills, no docs or template
 /serious-init --docs-only       # Just docs + CLAUDE.md, no skills
@@ -1025,8 +1065,8 @@ cp /path/to/template/_implementation_plan_template_v6.md ./_implementation_plan_
 
   <!-- Skills Table -->
   <section>
-    <h2>All 22 Skills</h2>
-    <p>5 workflow skills you invoke directly + 17 feature cheat sheets that auto-load when the topic comes up. Plus 10 built-in persona prompts and 5 Agent Teams agents.</p>
+    <h2>All 23 Skills</h2>
+    <p>6 workflow skills you invoke directly + 17 feature cheat sheets that auto-load when the topic comes up. Plus 10 built-in persona prompts and 5 Agent Teams agents.</p>
 
     <table>
       <thead>
@@ -1042,6 +1082,7 @@ cp /path/to/template/_implementation_plan_template_v6.md ./_implementation_plan_
         <tr><td><code>serious-research</code></td><td><span class="tag tag-workflow">workflow</span></td><td>research, investigation, deep research</td></tr>
         <tr><td><code>serious-plan</code></td><td><span class="tag tag-workflow">workflow</span></td><td>implementation plan, planning</td></tr>
         <tr><td><code>serious-code</code></td><td><span class="tag tag-workflow">workflow</span></td><td>execute plan, start coding, implement</td></tr>
+        <tr><td><code>serious-bananas</code></td><td><span class="tag tag-workflow">workflow</span></td><td>generate image, generate diagram, Nano Banana</td></tr>
         <tr><td><code>hooks</code></td><td><span class="tag tag-feature">feature</span></td><td>lifecycle events, pre/post tool use, automation</td></tr>
         <tr><td><code>skills-and-commands</code></td><td><span class="tag tag-feature">feature</span></td><td>custom commands, SKILL.md files</td></tr>
         <tr><td><code>mcp-integration</code></td><td><span class="tag tag-feature">feature</span></td><td>MCP servers, external tools, databases</td></tr>

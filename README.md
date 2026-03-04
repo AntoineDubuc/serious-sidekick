@@ -12,7 +12,7 @@ Your Claude Code sidekick — a knowledge base, workflow toolkit, and feature re
 ├── README.md                              # Project documentation (markdown)
 ├── README.html                            # Project documentation (HTML with light/dark mode)
 ├── .claude/
-│   ├── skills/                            # 22 auto-loading skills
+│   ├── skills/                            # 23 auto-loading skills
 │   │   ├── serious-init/SKILL.md          # /serious-init — scaffold a new project
 │   │   ├── serious-conversation/SKILL.md  # /serious-conversation — persona panel ideation
 │   │   │   └── personas/                  # 10 built-in persona prompt files
@@ -22,6 +22,7 @@ Your Claude Code sidekick — a knowledge base, workflow toolkit, and feature re
 │   │   ├── serious-research/SKILL.md      # /serious-research — structured research
 │   │   ├── serious-plan/SKILL.md          # /serious-plan — implementation planning
 │   │   ├── serious-code/SKILL.md          # /serious-code — plan execution with Agent Teams
+│   │   ├── serious-bananas/SKILL.md       # /serious-bananas — image generation via Gemini
 │   │   ├── hooks/SKILL.md                 # 17 feature-specific auto-loader skills
 │   │   ├── subagents/SKILL.md
 │   │   ├── mcp-integration/SKILL.md
@@ -42,7 +43,7 @@ Your Claude Code sidekick — a knowledge base, workflow toolkit, and feature re
 
 ## Workflow Skills
 
-The template includes five workflow skills that form a pipeline:
+The template includes six workflow skills that form a pipeline:
 
 ### `/serious-conversation` — Persona Panel
 
@@ -113,6 +114,20 @@ Executes implementation plans produced by `/serious-plan`. Uses a 3-level agent 
 - **Completion report:** Generated at end of execution with full evidence summary
 - **Stop hook tracking:** Uses `.active-code` breadcrumb to track `execution_log.md` across tool calls
 
+### `/serious-bananas` — Image Generation
+
+Generate images (especially diagrams) using Google's Gemini native image generation API (Nano Banana). Interviews you with 6 questions, crafts an optimized prompt, and runs the API call.
+
+**Interview questions:**
+1. **What do you need?** — plain language description
+2. **What type?** — flowchart, architecture, sequence, ER, infographic, concept map, freeform
+3. **Style?** — clean/minimal, technical/blueprint, whiteboard sketch, polished/presentation-ready
+4. **Aspect ratio?** — 1:1, 16:9, 3:2, 9:16
+5. **How many variations?** — 1-4 (each a separate API call)
+6. **Where to save?** — current directory, ./images/, ~/Desktop, or custom path
+
+**Models:** `gemini-3-pro-image-preview` (Pro, highest quality) or `gemini-3.1-flash-image-preview` (faster/cheaper). Requires `GEMINI_API_KEY` in `.env` and `pip install google-genai pillow`.
+
 **Typical workflow:**
 ```
 /serious-conversation [topic] →  Ideation & exploration with persona panel
@@ -173,7 +188,7 @@ Once installed, Claude Code gains awareness of its own features at three levels:
 Every session, Claude sees the feature index and knows about `/serious-research` and `/serious-plan`. If you ask "can you use hooks for this?", it knows hooks exist and where to find the details.
 
 **2. Deep knowledge on demand (Skills)**
-Claude knows about its features from training data, but frequently gets specifics wrong — incorrect syntax, outdated flags, missing options, wrong defaults. The 17 feature auto-loader skills fix this. Each is a concise cheat sheet (quick reference, configuration syntax, common patterns) that gets injected into context automatically when the topic comes up. If you mention MCP servers, the MCP skill loads with the correct transport types, scope precedence, and CLI flags. If you ask about permissions, Claude gets the exact rule evaluation order and path pattern syntax. The workflow skills (`/serious-init`, `/serious-conversation`, `/serious-research`, `/serious-plan`, `/serious-code`) load when you invoke them.
+Claude knows about its features from training data, but frequently gets specifics wrong — incorrect syntax, outdated flags, missing options, wrong defaults. The 17 feature auto-loader skills fix this. Each is a concise cheat sheet (quick reference, configuration syntax, common patterns) that gets injected into context automatically when the topic comes up. If you mention MCP servers, the MCP skill loads with the correct transport types, scope precedence, and CLI flags. If you ask about permissions, Claude gets the exact rule evaluation order and path pattern syntax. The workflow skills (`/serious-init`, `/serious-conversation`, `/serious-research`, `/serious-plan`, `/serious-code`, `/serious-bananas`) load when you invoke them.
 
 **3. Full reference when needed (Research docs)**
 For edge cases or deep configuration, Claude can read the full `research.md` which includes official documentation excerpts, all configuration options, and source URLs.
@@ -194,7 +209,7 @@ For edge cases or deep configuration, Claude can read the full `research.md` whi
 | **Tools** | Built-in Tools, Git Worktrees, Checkpointing/Rewind, Context Management, Headless Mode |
 | **Infrastructure** | Cloud Providers, Multi-Model Support, Cost Management |
 
-### 22 skills (17 feature + 5 workflow)
+### 23 skills (17 feature + 6 workflow)
 
 | Skill | Triggers when you discuss... |
 |-------|------------------------------|
@@ -203,6 +218,7 @@ For edge cases or deep configuration, Claude can read the full `research.md` whi
 | `serious-research` | `/serious-research`, research, investigation, deep research |
 | `serious-plan` | `/serious-plan`, implementation plan, planning |
 | `serious-code` | `/serious-code`, execute plan, start coding, implement |
+| `serious-bananas` | `/serious-bananas`, generate image, generate diagram, Nano Banana |
 | `hooks` | lifecycle events, pre/post tool use, automation |
 | `skills-and-commands` | creating custom commands, SKILL.md files |
 | `mcp-integration` | MCP servers, external tools, databases |
