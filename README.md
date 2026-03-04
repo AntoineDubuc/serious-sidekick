@@ -65,7 +65,7 @@ Runs a structured research operation with two modes:
 | **Quick** | Single-threaded research, persona reviews, markdown deliverable | Bug diagnosis, focused investigation, clear single-angle questions |
 | **Deep** | Parallel thread agents, evidence grading (A-F), adversarial verification, QA citation checking, HTML report | Architecture decisions, competitive analysis, multi-dimensional topics |
 
-The mode is auto-detected based on your request, or you can force it with `--quick` or `--deep`. A Stop hook uses the `.active-research` breadcrumb to track `notebook.md` across tool calls.
+The mode is auto-detected based on your request, or you can force it with `--quick` or `--deep`. During scoping, you choose a **research scope** — online only, codebase only, or both — so agents only use the tools that matter (no pointless web searches for a local bug hunt, no codebase exploration for a tech evaluation). A Stop hook uses the `.active-research` breadcrumb to track `notebook.md` across tool calls.
 
 **What it creates:**
 ```

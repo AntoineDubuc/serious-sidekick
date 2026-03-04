@@ -48,7 +48,24 @@ Evaluate silently along these dimensions — do NOT ask canned questions:
 - **Constraints** — Focus areas, exclusions, time sensitivity.
 - **Depth vs breadth** — Landscape survey or deep-dive on one area?
 
-### 0b. Classify the work
+### 0b. Determine research scope
+
+Ask the user where the research should look:
+
+| Scope | When to recommend | What it means |
+|-------|-------------------|---------------|
+| **Online only** | Technology evaluations, competitive analysis, external API docs, industry trends — nothing to investigate in the local codebase | Web searches and external sources only. No file reads, no codebase exploration. |
+| **Codebase only** | Bug hunts, refactoring decisions, understanding existing patterns, tracing execution paths — the answer lives in the code | Local files, git history, grep, glob only. No web searches. |
+| **Both** | Feature implementation research, architecture decisions where you need to understand existing code AND external best practices | Full investigation — codebase + web. Default when unclear. |
+
+Present your recommendation with a one-sentence rationale based on what you learned in 0a. The user can override.
+
+This scope constrains all downstream phases:
+- **Online only:** Thread agents use `WebSearch` and `WebFetch` only. No `Read`, `Glob`, `Grep` on the codebase.
+- **Codebase only:** Thread agents use `Read`, `Glob`, `Grep`, `Bash` (for git log, etc.) only. No `WebSearch`, `WebFetch`.
+- **Both:** All tools available.
+
+### 0c. Classify the work
 
 Determine the category:
 
@@ -58,7 +75,7 @@ Determine the category:
 | **Feature** | New capability, enhancement, improvement to build |
 | **Exploratory** | Open-ended question, architecture evaluation, competitive analysis, technology comparison — not tied to a specific bug or feature |
 
-### 0c. Recommend the mode
+### 0d. Recommend the mode
 
 | Mode | When to recommend | What it does |
 |------|-------------------|--------------|
@@ -78,12 +95,13 @@ Determine the category:
 - Multiple stakeholders will read the output
 - The topic has conflicting information online
 
-### 0d. Present the scoping brief
+### 0e. Present the scoping brief
 
 Present a brief for user approval:
 
 ```
 **Research brief:** {1-3 sentence description of what you'll investigate}
+**Scope:** Online only / Codebase only / Both
 **Classification:** Bug / Feature / Exploratory
 **Recommended mode:** Quick / Deep
 **Rationale:** {Why this mode — one sentence}
@@ -137,6 +155,7 @@ Research/
 **Started:** {date}
 **Status:** In Progress
 **Classification:** Bug / Feature / Exploratory
+**Scope:** Online only / Codebase only / Both
 **Mode:** Quick / Deep
 
 ## Research Question
@@ -157,6 +176,7 @@ Research/
 
 **Date:** {date}
 **Classification:** Bug / Feature / Exploratory
+**Scope:** Online only / Codebase only / Both
 **Mode:** Quick / Deep
 **Status:** In Progress
 
