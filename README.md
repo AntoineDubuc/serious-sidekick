@@ -66,7 +66,7 @@ Runs a structured research operation with two modes:
 | **Quick** | Single-threaded research, persona reviews, markdown deliverable | Bug diagnosis, focused investigation, clear single-angle questions |
 | **Deep** | Parallel thread agents, evidence grading (A-F), adversarial verification, QA citation checking, HTML report | Architecture decisions, competitive analysis, multi-dimensional topics |
 
-The mode is auto-detected based on your request, or you can force it with `--quick` or `--deep`. During scoping, you choose a **research scope** — online only, codebase only, or both — so agents only use the tools that matter (no pointless web searches for a local bug hunt, no codebase exploration for a tech evaluation). A Stop hook uses the `.active-research` breadcrumb to track `notebook.md` across tool calls.
+The mode is auto-detected based on your request, or you can force it with `--quick` or `--deep`. During scoping, you choose a **research scope** — online only, codebase only, or both — so agents only use the tools that matter (no pointless web searches for a local bug hunt, no codebase exploration for a tech evaluation). Before diving into research, mandatory pre-research steps capture a smoke test baseline, trace the full execution path from user action to visible result, identify optimization/caching layers, and map downstream consumers. A Stop hook uses the `.active-research` breadcrumb to track `notebook.md` across tool calls.
 
 **What it creates:**
 ```
@@ -95,6 +95,10 @@ Generates a v6 implementation plan from research, a PRD, or even a verbal descri
   - Same convergence rules, max 3 integration rounds
   - If integration fixes change a plan → one more individual review round
 - Evidence reports per task
+- Task 0 smoke test (reproduce problem in running app before any implementation)
+- Scope clarity per task (data layer, UI layer, or full round-trip)
+- Impact analysis per task (downstream consumers of changed code)
+- Every user-facing task requires a "visible to user" acceptance criterion
 
 ### `/serious-code` — Plan Execution
 
@@ -106,6 +110,9 @@ Executes implementation plans produced by `/serious-plan`. Uses a 3-level agent 
 - **Agent Teams** (5 agents per task): implementer (TDD), code reviewer, test runner, runtime checker, QA spot-checker
 
 **Key features:**
+- **SMOKE→RED→GREEN→VERIFY→SMOKE cycle:** Smoke test before implementation, TDD during, smoke test after — "tests pass" is necessary but not sufficient
+- **Gap investigation:** When unit tests pass but the feature doesn't work, investigates the missing layer (caches, indexes, visibility culling, event propagation, async timing, build caches)
+- **Monorepo awareness:** Rebuilds dependency packages and restarts dev servers after modifying shared modules
 - **Multi-plan execution:** Reads `phase_map.md` and runs plans in parallel phases via git worktrees
 - **Phase-by-phase approval:** User approves each phase before execution begins
 - **Two-level tracking:** `execution_log.md` (orchestrator level) + per-plan `progress.md`

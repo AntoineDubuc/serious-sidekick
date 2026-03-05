@@ -209,11 +209,23 @@ Runs AFTER all individual plan reviews have converged.
 - v6 integrates TDD: every acceptance criterion gets a failing test FIRST, then implementation, then QA sub-agent verification
 
 ### Master Checklist / Progress Dashboard
-- Create implementation tasks based on the research recommendations (or PRD requirements, or user description)
+
+**Task 0 is always a smoke test.** Before any implementation tasks, the checklist must start with:
+
+```
+Task 0: Smoke Test — Reproduce the problem (or baseline the current behavior) in the running application.
+```
+
+This is not a unit test. It's launching the app, performing the user action, and capturing what happens. The output becomes the baseline that implementation must improve.
+
+After Task 0, create implementation tasks:
 - Pair each implementation task with a verification task (N + Nv)
 - Assign risk levels (L/M/H) based on complexity and blast radius
 - Order tasks by dependency (independent tasks first, dependent tasks later)
 - Aim for **3-7 implementation tasks** — decompose large work, combine trivial items
+- **Interleave browser/app verification gates** — don't save all user-visible testing for the end. After each cluster of related changes, include a verification step that checks behavior in the running app.
+
+**The final task must always be a user-visible verification:** the same smoke test from Task 0, which should now pass.
 
 ### Evidence Generation Protocol
 - Copy from the v6 template — adapt the evidence types table to this project's task categories
@@ -224,10 +236,20 @@ Runs AFTER all individual plan reviews have converged.
 For each task, fill in:
 - **Risk level** with justification
 - **Intent** — one sentence on what the task accomplishes
+- **Scope clarity** — explicitly state what "done" means for this task:
+  - Does "done" mean the data model is correct? (schema/API layer)
+  - Does "done" mean the user can see/interact with the result? (rendering/UI layer)
+  - Does "done" mean the full round-trip works? (create → persist → reload → still there)
+  - If a task only covers the data layer, say so, and ensure a later task covers the user-visible layer.
 - **Context** — why it exists, dependencies, what it enables
 - **Expected behavior** — the user-visible outcome
 - **Key components** — specific files and functions
-- **Acceptance criteria** — concrete, testable `- [ ]` items
+- **Impact analysis** — what other components consume the output of the changed code? Follow the chain:
+  - What calls the changed function?
+  - What renders data from the changed data source?
+  - What caches/indexes recompute when this data changes?
+  - List each downstream consumer and whether it handles the new behavior correctly.
+- **Acceptance criteria** — concrete, testable `- [ ]` items (see quality bar below)
 - **Negative tests** — what should NOT happen
 - **Evidence requirements** — specific proof items
 - **TDD note** — the v6 reminder that every criterion requires a failing test first
@@ -239,6 +261,8 @@ For each task, fill in:
 - No vague criteria ("works correctly") — specify what "correct" means
 - Include the specific component, property, or behavior to check
 - Every criterion must be encodable as a test (TDD requirement)
+- **Every task with a user-facing outcome must include at least one "visible to user" criterion** — phrased as: "A user performing [action] sees [result]." These criteria cannot be verified by unit tests alone — they require a running application check.
+- Structural criteria (function accepts X, API returns Y) are necessary but **insufficient** for UI/UX tasks. Always pair them with a user-visible criterion.
 
 ### Appendix
 - Technical decisions (from research or inferred from requirements)
@@ -302,6 +326,11 @@ Before presenting to the user, verify each plan:
 - [ ] Acceptance criteria are specific enough to write a test for (TDD requirement)
 - [ ] Risk levels make sense (H for shared state/security, M for standard features, L for config/boilerplate)
 - [ ] The plan is self-contained — an agent could execute it without asking questions
+- [ ] Task 0 is a smoke test that reproduces the problem in the running app
+- [ ] The final task is a user-visible verification (same smoke test, now passing)
+- [ ] Every task with a user-facing outcome has at least one "visible to user" acceptance criterion
+- [ ] Every task has an impact analysis listing downstream consumers of changed code
+- [ ] Each task's scope is explicit about what "done" means (data layer, UI layer, or full round-trip)
 - [ ] TDD Protocol section is present and unmodified
 - [ ] Inline QA Protocol v6 section is present and unmodified
 - [ ] Input source is documented in the Appendix

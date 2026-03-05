@@ -20,7 +20,7 @@ Execute implementation plans produced by `/serious-plan`. Orchestrates parallel 
 
 **Position in the workflow:**
 ```
-/serious-conversation → /serious-research → /serious-plan → /serious-code → done
+/serious-conversation → /serious-research → /serious-plan → /serious-code → /serious-review → done
 ```
 
 ---
@@ -243,6 +243,21 @@ If a plan failed:
 
 This is what happens inside each plan agent for each task. The plan agent dispatches to Agent Teams agents.
 
+The full cycle is: **SMOKE → RED → GREEN → VERIFY → SMOKE**
+
+"Tests pass" is a necessary condition. "User can see/use it" is the sufficient condition.
+
+### Step 0: Smoke Test (before implementation)
+
+If this is Task 0 (the smoke test task from the plan), or if the task has "visible to user" acceptance criteria:
+
+1. Ensure the application is running (launch dev server, start CLI, etc.)
+2. Perform the user action described in the task
+3. Capture the result: error messages, HTTP responses, screenshots, console output
+4. Write the baseline to evidence: `evidence/task_{NN}/smoke_before.md`
+
+This takes 2-5 minutes and establishes what needs to change.
+
 ### Step 1: Implement (serious-code-implementer)
 
 Spawn the `serious-code-implementer` agent with:
@@ -256,9 +271,26 @@ The implementer:
 3. Commits after each criterion passes
 4. Returns: list of files changed, tests written, any issues encountered
 
+**Monorepo awareness:** If the implementer modifies a dependency package (library, shared module), it must:
+- Rebuild the modified package before testing dependents
+- Restart any running dev servers that consume the modified package
+- Track which packages were modified and which dependents need rebuilding
+
+### Step 1.5: Post-Implementation Smoke Test
+
+After the implementer completes and all unit tests pass, but **before** running the 4 verification agents:
+
+1. If the task has "visible to user" acceptance criteria, perform a smoke test in the running app
+2. If the smoke test fails despite unit tests passing, **investigate the gap**:
+   - The gap is always in a layer that unit tests don't cover
+   - Common culprits: caching/indexing layers, visibility culling, event propagation, z-ordering, async timing, build caches (stale code)
+   - Add a test for the missing layer, fix the layer, then re-run
+   - Document the missing layer in evidence so future plans include it
+3. Do not proceed to Step 2 until the smoke test passes
+
 ### Step 2: Verify (4 agents in parallel)
 
-After the implementer completes, spawn all four verification agents in parallel:
+After the implementer completes AND the smoke test passes, spawn all four verification agents in parallel:
 
 **serious-code-reviewer:**
 - Reads the diff of all files changed by the implementer
@@ -395,3 +427,7 @@ If `/serious-code --resume` is invoked or the orchestrator detects an existing `
 5. **User approval between phases.** Never start a phase without the user saying "go."
 6. **Evidence is mandatory.** Every completed task gets an evidence folder.
 7. **Commits should be granular.** One commit per acceptance criterion, not one mega-commit per task.
+8. **"Tests pass" is necessary, not sufficient.** After unit tests pass, always perform a smoke test in the running app for tasks with user-visible outcomes. Do not mark a task complete until the user can see/use the result.
+9. **When tests pass but the feature doesn't work, investigate the gap.** The gap is always in a layer tests don't cover — caches, indexes, visibility culling, event propagation, async timing, build caches. Add a test for the missing layer, fix it, document it.
+10. **Rebuild dependencies in monorepos.** After modifying a dependency package, rebuild it before testing dependents. Restart dev servers that consume the modified package. Stale builds are a silent failure source.
+11. **The completion report is not optional.** Generate `completion_report.md` with full evidence summary. If the session is interrupted, resume must generate it.

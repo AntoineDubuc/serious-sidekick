@@ -244,6 +244,67 @@ For deep mode only, also create:
 
 ## Phase 2: Research Execution
 
+### Mandatory Pre-Research Steps (Both Modes)
+
+Before diving into any research, perform these steps in order. They apply to both quick and deep modes, and to any classification (bug, feature, exploratory).
+
+#### 2-pre-a. Smoke Test Reproduction
+
+If the research topic involves user-visible behavior (a bug to fix, a feature to build, a flow to improve), **reproduce it in the running application first** — not unit tests, the real app.
+
+- Launch the app (headless browser, CLI, dev server — whatever the project uses)
+- Attempt the user action that should work (or is broken)
+- Capture what actually happens: error messages, HTTP responses, console output, screenshots if visual
+- Write the result to notebook.md immediately as Entry 1
+
+This takes 5 minutes and eliminates speculation. It establishes the **baseline** that all subsequent work must improve.
+
+**Skip this step only if:** the research is purely exploratory with no existing behavior to test (e.g., "evaluate cloud providers"), or the scope is online-only.
+
+#### 2-pre-b. Full Execution Path Trace
+
+For any research involving a feature or bug with a user-observable outcome, trace the **complete execution path** from user action to visible result. Every layer the data passes through:
+
+```
+User action → Input handler → Business logic → Data persistence → [optimization layers] → Rendering/Output → User sees result
+```
+
+Walk through the codebase and document each step:
+1. What file/function handles this step
+2. What data it receives and what it passes downstream
+3. Whether this step is already working or needs changes
+
+Write the full path to notebook.md and flag each step as: **working**, **needs changes**, or **unknown**.
+
+**Why this matters:** The most common failure pattern is fixing one layer while a downstream layer silently drops or mishandles the change. Caches, spatial indexes, virtual DOMs, memoization, and other optimization layers between data and rendering are invisible to unit tests and are the #1 source of "tests pass but it doesn't work."
+
+#### 2-pre-c. Identify Optimization and Caching Layers
+
+Explicitly identify every optimization or caching layer in the execution path:
+
+- Spatial indexes, quadtrees, R-trees (canvas/game apps)
+- Virtual DOM diffing, memo/useMemo (React apps)
+- Query caches (GraphQL, React Query, SWR)
+- Service workers, CDN caches (web apps)
+- Memoization, computed property caches
+- Event debouncing/throttling
+- Build caches, hot module replacement
+
+For each one found, document: what it caches, when it invalidates, and whether the planned changes will be visible through it. Write to notebook.md.
+
+#### 2-pre-d. Downstream Consumer Analysis
+
+For every component that will be changed, identify **what consumes its output**:
+
+- What functions call the changed function?
+- What components render data from the changed data source?
+- What indexes/caches recompute when this data changes?
+- What event listeners fire when this state updates?
+
+Write the consumer chain to notebook.md. These consumers are potential failure points that the plan must cover.
+
+---
+
 ### Quick Mode — Single-Threaded Research
 
 Execute a sequential research loop:
@@ -272,6 +333,10 @@ Execute a sequential research loop:
 - [ ] File paths and code references are specific (not vague)
 - [ ] External sources are cited with URLs
 - [ ] The notebook has a continuous trail of investigation (no large gaps)
+- [ ] Full execution path is traced from user action to visible result (if applicable)
+- [ ] Optimization/caching layers in the path are identified and documented
+- [ ] Downstream consumers of changed components are listed
+- [ ] Smoke test baseline is captured (if applicable)
 
 After completing the research loop, **skip to Phase 5** (Review & Finalization).
 

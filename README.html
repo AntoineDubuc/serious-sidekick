@@ -870,7 +870,7 @@
       </div>
     </div>
 
-    <p>During scoping, you choose a <strong>research scope</strong> &mdash; online only, codebase only, or both &mdash; so agents only use the tools that matter (no pointless web searches for a local bug hunt, no codebase exploration for a tech evaluation).</p>
+    <p>During scoping, you choose a <strong>research scope</strong> &mdash; online only, codebase only, or both &mdash; so agents only use the tools that matter (no pointless web searches for a local bug hunt, no codebase exploration for a tech evaluation). Before diving into research, mandatory pre-research steps capture a smoke test baseline, trace the full execution path from user action to visible result, identify optimization/caching layers, and map downstream consumers.</p>
     <p>A Stop hook uses the <code>.active-research</code> breadcrumb to track <code>notebook.md</code> across tool calls.</p>
     <p>Research output is organized by type:</p>
     <div class="folder-tree-small">Research/
@@ -894,6 +894,10 @@
       <li><strong>Multi-plan support</strong> — single plan (3-7 tasks) or multiple plans with <code>phase_map.md</code> for parallel execution</li>
       <li><strong>Cross-plan integration review</strong> — Integration Architect + Merge Strategist (+ optional Concurrency Engineer). Same convergence rules, max 3 integration rounds. If fixes change a plan &#8594; one more individual review round</li>
       <li><strong>Evidence reports</strong> — markdown evidence generated per task</li>
+      <li><strong>Task 0 smoke test</strong> — reproduce the problem in the running app before any implementation</li>
+      <li><strong>Scope clarity</strong> — every task states what "done" means (data layer, UI layer, or full round-trip)</li>
+      <li><strong>Impact analysis</strong> — downstream consumers of changed code listed per task</li>
+      <li><strong>Visible-to-user criteria</strong> — every user-facing task requires at least one criterion verifiable in the running app</li>
     </ul>
   </section>
 
@@ -904,6 +908,9 @@
     <p>The Orchestrator manages phases and user approval. Plan Agents (one per plan per phase) execute via git worktrees for isolation. Agent Teams (5 agents per task) handle TDD implementation and verification.</p>
 
     <ul class="feature-list">
+      <li><strong>SMOKE&#8594;RED&#8594;GREEN&#8594;VERIFY&#8594;SMOKE cycle</strong> — smoke test before implementation, TDD during, smoke test after. "Tests pass" is necessary but not sufficient</li>
+      <li><strong>Gap investigation</strong> — when unit tests pass but the feature doesn't work, investigates the missing layer (caches, indexes, visibility culling, event propagation, async timing, build caches)</li>
+      <li><strong>Monorepo awareness</strong> — rebuilds dependency packages and restarts dev servers after modifying shared modules</li>
       <li><strong>Multi-plan execution</strong> — reads <code>phase_map.md</code> and runs plans in parallel phases via git worktrees</li>
       <li><strong>5 Agent Teams agents</strong> — implementer (TDD), code reviewer, test runner, runtime checker, QA spot-checker</li>
       <li><strong>Phase-by-phase approval</strong> — user approves each phase before execution begins</li>
