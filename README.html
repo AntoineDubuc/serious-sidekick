@@ -284,6 +284,16 @@
     border: 2px solid var(--green);
     color: var(--green);
   }
+  .workflow-node.review {
+    background: #fef3f2;
+    border: 2px solid #e45858;
+    color: #e45858;
+  }
+  [data-theme="dark"] .workflow-node.review {
+    background: #3a1f1f;
+    border-color: #e87070;
+    color: #e87070;
+  }
   .workflow-node.done {
     background: var(--accent-bg);
     border: 2px solid var(--accent);
@@ -689,7 +699,7 @@
         <div class="stat-label">Documented Features</div>
       </div>
       <div class="stat">
-        <div class="stat-number">23</div>
+        <div class="stat-number">24</div>
         <div class="stat-label">Auto-loading Skills</div>
       </div>
       <div class="stat">
@@ -697,7 +707,7 @@
         <div class="stat-label">Feature Categories</div>
       </div>
       <div class="stat">
-        <div class="stat-number">6</div>
+        <div class="stat-number">7</div>
         <div class="stat-label">Workflow Skills</div>
       </div>
     </div>
@@ -706,7 +716,7 @@
   <!-- Workflow Diagram -->
   <section>
     <h2>Workflow</h2>
-    <p>Five workflow skills form a pipeline from ideation to implementation, plus one standalone image generation skill:</p>
+    <p>Six workflow skills form a full development loop from ideation to implementation and back, plus one standalone image generation skill:</p>
 
     <div class="diagram-container">
       <div class="diagram-title">Serious Workflow Pipeline</div>
@@ -737,6 +747,11 @@
         </div>
         <div class="workflow-arrow">&#10230;</div>
         <div class="workflow-step">
+          <div class="workflow-node review">/serious-review</div>
+          <div class="workflow-desc">Review, capture defects, cycle back &#8617;</div>
+        </div>
+        <div class="workflow-arrow">&#10230;</div>
+        <div class="workflow-step">
           <div class="workflow-node done">Done</div>
           <div class="workflow-desc">Evidence &amp; completion report</div>
         </div>
@@ -754,13 +769,14 @@
 ├── <span class="file">README.md</span>                              <span class="comment"># Project documentation (markdown)</span>
 ├── <span class="file">README.html</span>                            <span class="comment"># Project documentation (HTML with light/dark mode)</span>
 ├── <span class="folder">.claude/</span>
-│   ├── <span class="folder">skills/</span>                            <span class="comment"># 23 auto-loading skills</span>
+│   ├── <span class="folder">skills/</span>                            <span class="comment"># 24 auto-loading skills</span>
 │   │   ├── <span class="file">serious-init/SKILL.md</span>          <span class="comment"># /serious-init — scaffold a new project</span>
 │   │   ├── <span class="file">serious-conversation/SKILL.md</span> <span class="comment"># /serious-conversation — persona panel</span>
 │   │   │   └── <span class="folder">personas/</span>              <span class="comment"># 10 built-in persona prompt files</span>
 │   │   ├── <span class="file">serious-research/SKILL.md</span>      <span class="comment"># /serious-research — structured research</span>
 │   │   ├── <span class="file">serious-plan/SKILL.md</span>          <span class="comment"># /serious-plan — implementation planning</span>
 │   │   ├── <span class="file">serious-code/SKILL.md</span>          <span class="comment"># /serious-code — plan execution with Agent Teams</span>
+│   │   ├── <span class="file">serious-review/SKILL.md</span>        <span class="comment"># /serious-review — structured review &amp; defect capture</span>
 │   │   ├── <span class="file">serious-bananas/SKILL.md</span>       <span class="comment"># /serious-bananas — image generation via Gemini</span>
 │   │   ├── <span class="file">hooks/SKILL.md</span>                 <span class="comment"># 17 feature-specific auto-loader skills</span>
 │   │   ├── <span class="file">subagents/SKILL.md</span>
@@ -900,6 +916,54 @@
     </ul>
   </section>
 
+  <!-- Serious Review -->
+  <section>
+    <h2>/serious-review</h2>
+    <p>Structured review and defect capture that bridges <code>/serious-code</code> output back into the pipeline. Not a testing framework &mdash; a human review phase that collects feedback and cycles it through <code>/serious-research</code> &rarr; <code>/serious-plan</code> &rarr; <code>/serious-code</code>.</p>
+
+    <h3>The Flow</h3>
+    <ul class="feature-list">
+      <li><strong>Auto-detect context</strong> &mdash; scans for recent <code>/serious-code</code> output, flags missing deliverables</li>
+      <li><strong>Confirm scope</strong> &mdash; presents what was found, asks to confirm</li>
+      <li><strong>Choose mode</strong> &mdash; live capture, QA plan first, or both (default)</li>
+      <li><strong>Live capture</strong> &mdash; each issue gets an ID (REVIEW-001), classified, severity-rated, and written to disk immediately</li>
+      <li><strong>Synthesize</strong> &mdash; consolidates findings into <code>review-summary.md</code> formatted as research input</li>
+      <li><strong>Hand off</strong> &mdash; offers to kick off the pipeline again on the findings</li>
+    </ul>
+
+    <h3>Issue Classification</h3>
+    <div class="mode-cards">
+      <div class="mode-card quick">
+        <div class="mode-label">Types</div>
+        <h4>What gets captured</h4>
+        <ul>
+          <li>&#128027; Bug &mdash; broken behavior</li>
+          <li>&#9888;&#65039; Missed requirement</li>
+          <li>&#128161; Improvement</li>
+          <li>&#128274; Security concern</li>
+          <li>&#127912; UX/UI issue</li>
+        </ul>
+      </div>
+      <div class="mode-card deep">
+        <div class="mode-label">Severities</div>
+        <h4>Priority levels</h4>
+        <ul>
+          <li><strong>Critical</strong> &mdash; blocks usage, data loss</li>
+          <li><strong>High</strong> &mdash; major feature broken</li>
+          <li><strong>Medium</strong> &mdash; works but wrong</li>
+          <li><strong>Low</strong> &mdash; minor polish</li>
+        </ul>
+      </div>
+    </div>
+
+    <p>Output is organized in a QA folder:</p>
+    <div class="folder-tree-small">QA/
+└── {slug}/
+    ├── findings.md        <span style="color:var(--text-muted)"># All issues with IDs, types, severities</span>
+    ├── qa-plan.md         <span style="color:var(--text-muted)"># Generated QA checklist (if requested)</span>
+    └── review-summary.md  <span style="color:var(--text-muted)"># Final synthesis — feeds into /serious-research</span></div>
+  </section>
+
   <!-- Serious Bananas -->
   <section>
     <h2>/serious-bananas</h2>
@@ -956,7 +1020,7 @@
         </div>
         <div class="layer layer-2">
           <div class="layer-header">
-            <span class="layer-name">Skills (23 auto-loaders)</span>
+            <span class="layer-name">Skills (24 auto-loaders)</span>
             <span class="layer-badge">On demand</span>
           </div>
           <p class="layer-desc">Cheat sheets with correct syntax, config, and patterns. Loaded when the topic comes up. Prevents hallucinated details. Includes 10 persona prompts.</p>
@@ -991,7 +1055,7 @@
       </div>
       <div class="card">
         <h4>4. Workflow Skills</h4>
-        <p><code>/serious-init</code>, <code>/serious-conversation</code>, <code>/serious-research</code>, <code>/serious-plan</code>, <code>/serious-code</code>, and <code>/serious-bananas</code> load when invoked — providing step-by-step protocols from ideation through implementation and image generation.</p>
+        <p><code>/serious-init</code>, <code>/serious-conversation</code>, <code>/serious-research</code>, <code>/serious-plan</code>, <code>/serious-code</code>, <code>/serious-review</code>, and <code>/serious-bananas</code> load when invoked — providing step-by-step protocols from ideation through implementation, review, and image generation.</p>
       </div>
     </div>
   </section>
@@ -1004,7 +1068,7 @@
       <h3>Option A: Setup command <span class="recommended-badge">Recommended</span></h3>
       <p>Install the global skill, then open Claude Code in any project and run:</p>
       <pre><code>/serious-init</code></pre>
-      <p>This copies everything into your current project: CLAUDE.md (appends if one exists), all 23 skills, 38 feature documentation folders, and the v6 implementation plan template.</p>
+      <p>This copies everything into your current project: CLAUDE.md (appends if one exists), all 24 skills, 38 feature documentation folders, and the v6 implementation plan template.</p>
       <p style="margin-top: 12px;"><strong>Variants:</strong></p>
       <pre><code>/serious-init --skills-only     # Just skills, no docs or template
 /serious-init --docs-only       # Just docs + CLAUDE.md, no skills
@@ -1066,8 +1130,8 @@ cp /path/to/template/_implementation_plan_template_v6.md ./_implementation_plan_
 
   <!-- Skills Table -->
   <section>
-    <h2>All 23 Skills</h2>
-    <p>6 workflow skills you invoke directly + 17 feature cheat sheets that auto-load when the topic comes up. Plus 10 built-in persona prompts and 5 Agent Teams agents.</p>
+    <h2>All 24 Skills</h2>
+    <p>7 workflow skills you invoke directly + 17 feature cheat sheets that auto-load when the topic comes up. Plus 10 built-in persona prompts and 5 Agent Teams agents.</p>
 
     <table>
       <thead>
@@ -1083,6 +1147,7 @@ cp /path/to/template/_implementation_plan_template_v6.md ./_implementation_plan_
         <tr><td><code>serious-research</code></td><td><span class="tag tag-workflow">workflow</span></td><td>research, investigation, deep research</td></tr>
         <tr><td><code>serious-plan</code></td><td><span class="tag tag-workflow">workflow</span></td><td>implementation plan, planning</td></tr>
         <tr><td><code>serious-code</code></td><td><span class="tag tag-workflow">workflow</span></td><td>execute plan, start coding, implement</td></tr>
+        <tr><td><code>serious-review</code></td><td><span class="tag tag-workflow">workflow</span></td><td>review, QA, defect capture, feedback</td></tr>
         <tr><td><code>serious-bananas</code></td><td><span class="tag tag-workflow">workflow</span></td><td>generate image, generate diagram, Nano Banana</td></tr>
         <tr><td><code>hooks</code></td><td><span class="tag tag-feature">feature</span></td><td>lifecycle events, pre/post tool use, automation</td></tr>
         <tr><td><code>skills-and-commands</code></td><td><span class="tag tag-feature">feature</span></td><td>custom commands, SKILL.md files</td></tr>

@@ -26,23 +26,43 @@ All template files live at:
 
 When the user invokes `/serious-init`, perform these steps:
 
-### Step 1: Check for conflicts
+### Step 1: Detect global skills
+
+Before copying anything, check whether skills are already installed at the user's global profile level. Check these paths in order:
+
+```bash
+# Standard Claude Code profile
+~/.claude/skills/
+
+# Any alternate profiles (e.g., ~/.claude-alex/skills/)
+~/.claude-*/skills/
+```
+
+For each workflow skill (`serious-research`, `serious-plan`, `serious-code`, `serious-conversation`, `serious-bananas`, `serious-init`), check if a matching directory with a `SKILL.md` exists globally.
+
+**If all workflow skills exist globally:** Skip local skills copy entirely. Report: "All workflow skills detected globally at {path} — skipping local copy."
+
+**If some skills exist globally but not all:** Copy only the missing ones locally. Report which are global and which were copied locally.
+
+**If no global skills found:** Proceed with full local copy (Step 3).
+
+### Step 2: Check for conflicts
 
 - Check if `CLAUDE.md` already exists in the current directory
-- Check if `.claude/skills/` already has any of the skills
 - Check if `Claude Code Features/` already exists
 - Check if `_implementation_plan_template_v6.md` already exists
+- If skills are being copied locally (from Step 1), check if `.claude/skills/` already has any of them
 - If any conflicts, ask the user whether to skip, merge, or overwrite
 
-### Step 2: Copy the template files
+### Step 3: Copy the template files
 
-Run these commands (adjust for any conflicts resolved in Step 1):
+Run these commands (adjust based on Step 1 global detection and Step 2 conflict resolution):
 
 ```bash
 # Copy CLAUDE.md
 cp "/Users/cg-adubuc/Desktop/Antoine/_claude_code_template_/CLAUDE.md" ./CLAUDE.md
 
-# Copy skills (create dir if needed)
+# Copy skills ONLY if not already installed globally (see Step 1)
 mkdir -p .claude/skills
 cp -r "/Users/cg-adubuc/Desktop/Antoine/_claude_code_template_/.claude/skills/"* .claude/skills/
 
@@ -53,23 +73,25 @@ cp -r "/Users/cg-adubuc/Desktop/Antoine/_claude_code_template_/Claude Code Featu
 cp "/Users/cg-adubuc/Desktop/Antoine/_claude_code_template_/_implementation_plan_template_v6.md" ./_implementation_plan_template_v6.md
 ```
 
-### Step 3: Adapt CLAUDE.md
+### Step 4: Adapt CLAUDE.md
 
 - If the target project already has a CLAUDE.md, **append** the content rather than overwriting
 - Preserve the mandatory rules section at the top
 - If the project has existing content, add a separator (`---`) before the appended content
 
-### Step 4: Confirm
+### Step 5: Confirm
 
-Report what was copied:
-- Number of skills installed (including `serious-research` and `serious-plan`)
-- Number of feature research folders
-- Whether CLAUDE.md was created or appended to
-- Whether the v6 implementation plan template was installed
+Report what was set up:
+- **Skills:** How many installed locally vs detected globally (and where)
+- **Feature docs:** Number of feature research folders copied
+- **CLAUDE.md:** Created or appended to
+- **Template:** Whether the v6 implementation plan template was installed
 - Remind the user of the workflow:
   ```
-  /serious-research   →  investigate a bug, feature, or question
-  /serious-plan       →  generate an implementation plan
+  /serious-conversation  →  brainstorm with AI personas
+  /serious-research      →  investigate a bug, feature, or question
+  /serious-plan          →  generate an implementation plan
+  /serious-code          →  execute the plan with TDD and verification
   ```
 
 ## Arguments
