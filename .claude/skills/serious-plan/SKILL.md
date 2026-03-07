@@ -30,6 +30,7 @@ Before asking anything, scan the project:
 - Check `Research/bugs/*/research.md`, `Research/features/*/research.md`, `Research/exploratory/*/research.md` for files with `Status: Complete`
 - Check legacy paths: `Bugs/*/research.md`, `New Features/*/research.md`
 - Check for `synthesis.md` files (produced by deep-mode `/serious-research`)
+- Check for `mock-ups/mock-up-summary.md` alongside research files (produced by `/serious-mock-ups`)
 - If `$ARGUMENTS` specifies a path, use that directly and skip to Phase 1
 
 ### 0b. Present what you found
@@ -108,7 +109,9 @@ Research/features/{slug}/
 
 ## Phase 1: Plan Generation
 
-Read the v6 template file first. Then work through each section in order, filling it in based on the input material.
+Read the v6 template file first. If a `mock-ups/mock-up-summary.md` exists alongside the research, read it too — use the component inventory for task breakdown, design decisions for acceptance criteria, screen flow for navigation tasks, and responsive notes for breakpoint tasks.
+
+Then work through each section in order, filling it in based on the input material.
 
 **If generating multiple plans:** Generate each plan independently using the full v6 template structure below. Each plan must be self-contained — an agent should be able to execute it without reading the other plans. Then generate the phase map (see Phase 1b).
 

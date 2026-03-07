@@ -12,7 +12,7 @@ Your Claude Code sidekick — a knowledge base, workflow toolkit, and feature re
 ├── README.md                              # Project documentation (markdown)
 ├── README.html                            # Project documentation (HTML with light/dark mode)
 ├── .claude/
-│   ├── skills/                            # 24 auto-loading skills
+│   ├── skills/                            # 25 auto-loading skills
 │   │   ├── serious-init/SKILL.md          # /serious-init — scaffold a new project
 │   │   ├── serious-conversation/SKILL.md  # /serious-conversation — persona panel ideation
 │   │   │   └── personas/                  # 10 built-in persona prompt files
@@ -20,6 +20,7 @@ Your Claude Code sidekick — a knowledge base, workflow toolkit, and feature re
 │   │   │       ├── product-thinker.md, debugger.md, security-mind.md
 │   │   │       └── dx-advocate.md, mentor.md, optimizer.md, historian.md
 │   │   ├── serious-research/SKILL.md      # /serious-research — structured research
+│   │   ├── serious-mock-ups/SKILL.md     # /serious-mock-ups — UI mock-ups before planning
 │   │   ├── serious-plan/SKILL.md          # /serious-plan — implementation planning
 │   │   ├── serious-code/SKILL.md          # /serious-code — plan execution with Agent Teams
 │   │   ├── serious-review/SKILL.md        # /serious-review — structured review & defect capture
@@ -44,7 +45,7 @@ Your Claude Code sidekick — a knowledge base, workflow toolkit, and feature re
 
 ## Workflow Skills
 
-The template includes seven workflow skills that form a pipeline:
+The template includes eight workflow skills that form a pipeline:
 
 ### `/serious-conversation` — Persona Panel
 
@@ -79,9 +80,38 @@ Research/
     └── {slug}/
 ```
 
+### `/serious-mock-ups` — UI Mock-Ups
+
+Generate UI mock-ups from research output before moving to implementation planning. A visual checkpoint so you validate layout, flow, and interaction before committing to a plan.
+
+**Three fidelity levels:**
+- **Wireframe** — ASCII/text-based layouts right in the terminal. Fast, no dependencies, great for structure decisions.
+- **Visual mock-up** — Generated via Gemini image API with proper styling and realistic components. Requires `GEMINI_API_KEY`.
+- **Interactive flow** — Screen-to-screen navigation maps showing user journeys and state variations.
+
+**Key features:**
+- Auto-detects UI surfaces from `/serious-research` output
+- Iterative feedback with versioned wireframes and visuals (`v1`, `v2`, `v3`)
+- Design decision log — every layout choice is recorded with rationale
+- Component inventory — extracted from approved mock-ups, feeds directly into `/serious-plan` task breakdown
+- Responsive variants — optional desktop, tablet, and mobile versions with breakpoint notes
+- State variations — empty states, error states, loading states surfaced early
+
+**What it creates:**
+```
+Research/features/{slug}/
+└── mock-ups/
+    ├── mock-up-summary.md        # Component inventory + design decisions
+    ├── 01_{surface}/
+    │   ├── wireframe_v1.md       # ASCII wireframe
+    │   ├── visual_v1.png         # Gemini-generated
+    │   └── feedback.md           # What changed and why
+    └── flow.md                   # Screen-to-screen navigation map
+```
+
 ### `/serious-plan` — Implementation Planning
 
-Generates a v6 implementation plan from research, a PRD, or even a verbal description. It auto-detects existing `/serious-research` output or asks what input you have.
+Generates a v6 implementation plan from research, a PRD, or even a verbal description. It auto-detects existing `/serious-research` output and `/serious-mock-ups` deliverables, or asks what input you have.
 
 **Key features:**
 - TDD protocol (RED→GREEN→VERIFY per acceptance criterion)
@@ -161,7 +191,8 @@ Generate images (especially diagrams) using Google's Gemini native image generat
 ```
 /serious-conversation [topic] →  Ideation & exploration with persona panel
 /serious-research [topic]     →  Structured investigation with evidence
-/serious-plan                 →  Plan generation (auto-finds research)
+/serious-mock-ups             →  UI wireframes & visuals before planning
+/serious-plan                 →  Plan generation (auto-finds research + mock-ups)
 /serious-code                 →  Execution with TDD, verification, evidence
 /serious-review               →  Review, capture defects, cycle back ↩
 ```
@@ -173,7 +204,7 @@ Generate images (especially diagrams) using Google's Gemini native image generat
 | Layer | What | When it loads | Context cost |
 |-------|------|---------------|--------------|
 | **CLAUDE.md** | Feature index + workflow skill references | Every session, survives compaction | Minimal — always present |
-| **Skills** | How-to guides for 17 features + 7 workflow skills | On-demand when the topic comes up | Only when relevant |
+| **Skills** | How-to guides for 17 features + 8 workflow skills | On-demand when the topic comes up | Only when relevant |
 | **Research docs** | Deep-dive documentation with citations | When Claude reads the file | Only when explicitly needed |
 
 ## Quick Start
@@ -218,7 +249,7 @@ Once installed, Claude Code gains awareness of its own features at three levels:
 Every session, Claude sees the feature index and knows about `/serious-research` and `/serious-plan`. If you ask "can you use hooks for this?", it knows hooks exist and where to find the details.
 
 **2. Deep knowledge on demand (Skills)**
-Claude knows about its features from training data, but frequently gets specifics wrong — incorrect syntax, outdated flags, missing options, wrong defaults. The 17 feature auto-loader skills fix this. Each is a concise cheat sheet (quick reference, configuration syntax, common patterns) that gets injected into context automatically when the topic comes up. If you mention MCP servers, the MCP skill loads with the correct transport types, scope precedence, and CLI flags. If you ask about permissions, Claude gets the exact rule evaluation order and path pattern syntax. The workflow skills (`/serious-init`, `/serious-conversation`, `/serious-research`, `/serious-plan`, `/serious-code`, `/serious-review`, `/serious-bananas`) load when you invoke them.
+Claude knows about its features from training data, but frequently gets specifics wrong — incorrect syntax, outdated flags, missing options, wrong defaults. The 17 feature auto-loader skills fix this. Each is a concise cheat sheet (quick reference, configuration syntax, common patterns) that gets injected into context automatically when the topic comes up. If you mention MCP servers, the MCP skill loads with the correct transport types, scope precedence, and CLI flags. If you ask about permissions, Claude gets the exact rule evaluation order and path pattern syntax. The workflow skills (`/serious-init`, `/serious-conversation`, `/serious-research`, `/serious-mock-ups`, `/serious-plan`, `/serious-code`, `/serious-review`, `/serious-bananas`) load when you invoke them.
 
 **3. Full reference when needed (Research docs)**
 For edge cases or deep configuration, Claude can read the full `research.md` which includes official documentation excerpts, all configuration options, and source URLs.
@@ -239,13 +270,14 @@ For edge cases or deep configuration, Claude can read the full `research.md` whi
 | **Tools** | Built-in Tools, Git Worktrees, Checkpointing/Rewind, Context Management, Headless Mode |
 | **Infrastructure** | Cloud Providers, Multi-Model Support, Cost Management |
 
-### 24 skills (17 feature + 7 workflow)
+### 25 skills (17 feature + 8 workflow)
 
 | Skill | Triggers when you discuss... |
 |-------|------------------------------|
 | `serious-init` | `/serious-init`, bootstrap, scaffold, setup new project |
 | `serious-conversation` | `/serious-conversation`, brainstorm, ideation, think through |
 | `serious-research` | `/serious-research`, research, investigation, deep research |
+| `serious-mock-ups` | `/serious-mock-ups`, mock up, wireframe, show me the UI, visualize |
 | `serious-plan` | `/serious-plan`, implementation plan, planning |
 | `serious-code` | `/serious-code`, execute plan, start coding, implement |
 | `serious-review` | `/serious-review`, review, QA, defect capture, feedback |
