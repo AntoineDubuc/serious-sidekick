@@ -805,7 +805,7 @@
 │       ├── <span class="file">serious-code-test-runner.md</span>    <span class="comment"># Static analysis + full test suite</span>
 │       ├── <span class="file">serious-code-runtime-checker.md</span> <span class="comment"># Runtime behavior verification</span>
 │       └── <span class="file">serious-code-qa.md</span>             <span class="comment"># Adversarial QA spot-check</span>
-└── <span class="folder">Claude Code Features/</span>                  <span class="comment"># 38 research folders + master README</span>
+└── <span class="folder">Claude Code Features/</span>                  <span class="comment"># 39 research folders + master README</span>
     ├── <span class="file">README.md</span>                          <span class="comment"># Categorized &amp; chronological index</span>
     ├── <span class="file">01_Core_CLI/research.md</span>
     ├── <span class="comment">...through...</span>
@@ -1139,7 +1139,7 @@
       <h3>Option A: Setup command <span class="recommended-badge">Recommended</span></h3>
       <p>Install the global skill, then open Claude Code in any project and run:</p>
       <pre><code>/serious-init</code></pre>
-      <p>This copies everything into your current project: CLAUDE.md (appends if one exists), all 25 skills, 38 feature documentation folders, and the v6 implementation plan template.</p>
+      <p>This copies everything into your current project: CLAUDE.md (appends if one exists), all 26 skills, 38 feature documentation folders, and the v6 implementation plan template.</p>
       <p style="margin-top: 12px;"><strong>Variants:</strong></p>
       <pre><code>/serious-init --skills-only     # Just skills, no docs or template
 /serious-init --docs-only       # Just docs + CLAUDE.md, no skills
@@ -1157,7 +1157,7 @@ cp /path/to/template/_implementation_plan_template_v6.md ./_implementation_plan_
 
   <!-- Features Covered -->
   <section>
-    <h2>38 Features Across 9 Categories</h2>
+    <h2>39 Features Across 9 Categories</h2>
 
     <div class="category-grid">
       <div class="category-card">
@@ -1190,7 +1190,7 @@ cp /path/to/template/_implementation_plan_template_v6.md ./_implementation_plan_
       </div>
       <div class="category-card">
         <h4>Tools</h4>
-        <p>Built-in Tools, Git Worktrees, Checkpointing, Context Mgmt, Headless</p>
+        <p>Built-in Tools, Git Worktrees, Checkpointing, Context Mgmt, Headless, Scheduled Tasks</p>
       </div>
       <div class="category-card">
         <h4>Infrastructure</h4>
@@ -1201,7 +1201,7 @@ cp /path/to/template/_implementation_plan_template_v6.md ./_implementation_plan_
 
   <!-- Skills Table -->
   <section>
-    <h2>All 25 Skills</h2>
+    <h2>All 26 Skills</h2>
     <p>7 workflow skills you invoke directly + 17 feature cheat sheets that auto-load when the topic comes up. Plus 10 built-in persona prompts and 5 Agent Teams agents.</p>
 
     <table>
@@ -1238,6 +1238,7 @@ cp /path/to/template/_implementation_plan_template_v6.md ./_implementation_plan_
         <tr><td><code>keybindings</code></td><td><span class="tag tag-feature">feature</span></td><td>keyboard shortcuts, chords</td></tr>
         <tr><td><code>output-styles</code></td><td><span class="tag tag-feature">feature</span></td><td>explanatory/learning mode, custom styles</td></tr>
         <tr><td><code>status-line</code></td><td><span class="tag tag-feature">feature</span></td><td>status bar, footer customization</td></tr>
+        <tr><td><code>scheduled-tasks</code></td><td><span class="tag tag-feature">feature</span></td><td>/loop, cron scheduling, recurring prompts, reminders, polling</td></tr>
       </tbody>
     </table>
   </section>

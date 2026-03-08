@@ -80,6 +80,7 @@ Comprehensive documentation of all Claude Code features, sourced from Anthropic'
 | [30](./30_Checkpointing_and_Rewind/) | **Checkpointing & Rewind** | Automatic code snapshots — Esc+Esc to rewind |
 | [12](./12_Context_Management/) | **Context Management** | Auto-compaction, extended thinking, context window optimization |
 | [11](./11_Headless_Mode/) | **Headless Mode** | Non-interactive -p flag for scripting, CI/CD, and automation |
+| [39](./39_Scheduled_Tasks/) | **Scheduled Tasks** | /loop command, cron scheduling, recurring prompts, reminders |
 
 ## Infrastructure
 
@@ -133,6 +134,7 @@ Comprehensive documentation of all Claude Code features, sourced from Anthropic'
 | Feb 2026 | [28](./28_Agent_Teams/) | **Agent Teams / Swarms** (experimental) | Orchestration |
 | Feb 2026 | [29](./29_Fast_Mode/) | **Fast Mode** (research preview) | Interaction |
 | Feb 2026 | [13](./13_Git_Worktrees/) | **Git Worktrees** | Tools |
+| Mar 2026 | [39](./39_Scheduled_Tasks/) | **Scheduled Tasks** (/loop, cron, reminders) | Tools |
 
 ### Key Milestones
 

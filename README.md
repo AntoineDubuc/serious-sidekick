@@ -12,7 +12,7 @@ Your Claude Code sidekick — a knowledge base, workflow toolkit, and feature re
 ├── README.md                              # Project documentation (markdown)
 ├── README.html                            # Project documentation (HTML with light/dark mode)
 ├── .claude/
-│   ├── skills/                            # 25 auto-loading skills
+│   ├── skills/                            # 26 auto-loading skills
 │   │   ├── serious-init/SKILL.md          # /serious-init — scaffold a new project
 │   │   ├── serious-conversation/SKILL.md  # /serious-conversation — persona panel ideation
 │   │   │   └── personas/                  # 10 built-in persona prompt files
@@ -36,11 +36,12 @@ Your Claude Code sidekick — a knowledge base, workflow toolkit, and feature re
 │       ├── serious-code-test-runner.md    # Static analysis + full test suite
 │       ├── serious-code-runtime-checker.md # Runtime behavior verification
 │       └── serious-code-qa.md             # Adversarial QA spot-check
-└── Claude Code Features/                  # 38 research folders + master README
+└── Claude Code Features/                  # 39 research folders + master README
     ├── README.md                          # Categorized & chronological index
     ├── 01_Core_CLI/research.md
     ├── ...through...
-    └── 38_Enterprise_and_Managed_Settings/research.md
+    ├── 38_Enterprise_and_Managed_Settings/research.md
+    └── 39_Scheduled_Tasks/research.md
 ```
 
 ## Workflow Skills
@@ -204,7 +205,7 @@ Generate images (especially diagrams) using Google's Gemini native image generat
 | Layer | What | When it loads | Context cost |
 |-------|------|---------------|--------------|
 | **CLAUDE.md** | Feature index + workflow skill references | Every session, survives compaction | Minimal — always present |
-| **Skills** | How-to guides for 17 features + 8 workflow skills | On-demand when the topic comes up | Only when relevant |
+| **Skills** | How-to guides for 18 features + 8 workflow skills | On-demand when the topic comes up | Only when relevant |
 | **Research docs** | Deep-dive documentation with citations | When Claude reads the file | Only when explicitly needed |
 
 ## Quick Start
@@ -249,14 +250,14 @@ Once installed, Claude Code gains awareness of its own features at three levels:
 Every session, Claude sees the feature index and knows about `/serious-research` and `/serious-plan`. If you ask "can you use hooks for this?", it knows hooks exist and where to find the details.
 
 **2. Deep knowledge on demand (Skills)**
-Claude knows about its features from training data, but frequently gets specifics wrong — incorrect syntax, outdated flags, missing options, wrong defaults. The 17 feature auto-loader skills fix this. Each is a concise cheat sheet (quick reference, configuration syntax, common patterns) that gets injected into context automatically when the topic comes up. If you mention MCP servers, the MCP skill loads with the correct transport types, scope precedence, and CLI flags. If you ask about permissions, Claude gets the exact rule evaluation order and path pattern syntax. The workflow skills (`/serious-init`, `/serious-conversation`, `/serious-research`, `/serious-mock-ups`, `/serious-plan`, `/serious-code`, `/serious-review`, `/serious-bananas`) load when you invoke them.
+Claude knows about its features from training data, but frequently gets specifics wrong — incorrect syntax, outdated flags, missing options, wrong defaults. The 18 feature auto-loader skills fix this. Each is a concise cheat sheet (quick reference, configuration syntax, common patterns) that gets injected into context automatically when the topic comes up. If you mention MCP servers, the MCP skill loads with the correct transport types, scope precedence, and CLI flags. If you ask about permissions, Claude gets the exact rule evaluation order and path pattern syntax. The workflow skills (`/serious-init`, `/serious-conversation`, `/serious-research`, `/serious-mock-ups`, `/serious-plan`, `/serious-code`, `/serious-review`, `/serious-bananas`) load when you invoke them.
 
 **3. Full reference when needed (Research docs)**
 For edge cases or deep configuration, Claude can read the full `research.md` which includes official documentation excerpts, all configuration options, and source URLs.
 
 ## What Features Are Covered
 
-### 38 documented features across 9 categories
+### 39 documented features across 9 categories
 
 | Category | Features |
 |----------|----------|
@@ -267,10 +268,10 @@ For edge cases or deep configuration, Claude can read the full `research.md` whi
 | **Modes** | Plan Mode, Vim Mode, Fast Mode, Interactive Features |
 | **Security** | Permissions, Sandboxing, Enterprise/Managed Settings |
 | **Platforms** | IDE Extensions, Chrome, Desktop App, Web, GitHub Actions, Slack, Remote Control |
-| **Tools** | Built-in Tools, Git Worktrees, Checkpointing/Rewind, Context Management, Headless Mode |
+| **Tools** | Built-in Tools, Git Worktrees, Checkpointing/Rewind, Context Management, Headless Mode, Scheduled Tasks |
 | **Infrastructure** | Cloud Providers, Multi-Model Support, Cost Management |
 
-### 25 skills (17 feature + 8 workflow)
+### 26 skills (18 feature + 8 workflow)
 
 | Skill | Triggers when you discuss... |
 |-------|------------------------------|
@@ -299,6 +300,7 @@ For edge cases or deep configuration, Claude can read the full `research.md` whi
 | `keybindings` | keyboard shortcuts, chords |
 | `output-styles` | explanatory/learning mode, custom styles |
 | `status-line` | status bar, footer customization |
+| `scheduled-tasks` | /loop, cron scheduling, recurring prompts, reminders, polling |
 
 ## Browsing the Documentation
 

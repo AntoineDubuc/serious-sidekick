@@ -50,7 +50,7 @@ Detailed feature documentation lives in `./Claude Code Features/`. Before answer
 **Modes:** Plan Mode (21), Vim Mode (22), Fast Mode (29), Interactive Features (37)
 **Security:** Permissions (10), Sandboxing (35), Enterprise/Managed Settings (38)
 **Platforms:** IDE Extensions (06), Chrome (25), Desktop App (33), Web (34), GitHub Actions (08), Slack (32), Remote Control (31)
-**Tools:** Built-in Tools (19), Git Worktrees (13), Checkpointing/Rewind (30), Context Management (12), Headless Mode (11)
+**Tools:** Built-in Tools (19), Git Worktrees (13), Checkpointing/Rewind (30), Context Management (12), Headless Mode (11), Scheduled Tasks (39)
 **Infrastructure:** Cloud Providers (14), Multi-Model Support (20), Cost Management (17)
 
 ### How to Use
