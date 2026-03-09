@@ -433,12 +433,188 @@
   }
   footer a:hover { opacity: 0.7; }
 
+  /* ── Feature Hero ── */
+  .feature-hero {
+    background: linear-gradient(135deg, var(--accent-bg) 0%, var(--bg2) 100%);
+    border: 2px solid var(--accent);
+    border-radius: 20px;
+    padding: 40px 32px;
+    margin: 24px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .feature-hero::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 160px; height: 160px;
+    background: var(--accent); opacity: 0.04; border-radius: 50%;
+  }
+  .feature-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent);
+    color: white;
+    padding: 4px 14px;
+    border-radius: 16px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .feature-hero h2 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+  .feature-hero > p {
+    font-size: 15px;
+    color: var(--text2);
+    max-width: 600px;
+    line-height: 1.6;
+    margin-bottom: 28px;
+  }
+  .feature-hero .svg-diagram {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: center;
+    overflow-x: auto;
+  }
+  .feature-hero .svg-diagram svg {
+    max-width: 100%;
+    height: auto;
+  }
+  .feature-hero .svg-diagram svg text {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
+  }
+  .feature-hero .comparison-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 20px 0;
+  }
+  .feature-hero .comparison-card {
+    flex: 1;
+    min-width: 260px;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .feature-hero .comparison-card.before {
+    background: var(--bg2);
+    border: 2px solid var(--red);
+  }
+  .feature-hero .comparison-card.after {
+    background: var(--bg2);
+    border: 2px solid var(--green);
+  }
+  .feature-hero .comparison-card .comp-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .feature-hero .comparison-card.before .comp-label { color: var(--red); }
+  .feature-hero .comparison-card.after .comp-label { color: var(--green); }
+  .feature-hero .comparison-card h4 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .feature-hero .comparison-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .feature-hero .comparison-card li {
+    font-size: 13px;
+    color: var(--text2);
+    padding: 3px 0 3px 18px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .feature-hero .comparison-card.before li::before {
+    content: '\2717';
+    position: absolute;
+    left: 0;
+    color: var(--red);
+    font-weight: 700;
+  }
+  .feature-hero .comparison-card.after li::before {
+    content: '\2713';
+    position: absolute;
+    left: 0;
+    color: var(--green);
+    font-weight: 700;
+  }
+  .feature-hero .scenario-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  .feature-hero .scenario-item {
+    flex: 1;
+    min-width: 200px;
+    padding: 14px 16px;
+    background: var(--bg2);
+    border-radius: 10px;
+    border-left: 3px solid var(--accent);
+  }
+  .feature-hero .scenario-item h4 {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .feature-hero .scenario-item p {
+    font-size: 12px;
+    color: var(--text2);
+    margin: 0;
+    line-height: 1.5;
+  }
+  .feature-hero .mgmt-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+  .feature-hero .mgmt-card {
+    flex: 1;
+    min-width: 250px;
+    padding: 16px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .feature-hero .mgmt-card code {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px; background: var(--bg3);
+    padding: 2px 7px; border-radius: 5px;
+    color: var(--accent); font-weight: 600;
+  }
+  .feature-hero .mgmt-card p {
+    font-size: 13px;
+    color: var(--text2);
+    margin: 4px 0 0;
+  }
+
   /* ── Responsive ── */
   @media (max-width: 640px) {
     .cmd-grid { grid-template-columns: 1fr; }
     .pipeline { flex-direction: column; gap: 4px; }
     .pipe-arrow { transform: rotate(90deg); padding: 2px 0; }
     .step { flex-direction: column; gap: 12px; }
+    .feature-hero { padding: 28px 20px; }
+    .feature-hero h2 { font-size: 22px; }
+    .feature-hero .comparison-row,
+    .feature-hero .scenario-row,
+    .feature-hero .mgmt-row { flex-direction: column; }
   }
 </style>
 </head>
@@ -694,79 +870,187 @@
 
   <div class="divider"></div>
 
-  <!-- Recursive Workflows -->
+  <!-- ============================================ -->
+  <!-- RECURSIVE WORKFLOWS — HERO FEATURE SECTION   -->
+  <!-- ============================================ -->
   <section>
     <div class="container">
       <div class="reveal">
-        <div class="section-label">The big idea</div>
-        <h2>Workflows inside workflows</h2>
-        <p style="font-size:1.05em;">The pipeline goes conversation &rarr; research &rarr; plan &rarr; code. But what happens when you're <em>planning</em> and discover you need more <em>research</em>? Or you're <em>coding</em> and need a <em>conversation</em> to think through an edge case?</p>
-      </div>
+        <div class="feature-hero">
+          <div class="feature-hero-badge">&#9733; Headline Feature</div>
+          <h2>Workflows inside workflows</h2>
+          <p>The pipeline goes conversation &rarr; research &rarr; plan &rarr; code. But real work isn't linear. When you discover a sub-problem, you can branch into a child workflow and come back when it's done &mdash; without losing your place.</p>
 
-      <div class="reveal delay-1" style="margin-top:24px;">
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;">
-          <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);font-weight:600;margin-bottom:16px;">What changes</div>
-          <div style="display:flex;gap:16px;flex-wrap:wrap;">
-            <div style="flex:1;min-width:250px;padding:16px;background:var(--bg3);border-radius:8px;border-left:3px solid var(--red);">
-              <div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:8px;">Without recursion</div>
-              <p style="font-size:13px;color:var(--text2);margin:0;line-height:1.6;">You abandon the plan to go research. When research finishes, you've lost the planning context. Nothing records <em>why</em> you went back to research. Disconnected folders everywhere.</p>
+          <!-- SVG: Linear vs Recursive -->
+          <div class="svg-diagram">
+            <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg" style="max-width:680px;">
+              <!-- Linear (top) -->
+              <text x="340" y="18" text-anchor="middle" font-size="11" font-weight="700" fill="var(--red)" letter-spacing="0.5">WITHOUT RECURSION</text>
+              <rect x="10" y="30" width="90" height="32" rx="7" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="1.5"/>
+              <text x="55" y="51" text-anchor="middle" font-size="11" font-weight="600" fill="var(--blue)">research</text>
+              <line x1="105" y1="46" x2="125" y2="46" stroke="var(--text3)" stroke-width="1.5" marker-end="url(#tArrowR)"/>
+              <rect x="130" y="30" width="70" height="32" rx="7" fill="var(--orange-bg)" stroke="var(--orange)" stroke-width="1.5"/>
+              <text x="165" y="51" text-anchor="middle" font-size="11" font-weight="600" fill="var(--orange)">plan</text>
+              <line x1="205" y1="46" x2="225" y2="46" stroke="var(--text3)" stroke-width="1.5" marker-end="url(#tArrowR)"/>
+              <rect x="230" y="28" width="170" height="36" rx="8" fill="var(--bg3)" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="5,3"/>
+              <text x="315" y="48" text-anchor="middle" font-size="10" font-weight="600" fill="var(--red)">unclear requirement &#8212; stuck</text>
+              <line x1="405" y1="46" x2="425" y2="46" stroke="var(--text3)" stroke-width="1.5" stroke-dasharray="4,3"/>
+              <text x="455" y="51" font-size="18" fill="var(--red)">&#10007;</text>
+
+              <!-- Divider -->
+              <line x1="20" y1="82" x2="660" y2="82" stroke="var(--border)" stroke-width="1" stroke-dasharray="4,4"/>
+
+              <!-- Recursive (bottom) -->
+              <text x="340" y="108" text-anchor="middle" font-size="11" font-weight="700" fill="var(--green)" letter-spacing="0.5">WITH RECURSION</text>
+              <rect x="10" y="120" width="90" height="32" rx="7" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="1.5"/>
+              <text x="55" y="141" text-anchor="middle" font-size="11" font-weight="600" fill="var(--blue)">research</text>
+              <line x1="105" y1="136" x2="125" y2="136" stroke="var(--text3)" stroke-width="1.5" marker-end="url(#tArrowR)"/>
+              <rect x="130" y="120" width="70" height="32" rx="7" fill="var(--orange-bg)" stroke="var(--orange)" stroke-width="1.5"/>
+              <text x="165" y="141" text-anchor="middle" font-size="11" font-weight="600" fill="var(--orange)">plan</text>
+
+              <!-- Branch down -->
+              <line x1="165" y1="152" x2="165" y2="176" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#tArrowD)"/>
+              <text x="180" y="170" font-size="9" fill="var(--accent)" font-weight="600">branch</text>
+
+              <!-- Sub-workflow -->
+              <rect x="100" y="182" width="130" height="52" rx="10" fill="var(--accent-bg)" stroke="var(--accent)" stroke-width="1.5"/>
+              <text x="165" y="200" text-anchor="middle" font-size="9" font-weight="700" fill="var(--accent)">SUB-WORKFLOW</text>
+              <rect x="118" y="208" width="94" height="20" rx="5" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="1"/>
+              <text x="165" y="222" text-anchor="middle" font-size="10" font-weight="600" fill="var(--blue)">sub-research</text>
+
+              <!-- Return -->
+              <line x1="230" y1="208" x2="270" y2="208" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4,3"/>
+              <line x1="270" y1="208" x2="270" y2="141" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4,3"/>
+              <line x1="270" y1="141" x2="290" y2="141" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#tArrowR)"/>
+
+              <!-- Resume -->
+              <rect x="295" y="120" width="120" height="32" rx="7" fill="var(--orange-bg)" stroke="var(--orange)" stroke-width="1.5"/>
+              <text x="355" y="138" text-anchor="middle" font-size="11" font-weight="600" fill="var(--orange)">plan (resumed)</text>
+              <text x="355" y="148" text-anchor="middle" font-size="8" fill="var(--text3)">findings linked</text>
+              <line x1="420" y1="136" x2="440" y2="136" stroke="var(--text3)" stroke-width="1.5" marker-end="url(#tArrowR)"/>
+              <rect x="445" y="120" width="70" height="32" rx="7" fill="var(--green-bg)" stroke="var(--green)" stroke-width="1.5"/>
+              <text x="480" y="141" text-anchor="middle" font-size="11" font-weight="600" fill="var(--green)">code</text>
+              <line x1="520" y1="136" x2="540" y2="136" stroke="var(--text3)" stroke-width="1.5" marker-end="url(#tArrowR)"/>
+              <text x="565" y="141" font-size="18" fill="var(--green)">&#10003;</text>
+
+              <defs>
+                <marker id="tArrowR" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+                  <path d="M0,0 L7,3.5 L0,7" fill="none" stroke="var(--text3)" stroke-width="1.2"/>
+                </marker>
+                <marker id="tArrowD" markerWidth="7" markerHeight="7" refX="3.5" refY="6" orient="auto">
+                  <path d="M0,0 L3.5,7 L7,0" fill="none" stroke="var(--accent)" stroke-width="1.2"/>
+                </marker>
+              </defs>
+            </svg>
+          </div>
+
+          <!-- Before / After -->
+          <div class="comparison-row">
+            <div class="comparison-card before">
+              <div class="comp-label">Before &mdash; Flat Pipeline</div>
+              <h4>Lose your place</h4>
+              <ul>
+                <li>Abandon the plan to go research</li>
+                <li>Planning context is gone when you return</li>
+                <li>No record of <em>why</em> research was needed</li>
+                <li>Disconnected folders everywhere</li>
+              </ul>
             </div>
-            <div style="flex:1;min-width:250px;padding:16px;background:var(--bg3);border-radius:8px;border-left:3px solid var(--green);">
-              <div style="font-size:13px;font-weight:600;color:var(--green);margin-bottom:8px;">With recursion</div>
-              <p style="font-size:13px;color:var(--text2);margin:0;line-height:1.6;">Type <code>/serious-research</code> mid-plan. System asks: &ldquo;Link as sub-workflow?&rdquo; Research nests <em>inside</em> the plan folder. When it's done, you're right back where you were.</p>
+            <div class="comparison-card after">
+              <div class="comp-label">After &mdash; Recursive Pipeline</div>
+              <h4>Keep your place</h4>
+              <ul>
+                <li>Type <code>/serious-research</code> &mdash; &ldquo;Link as sub-workflow?&rdquo;</li>
+                <li>Research nests inside: <code>.../sub/token-expiry/</code></li>
+                <li>Parent-child relationship recorded in YAML</li>
+                <li><code>/serious-status</code> shows the whole tree</li>
+              </ul>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div class="reveal delay-2" style="margin-top:20px;">
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;">
-          <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);font-weight:600;margin-bottom:16px;">When you need it</div>
-          <div style="display:flex;gap:12px;flex-wrap:wrap;">
-            <div style="flex:1;min-width:220px;padding:12px 16px;background:var(--bg3);border-radius:8px;">
-              <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Mid-plan discovery</div>
-              <div style="font-size:12px;color:var(--text2);">Planning reveals an ambiguity &rarr; spawn sub-research &rarr; get the answer &rarr; continue planning with findings linked</div>
+          <!-- Scenarios -->
+          <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);font-weight:600;margin:20px 0 12px;">When you need it</div>
+          <div class="scenario-row">
+            <div class="scenario-item">
+              <h4>Mid-plan discovery</h4>
+              <p>Planning reveals an ambiguity &rarr; spawn sub-research &rarr; get the answer &rarr; continue planning</p>
             </div>
-            <div style="flex:1;min-width:220px;padding:12px 16px;background:var(--bg3);border-radius:8px;">
-              <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Implementation gap</div>
-              <div style="font-size:12px;color:var(--text2);">Coding hits an edge case &rarr; spawn sub-conversation with personas &rarr; think it through &rarr; back to coding</div>
+            <div class="scenario-item">
+              <h4>Implementation gap</h4>
+              <p>Coding hits an edge case &rarr; spawn sub-conversation &rarr; think it through &rarr; back to coding</p>
             </div>
-            <div style="flex:1;min-width:220px;padding:12px 16px;background:var(--bg3);border-radius:8px;">
-              <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Research rabbit hole</div>
-              <div style="font-size:12px;color:var(--text2);">Research finds a deeper question &rarr; spawn sub-research &rarr; parent stays intact &rarr; <code>/serious-status</code> shows both</div>
+            <div class="scenario-item">
+              <h4>Research rabbit hole</h4>
+              <p>Research finds a deeper question &rarr; spawn sub-research (same skill!) &rarr; parent stays intact</p>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div class="reveal delay-3" style="margin-top:20px;">
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;">
-          <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);font-weight:600;margin-bottom:12px;">What you see</div>
-          <div style="font-family:monospace;font-size:13px;line-height:2.2;color:var(--text);">
-<span style="color:var(--green);">&#10003;</span> notifications <span style="color:var(--text3)">(research)</span><br>
-<span style="color:var(--accent);">&nbsp;&nbsp;&#9679;</span> &#9492; token-expiry <span style="color:var(--text3)">(research)</span> <span style="font-size:11px;background:var(--accent-bg);padding:1px 6px;border-radius:3px;">active</span><br>
-<span style="color:var(--green);">&nbsp;&nbsp;&#10003;</span> &#9492; email-templates <span style="color:var(--text3)">(mock-ups)</span><br>
-<span style="color:var(--green);">&#10003;</span> auth-redesign <span style="color:var(--text3)">(code)</span><br>
-<span style="color:var(--red);">&nbsp;&nbsp;&#10007;</span> &#9492; jwt-migration <span style="color:var(--text3)">(plan)</span> <span style="font-size:11px;background:var(--red-bg);padding:1px 6px;border-radius:3px;">abandoned</span>
-          </div>
-          <div style="font-size:12px;color:var(--text2);margin-top:8px;">The tree tells the story: <em>why</em> each sub-workflow exists, what it found, and whether it's still going.</div>
-        </div>
-      </div>
+          <!-- Workflow tree -->
+          <div class="svg-diagram">
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);font-weight:600;margin-bottom:12px;text-align:center;">/serious-status &mdash; workflow tree</div>
+            <svg viewBox="0 0 620 240" xmlns="http://www.w3.org/2000/svg" style="max-width:620px;">
+              <!-- notifications (done) -->
+              <rect x="10" y="10" width="200" height="36" rx="8" fill="var(--green-bg)" stroke="var(--green)" stroke-width="1.5"/>
+              <text x="24" y="33" font-size="14" fill="var(--green)" font-weight="700">&#10003;</text>
+              <text x="42" y="33" font-size="12" font-weight="700" fill="var(--text)">notifications</text>
+              <text x="140" y="33" font-size="10" fill="var(--text3)">(research)</text>
 
-      <div class="reveal" style="margin-top:20px;">
-        <div style="display:flex;gap:16px;flex-wrap:wrap;">
-          <div style="flex:1;min-width:250px;padding:16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;">
-            <div style="font-weight:600;font-size:14px;margin-bottom:4px;"><code>/serious-status</code></div>
-            <div style="font-size:13px;color:var(--text2);">See every workflow and its children in one table. Always know where you are.</div>
+              <!-- token-expiry (active) -->
+              <line x1="40" y1="46" x2="40" y2="70" stroke="var(--border)" stroke-width="1.2"/>
+              <line x1="40" y1="70" x2="65" y2="70" stroke="var(--border)" stroke-width="1.2"/>
+              <rect x="65" y="54" width="230" height="34" rx="8" fill="var(--accent-bg)" stroke="var(--accent)" stroke-width="1.5"/>
+              <text x="79" y="76" font-size="14" fill="var(--accent)" font-weight="700">&#9679;</text>
+              <text x="97" y="76" font-size="12" font-weight="700" fill="var(--text)">token-expiry</text>
+              <text x="190" y="76" font-size="10" fill="var(--text3)">(research)</text>
+              <rect x="252" y="61" width="38" height="18" rx="5" fill="var(--accent)" opacity="0.15"/>
+              <text x="271" y="74" text-anchor="middle" font-size="9" font-weight="700" fill="var(--accent)">active</text>
+              <!-- annotation -->
+              <text x="310" y="70" font-size="10" fill="var(--accent)">&larr; nested at .../sub/token-expiry/</text>
+
+              <!-- email-templates (done) -->
+              <line x1="40" y1="70" x2="40" y2="110" stroke="var(--border)" stroke-width="1.2"/>
+              <line x1="40" y1="110" x2="65" y2="110" stroke="var(--border)" stroke-width="1.2"/>
+              <rect x="65" y="94" width="230" height="34" rx="8" fill="var(--green-bg)" stroke="var(--green)" stroke-width="1.5"/>
+              <text x="79" y="116" font-size="14" fill="var(--green)" font-weight="700">&#10003;</text>
+              <text x="97" y="116" font-size="12" font-weight="700" fill="var(--text)">email-templates</text>
+              <text x="202" y="116" font-size="10" fill="var(--text3)">(mock-ups)</text>
+
+              <!-- auth-redesign (done) -->
+              <rect x="10" y="150" width="200" height="36" rx="8" fill="var(--green-bg)" stroke="var(--green)" stroke-width="1.5"/>
+              <text x="24" y="173" font-size="14" fill="var(--green)" font-weight="700">&#10003;</text>
+              <text x="42" y="173" font-size="12" font-weight="700" fill="var(--text)">auth-redesign</text>
+              <text x="147" y="173" font-size="10" fill="var(--text3)">(code)</text>
+
+              <!-- jwt-migration (abandoned) -->
+              <line x1="40" y1="186" x2="40" y2="210" stroke="var(--border)" stroke-width="1.2"/>
+              <line x1="40" y1="210" x2="65" y2="210" stroke="var(--border)" stroke-width="1.2"/>
+              <rect x="65" y="194" width="230" height="34" rx="8" fill="var(--bg3)" stroke="var(--red)" stroke-width="1.5"/>
+              <text x="79" y="216" font-size="14" fill="var(--red)" font-weight="700">&#10007;</text>
+              <text x="97" y="216" font-size="12" font-weight="700" fill="var(--text)">jwt-migration</text>
+              <text x="195" y="216" font-size="10" fill="var(--text3)">(plan)</text>
+              <rect x="240" y="201" width="52" height="18" rx="5" fill="var(--red)" opacity="0.12"/>
+              <text x="266" y="214" text-anchor="middle" font-size="9" font-weight="700" fill="var(--red)">abandoned</text>
+              <!-- annotation -->
+              <text x="310" y="210" font-size="10" fill="var(--red)">&larr; dead end, safely abandoned</text>
+            </svg>
           </div>
-          <div style="flex:1;min-width:250px;padding:16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;">
-            <div style="font-weight:600;font-size:14px;margin-bottom:4px;"><code>/serious-abandon</code></div>
-            <div style="font-size:13px;color:var(--text2);">Dead end? Bail out. Parent context is restored. Nothing is deleted &mdash; the work stays for reference.</div>
+
+          <!-- Management tools -->
+          <div class="mgmt-row">
+            <div class="mgmt-card">
+              <code>/serious-status</code>
+              <p>See every workflow &mdash; parents, children, active, done, abandoned &mdash; in one tree.</p>
+            </div>
+            <div class="mgmt-card">
+              <code>/serious-abandon</code>
+              <p>Dead end? Bail out. Parent context is restored. Nothing deleted &mdash; work stays for reference.</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </section>
+  <!-- END RECURSIVE WORKFLOWS HERO -->
 
   <div class="divider"></div>
 
