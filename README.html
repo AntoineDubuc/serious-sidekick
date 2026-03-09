@@ -777,13 +777,70 @@
   <!-- Recursive Workflows -->
   <section>
     <h2>Recursive Workflows</h2>
-    <p>Real work isn't linear. During planning you discover sub-problems that need their own research; during code you find gaps that need their own conversation. Every <code>/serious-*</code> skill can spawn <strong>sub-workflows</strong> that nest inside their parent &mdash; creating a tree of related work instead of a flat sequence.</p>
+    <p style="font-size:1.1em;max-width:680px;">The pipeline is linear. Real work isn't. <strong>Recursive workflows let you open a new tab for any sub-problem without losing your place in the main workflow.</strong></p>
 
-    <h3>The Problem</h3>
-    <p>Without recursion, you're forced to abandon your current workflow to investigate a sub-problem, or mentally track side-quests without any tooling. Example: you're in <code>/serious-plan</code> for a notifications feature when you realize the auth token expiry behavior is unclear. You need research, but you don't want to lose your planning context.</p>
+    <h3>Why This Changes Everything</h3>
+    <p>Without recursion, the pipeline is a one-lane highway. You're planning a notifications feature and realize the auth token behavior is unclear. Your options are bad:</p>
 
-    <h3>Advancing vs Branching</h3>
-    <p>When you invoke a skill while another workflow is active, the system compares pipeline positions:</p>
+    <div class="mode-cards">
+      <div class="mode-card quick">
+        <div class="mode-label" style="color:var(--red)">Before</div>
+        <h4>Lose your place</h4>
+        <ul style="font-size:0.9em;color:var(--text-secondary);margin-top:8px;">
+          <li>Abandon the plan to go research token expiry</li>
+          <li>Research finishes &mdash; but now you've lost the planning context</li>
+          <li>Mentally track which sub-problems you've investigated vs. haven't</li>
+          <li>No record that the research was <em>because of</em> the plan</li>
+          <li>Disconnected folders with no relationship to each other</li>
+        </ul>
+      </div>
+      <div class="mode-card deep">
+        <div class="mode-label" style="color:var(--green)">After</div>
+        <h4>Keep your place</h4>
+        <ul style="font-size:0.9em;color:var(--text-secondary);margin-top:8px;">
+          <li>Type <code>/serious-research</code> &mdash; system asks &ldquo;link as sub-workflow?&rdquo;</li>
+          <li>Research nests <em>inside</em> the plan: <code>.../notifications/sub/token-expiry/</code></li>
+          <li>Research finishes &rarr; you're right back in the plan, with a link to the findings</li>
+          <li>The relationship is recorded: token-expiry is a <em>child</em> of notifications</li>
+          <li><code>/serious-status</code> shows the whole tree at a glance</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Real-World Scenarios</h3>
+    <div class="card-grid">
+      <div class="card">
+        <h4 style="color:var(--accent)">Mid-plan discovery</h4>
+        <p>You're in <code>/serious-plan</code> and realize a component's behavior is ambiguous. Spawn a <code>/serious-research</code> sub-workflow, get the answer, come back to planning with the findings linked right there.</p>
+      </div>
+      <div class="card">
+        <h4 style="color:var(--accent)">Implementation gap</h4>
+        <p>During <code>/serious-code</code>, you hit an edge case the plan didn't cover. Spawn a <code>/serious-conversation</code> sub-workflow to think it through with personas, then come back to coding.</p>
+      </div>
+      <div class="card">
+        <h4 style="color:var(--accent)">Research rabbit hole</h4>
+        <p>Your research uncovers a deeper question. Spawn a <em>sub-research</em> (same skill!) to investigate just that piece. The parent research stays intact with its own findings. <code>/serious-status</code> shows both.</p>
+      </div>
+      <div class="card">
+        <h4 style="color:var(--accent)">Dead end? No cost.</h4>
+        <p>Sub-workflow going nowhere? <code>/serious-abandon</code> marks it as abandoned, restores the parent context, and you're back where you were. The abandoned work stays in the folder for reference &mdash; nothing is deleted.</p>
+      </div>
+    </div>
+
+    <h3>What It Looks Like</h3>
+    <div class="diagram-container">
+      <div class="diagram-title"><code>/serious-status</code> output</div>
+      <div class="file-tree" style="font-size:0.85em;line-height:2;">
+<span style="color:var(--green)">&#10003;</span> notifications <span style="color:var(--text-muted)">(research) &mdash; Research/features/notifications/</span>
+  <span style="color:var(--accent)">&#9679;</span> &nbsp;&#9492; token-expiry <span style="color:var(--text-muted)">(research) &mdash; .../sub/token-expiry/</span>  <span style="font-size:0.8em;background:var(--accent-bg);padding:2px 8px;border-radius:4px;">active</span>
+  <span style="color:var(--green)">&#10003;</span> &nbsp;&#9492; email-templates <span style="color:var(--text-muted)">(mock-ups) &mdash; .../sub/email-templates/</span>
+<span style="color:var(--green)">&#10003;</span> auth-redesign <span style="color:var(--text-muted)">(code) &mdash; Research/features/auth-redesign/</span>
+  <span style="color:var(--red)">&#10007;</span> &nbsp;&#9492; jwt-migration <span style="color:var(--text-muted)">(plan) &mdash; .../sub/jwt-migration/</span>  <span style="font-size:0.8em;background:var(--red-bg);padding:2px 8px;border-radius:4px;">abandoned</span></div>
+    </div>
+    <p style="font-size:0.9em;color:var(--text-secondary);margin-top:8px;">Every workflow &mdash; parent, child, active, done, abandoned &mdash; visible in one flat table. The tree structure tells the story: <em>why</em> token-expiry was researched, <em>why</em> jwt-migration was abandoned.</p>
+
+    <h3>Smart Detection: Advancing vs Branching</h3>
+    <p>The system doesn't prompt you on normal forward flow. It only asks about sub-workflows when you're going <em>backwards</em> in the pipeline.</p>
 
     <div class="diagram-container">
       <div class="diagram-title">Pipeline Order</div>
@@ -804,64 +861,50 @@
 
     <div class="mode-cards">
       <div class="mode-card quick">
-        <div class="mode-label">Advancing</div>
-        <h4>Normal forward flow &mdash; no prompt</h4>
-        <p>New skill is <em>later</em> in the pipeline than the active one. Example: <code>/serious-research</code> is active, you invoke <code>/serious-plan</code>. Plan (4) > Research (2) = advancing. The system proceeds normally &mdash; no prompt, no sub-workflow, no <code>parent:</code> field.</p>
-        <p style="margin-top:8px;font-size:0.85em;color:var(--text-muted)">This is the happy path. research &rarr; plan &rarr; code just works.</p>
+        <div class="mode-label">Advancing &#10003;</div>
+        <h4>Forward flow &mdash; no interruption</h4>
+        <p><code>/serious-research</code> active, you invoke <code>/serious-plan</code>. Plan (4) > Research (2). <strong>No prompt.</strong> The system knows this is the normal next step.</p>
+        <p style="margin-top:8px;font-size:0.85em;color:var(--text-muted)">research &rarr; plan &rarr; code never triggers a sub-workflow prompt.</p>
       </div>
       <div class="mode-card deep">
-        <div class="mode-label">Branching</div>
-        <h4>Sub-workflow prompt</h4>
-        <p>New skill is <em>earlier or equal</em> in the pipeline. Example: <code>/serious-plan</code> is active, you invoke <code>/serious-research</code>. Research (2) &le; Plan (4) = branching. The system asks: <strong>&ldquo;I see you're in /serious-plan for notifications. Link this research as a sub-workflow?&rdquo;</strong></p>
-        <p style="margin-top:8px;font-size:0.85em;color:var(--text-muted)">Same-skill drilling works too: research &rarr; sub-research.</p>
+        <div class="mode-label">Branching &#9432;</div>
+        <h4>Backward or same &mdash; asks first</h4>
+        <p><code>/serious-plan</code> active, you invoke <code>/serious-research</code>. Research (2) &le; Plan (4). <strong>&ldquo;Link as a sub-workflow?&rdquo;</strong> The system knows you're going back to investigate something.</p>
+        <p style="margin-top:8px;font-size:0.85em;color:var(--text-muted)">Say no and it creates a normal top-level workflow instead.</p>
       </div>
     </div>
 
-    <h3>What Happens When You Branch</h3>
-    <div class="diagram-container">
-      <div class="diagram-title">Example: Workflow Tree</div>
-      <div class="file-tree" style="font-size:0.85em;line-height:1.8;">
-<span style="color:var(--green)">&#10003;</span> notifications <span style="color:var(--text-muted)">(research)</span> &mdash; <span style="color:var(--text-muted)">Research/features/notifications/</span>
-  <span style="color:var(--accent)">&#9679;</span> &nbsp;&#9492; token-expiry <span style="color:var(--text-muted)">(research)</span> &mdash; <span style="color:var(--text-muted)">.../sub/token-expiry/</span>
-  <span style="color:var(--green)">&#10003;</span> &nbsp;&#9492; email-templates <span style="color:var(--text-muted)">(mock-ups)</span> &mdash; <span style="color:var(--text-muted)">.../sub/email-templates/</span>
-<span style="color:var(--green)">&#10003;</span> auth-redesign <span style="color:var(--text-muted)">(code)</span> &mdash; <span style="color:var(--text-muted)">Research/features/auth-redesign/</span>
-  <span style="color:var(--red)">&#10007;</span> &nbsp;&#9492; jwt-migration <span style="color:var(--text-muted)">(plan)</span> &mdash; <span style="color:var(--text-muted)">.../sub/jwt-migration/</span></div>
-    </div>
-
-    <h3>The Mechanics</h3>
+    <h3>Under the Hood</h3>
     <div class="card-grid">
       <div class="card">
         <h4>YAML Frontmatter</h4>
-        <p>Every workflow output file gets 5 standard fields: <code>skill</code>, <code>slug</code>, <code>status</code> (active/done/abandoned), <code>parent</code> (path to parent folder), and <code>created</code> (date). The <code>parent:</code> field is what links the tree together.</p>
+        <p>Every workflow output file gets <code>skill</code>, <code>slug</code>, <code>status</code>, <code>parent</code>, and <code>created</code>. The <code>parent:</code> field links children to parents, building the tree.</p>
       </div>
       <div class="card">
         <h4>Breadcrumb Files</h4>
-        <p><code>.active-conversation</code>, <code>.active-research</code>, <code>.active-plan</code>, etc. in the project root. Each contains the relative path to the active workflow folder. These are the "live" signal &mdash; if a breadcrumb exists, that workflow is in progress.</p>
+        <p><code>.active-*</code> files in the project root are live signals. If <code>.active-research</code> exists, a research workflow is running. Breadcrumbs are created first, removed last.</p>
       </div>
       <div class="card">
-        <h4>Sub-Workflow Folders</h4>
-        <p>Sub-workflows live at <code>{parent}/sub/{slug}/</code>. This keeps the hierarchy visible in your file tree: <code>Research/features/notifications/sub/token-expiry/research.md</code>. Auto-detect scan paths include <code>**/sub/*/</code> so downstream skills find them.</p>
+        <h4>Nested Folders</h4>
+        <p>Sub-workflows live at <code>{parent}/sub/{slug}/</code>. The file tree <em>is</em> the hierarchy. All auto-detect paths include <code>**/sub/*/</code> so downstream skills find sub-workflow outputs.</p>
       </div>
       <div class="card">
-        <h4>Depth Guard</h4>
-        <p>At 3+ levels deep, the system warns: &ldquo;This would be depth N. Are you sure?&rdquo; Prevents runaway nesting. Depth is computed by following <code>parent:</code> chains in frontmatter.</p>
+        <h4>Safety Rails</h4>
+        <p><strong>Depth guard</strong> warns at 3+ levels. <strong>Same-skill drilling</strong> overwrites the breadcrumb and restores it on completion. <strong>Active-children guard</strong> prevents abandoning a parent before its children.</p>
       </div>
     </div>
 
-    <h3>Same-Skill Drilling</h3>
-    <p>A special case: research spawning sub-research, or plan spawning sub-plan. The <code>.active-{skill}</code> breadcrumb gets overwritten (since both are the same skill type). When the sub-workflow completes or is abandoned, the breadcrumb is <strong>restored</strong> to point back to the parent. This works at any depth &mdash; even a depth-2 sub-workflow restoring to a depth-1 parent that is itself a sub-workflow.</p>
-
-    <h3>Utility Commands</h3>
+    <h3>Manage It All</h3>
     <div class="mode-cards">
       <div class="mode-card quick">
         <div class="mode-label">/serious-status</div>
-        <h4>Where am I?</h4>
-        <p>Scans all workflow folders, reads frontmatter, builds the tree, and displays a flat table with status glyphs: <strong>&#10003;</strong> done, <strong>&#9679;</strong> active, <strong>&#9675;</strong> pending, <strong>&#10007;</strong> abandoned, <strong>?</strong> legacy. Works with both new (frontmatter) and old (bold header) formats.</p>
+        <h4>See everything</h4>
+        <p>Full workflow tree with status glyphs: <strong>&#10003;</strong> done, <strong>&#9679;</strong> active, <strong>&#9675;</strong> pending, <strong>&#10007;</strong> abandoned, <strong>?</strong> legacy. Shows orphans, stale breadcrumbs, and malformed files. Works with both frontmatter and pre-frontmatter formats.</p>
       </div>
       <div class="mode-card deep">
         <div class="mode-label">/serious-abandon</div>
-        <h4>Bail out</h4>
-        <p>Marks the deepest active sub-workflow as abandoned, removes its breadcrumb, restores the parent context. Safety: refuses to abandon a parent with active children. Won't delete worktrees. Requires confirmation for top-level workflows.</p>
+        <h4>Bail out safely</h4>
+        <p>Targets the deepest active sub-workflow. Sets status to abandoned, removes the breadcrumb, restores the parent context, and reports what you're returning to. Won't cascade &mdash; you abandon one level at a time.</p>
       </div>
     </div>
   </section>

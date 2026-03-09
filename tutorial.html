@@ -698,59 +698,72 @@
   <section>
     <div class="container">
       <div class="reveal">
-        <div class="section-label">Key feature</div>
-        <h2>Recursive workflows</h2>
-        <p>Real work isn't linear. During planning you discover sub-problems that need their own research. During code you find gaps that need their own conversation. <strong>Any skill can spawn sub-workflows that nest inside their parent.</strong></p>
+        <div class="section-label">The big idea</div>
+        <h2>Workflows inside workflows</h2>
+        <p style="font-size:1.05em;">The pipeline goes conversation &rarr; research &rarr; plan &rarr; code. But what happens when you're <em>planning</em> and discover you need more <em>research</em>? Or you're <em>coding</em> and need a <em>conversation</em> to think through an edge case?</p>
       </div>
 
       <div class="reveal delay-1" style="margin-top:24px;">
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;">
-          <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);font-weight:600;margin-bottom:12px;">How it decides</div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;">
+          <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);font-weight:600;margin-bottom:16px;">What changes</div>
           <div style="display:flex;gap:16px;flex-wrap:wrap;">
-            <div style="flex:1;min-width:250px;padding:16px;background:var(--bg3);border-radius:8px;">
-              <div style="font-size:13px;font-weight:600;color:var(--green);margin-bottom:6px;">Advancing &mdash; no prompt</div>
-              <p style="font-size:13px;color:var(--text2);margin:0;">New skill is <em>later</em> in the pipeline. research &rarr; plan &rarr; code just works. No interruption.</p>
+            <div style="flex:1;min-width:250px;padding:16px;background:var(--bg3);border-radius:8px;border-left:3px solid var(--red);">
+              <div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:8px;">Without recursion</div>
+              <p style="font-size:13px;color:var(--text2);margin:0;line-height:1.6;">You abandon the plan to go research. When research finishes, you've lost the planning context. Nothing records <em>why</em> you went back to research. Disconnected folders everywhere.</p>
             </div>
-            <div style="flex:1;min-width:250px;padding:16px;background:var(--bg3);border-radius:8px;">
-              <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:6px;">Branching &mdash; asks first</div>
-              <p style="font-size:13px;color:var(--text2);margin:0;">New skill is <em>earlier or same</em>. plan &rarr; sub-research? &ldquo;Link as a sub-workflow?&rdquo;</p>
+            <div style="flex:1;min-width:250px;padding:16px;background:var(--bg3);border-radius:8px;border-left:3px solid var(--green);">
+              <div style="font-size:13px;font-weight:600;color:var(--green);margin-bottom:8px;">With recursion</div>
+              <p style="font-size:13px;color:var(--text2);margin:0;line-height:1.6;">Type <code>/serious-research</code> mid-plan. System asks: &ldquo;Link as sub-workflow?&rdquo; Research nests <em>inside</em> the plan folder. When it's done, you're right back where you were.</p>
             </div>
           </div>
         </div>
       </div>
 
       <div class="reveal delay-2" style="margin-top:20px;">
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;">
-          <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);font-weight:600;margin-bottom:12px;">Example: workflow tree</div>
-          <div style="font-family:monospace;font-size:13px;line-height:2;color:var(--text);">
-<span style="color:var(--green);">&#10003;</span> notifications <span style="color:var(--text3)">(research)</span><br>
-<span style="color:var(--accent);">&nbsp;&nbsp;&#9679;</span> &#9492; token-expiry <span style="color:var(--text3)">(research)</span> &larr; sub-workflow<br>
-<span style="color:var(--green);">&nbsp;&nbsp;&#10003;</span> &#9492; email-templates <span style="color:var(--text3)">(mock-ups)</span><br>
-<span style="color:var(--green);">&#10003;</span> auth-redesign <span style="color:var(--text3)">(code)</span><br>
-<span style="color:var(--red);">&nbsp;&nbsp;&#10007;</span> &#9492; jwt-migration <span style="color:var(--text3)">(plan)</span> &larr; abandoned
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;">
+          <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);font-weight:600;margin-bottom:16px;">When you need it</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:220px;padding:12px 16px;background:var(--bg3);border-radius:8px;">
+              <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Mid-plan discovery</div>
+              <div style="font-size:12px;color:var(--text2);">Planning reveals an ambiguity &rarr; spawn sub-research &rarr; get the answer &rarr; continue planning with findings linked</div>
+            </div>
+            <div style="flex:1;min-width:220px;padding:12px 16px;background:var(--bg3);border-radius:8px;">
+              <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Implementation gap</div>
+              <div style="font-size:12px;color:var(--text2);">Coding hits an edge case &rarr; spawn sub-conversation with personas &rarr; think it through &rarr; back to coding</div>
+            </div>
+            <div style="flex:1;min-width:220px;padding:12px 16px;background:var(--bg3);border-radius:8px;">
+              <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Research rabbit hole</div>
+              <div style="font-size:12px;color:var(--text2);">Research finds a deeper question &rarr; spawn sub-research &rarr; parent stays intact &rarr; <code>/serious-status</code> shows both</div>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="reveal delay-3" style="margin-top:20px;">
-        <div style="display:flex;gap:12px;flex-wrap:wrap;">
-          <div style="flex:1;min-width:200px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;">
-            <div style="font-weight:600;font-size:14px;margin-bottom:4px;">YAML Frontmatter</div>
-            <div style="font-size:13px;color:var(--text2);">Every output file gets <code>skill</code>, <code>slug</code>, <code>status</code>, <code>parent</code>, <code>created</code>. The <code>parent:</code> field links the tree.</div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;">
+          <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);font-weight:600;margin-bottom:12px;">What you see</div>
+          <div style="font-family:monospace;font-size:13px;line-height:2.2;color:var(--text);">
+<span style="color:var(--green);">&#10003;</span> notifications <span style="color:var(--text3)">(research)</span><br>
+<span style="color:var(--accent);">&nbsp;&nbsp;&#9679;</span> &#9492; token-expiry <span style="color:var(--text3)">(research)</span> <span style="font-size:11px;background:var(--accent-bg);padding:1px 6px;border-radius:3px;">active</span><br>
+<span style="color:var(--green);">&nbsp;&nbsp;&#10003;</span> &#9492; email-templates <span style="color:var(--text3)">(mock-ups)</span><br>
+<span style="color:var(--green);">&#10003;</span> auth-redesign <span style="color:var(--text3)">(code)</span><br>
+<span style="color:var(--red);">&nbsp;&nbsp;&#10007;</span> &#9492; jwt-migration <span style="color:var(--text3)">(plan)</span> <span style="font-size:11px;background:var(--red-bg);padding:1px 6px;border-radius:3px;">abandoned</span>
           </div>
-          <div style="flex:1;min-width:200px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;">
-            <div style="font-weight:600;font-size:14px;margin-bottom:4px;">Breadcrumb Files</div>
-            <div style="font-size:13px;color:var(--text2);"><code>.active-*</code> files in project root track live workflows. The "is anything running?" signal.</div>
-          </div>
-          <div style="flex:1;min-width:200px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;">
-            <div style="font-weight:600;font-size:14px;margin-bottom:4px;">Depth Guard</div>
-            <div style="font-size:13px;color:var(--text2);">Warns at 3+ levels deep. Prevents runaway nesting. Sub-folders live at <code>{parent}/sub/{slug}/</code>.</div>
-          </div>
+          <div style="font-size:12px;color:var(--text2);margin-top:8px;">The tree tells the story: <em>why</em> each sub-workflow exists, what it found, and whether it's still going.</div>
         </div>
       </div>
 
-      <div class="reveal" style="margin-top:16px;">
-        <p style="font-size:13px;color:var(--text2);text-align:center;"><code>/serious-status</code> shows the full tree. <code>/serious-abandon</code> bails out and restores the parent.</p>
+      <div class="reveal" style="margin-top:20px;">
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:250px;padding:16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;">
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px;"><code>/serious-status</code></div>
+            <div style="font-size:13px;color:var(--text2);">See every workflow and its children in one table. Always know where you are.</div>
+          </div>
+          <div style="flex:1;min-width:250px;padding:16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;">
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px;"><code>/serious-abandon</code></div>
+            <div style="font-size:13px;color:var(--text2);">Dead end? Bail out. Parent context is restored. Nothing is deleted &mdash; the work stays for reference.</div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
