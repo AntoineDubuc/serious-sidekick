@@ -636,6 +636,16 @@
           <div class="cmd-desc">Scaffold any project with the full toolkit. Run it once per project.</div>
           <div class="cmd-tag t-green">Setup</div>
         </div>
+        <div class="cmd-card c-blue reveal delay-2">
+          <div class="cmd-name">/serious-status</div>
+          <div class="cmd-desc">See all workflows &amp; their status</div>
+          <div class="cmd-tag t-blue">Utility</div>
+        </div>
+        <div class="cmd-card c-orange reveal delay-3">
+          <div class="cmd-name">/serious-abandon</div>
+          <div class="cmd-desc">Bail out of a sub-workflow</div>
+          <div class="cmd-tag t-orange">Utility</div>
+        </div>
       </div>
     </div>
   </section>
@@ -684,6 +694,69 @@
 
   <div class="divider"></div>
 
+  <!-- Recursive Workflows -->
+  <section>
+    <div class="container">
+      <div class="reveal">
+        <div class="section-label">Key feature</div>
+        <h2>Recursive workflows</h2>
+        <p>Real work isn't linear. During planning you discover sub-problems that need their own research. During code you find gaps that need their own conversation. <strong>Any skill can spawn sub-workflows that nest inside their parent.</strong></p>
+      </div>
+
+      <div class="reveal delay-1" style="margin-top:24px;">
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;">
+          <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);font-weight:600;margin-bottom:12px;">How it decides</div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:250px;padding:16px;background:var(--bg3);border-radius:8px;">
+              <div style="font-size:13px;font-weight:600;color:var(--green);margin-bottom:6px;">Advancing &mdash; no prompt</div>
+              <p style="font-size:13px;color:var(--text2);margin:0;">New skill is <em>later</em> in the pipeline. research &rarr; plan &rarr; code just works. No interruption.</p>
+            </div>
+            <div style="flex:1;min-width:250px;padding:16px;background:var(--bg3);border-radius:8px;">
+              <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:6px;">Branching &mdash; asks first</div>
+              <p style="font-size:13px;color:var(--text2);margin:0;">New skill is <em>earlier or same</em>. plan &rarr; sub-research? &ldquo;Link as a sub-workflow?&rdquo;</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal delay-2" style="margin-top:20px;">
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;">
+          <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);font-weight:600;margin-bottom:12px;">Example: workflow tree</div>
+          <div style="font-family:monospace;font-size:13px;line-height:2;color:var(--text);">
+<span style="color:var(--green);">&#10003;</span> notifications <span style="color:var(--text3)">(research)</span><br>
+<span style="color:var(--accent);">&nbsp;&nbsp;&#9679;</span> &#9492; token-expiry <span style="color:var(--text3)">(research)</span> &larr; sub-workflow<br>
+<span style="color:var(--green);">&nbsp;&nbsp;&#10003;</span> &#9492; email-templates <span style="color:var(--text3)">(mock-ups)</span><br>
+<span style="color:var(--green);">&#10003;</span> auth-redesign <span style="color:var(--text3)">(code)</span><br>
+<span style="color:var(--red);">&nbsp;&nbsp;&#10007;</span> &#9492; jwt-migration <span style="color:var(--text3)">(plan)</span> &larr; abandoned
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal delay-3" style="margin-top:20px;">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;">
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px;">YAML Frontmatter</div>
+            <div style="font-size:13px;color:var(--text2);">Every output file gets <code>skill</code>, <code>slug</code>, <code>status</code>, <code>parent</code>, <code>created</code>. The <code>parent:</code> field links the tree.</div>
+          </div>
+          <div style="flex:1;min-width:200px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;">
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px;">Breadcrumb Files</div>
+            <div style="font-size:13px;color:var(--text2);"><code>.active-*</code> files in project root track live workflows. The "is anything running?" signal.</div>
+          </div>
+          <div style="flex:1;min-width:200px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;">
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px;">Depth Guard</div>
+            <div style="font-size:13px;color:var(--text2);">Warns at 3+ levels deep. Prevents runaway nesting. Sub-folders live at <code>{parent}/sub/{slug}/</code>.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal" style="margin-top:16px;">
+        <p style="font-size:13px;color:var(--text2);text-align:center;"><code>/serious-status</code> shows the full tree. <code>/serious-abandon</code> bails out and restores the parent.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
   <!-- Try It -->
   <section>
     <div class="container">
@@ -720,6 +793,20 @@
           <div class="step-content">
             <h3>Have a plan? Build it.</h3>
             <p><code>/serious-code</code> &mdash; TDD execution with 5 verification agents per task.</p>
+          </div>
+        </div>
+        <div class="step reveal">
+          <div class="step-num" style="background:var(--blue-bg);color:var(--blue);">E</div>
+          <div class="step-content">
+            <h3>Lost track? Check status.</h3>
+            <p><code>/serious-status</code> &mdash; see where you are across all active workflows.</p>
+          </div>
+        </div>
+        <div class="step reveal delay-1">
+          <div class="step-num" style="background:var(--orange-bg);color:var(--orange);">F</div>
+          <div class="step-content">
+            <h3>Need to bail? Abandon it.</h3>
+            <p><code>/serious-abandon</code> &mdash; bail out of a sub-workflow and return to the parent.</p>
           </div>
         </div>
       </div>

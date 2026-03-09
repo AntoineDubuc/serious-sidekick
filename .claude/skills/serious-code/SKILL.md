@@ -5,13 +5,16 @@ user-invocable: true
 hooks:
   Stop:
     - matcher: "*"
-      handler:
-        type: prompt
-        prompt: |
-          If a serious code session is active (check for .active-code file in project root),
-          read the execution folder path from it, then update execution_log.md with the latest
-          status: which phase is active, which plans are running/completed/failed, and any
-          errors encountered. Include timestamp. Keep it concise.
+      hooks:
+        - type: command
+          command: "bash .claude/skills/serious-code/hooks/verify-completion-gate.sh"
+          timeout: 30
+        - type: prompt
+          prompt: |
+            If a serious code session is active (check for .active-code file in project root),
+            read the execution folder path from it, then update execution_log.md with the latest
+            status: which phase is active, which plans are running/completed/failed, and any
+            errors encountered. Include timestamp. Keep it concise.
 ---
 
 # Serious Code
@@ -27,13 +30,37 @@ Execute implementation plans produced by `/serious-plan`. Orchestrates parallel 
 
 ## Phase 0: Intake
 
+### 0-pre. Check for active parent workflow
+
+Before anything else, check for active workflow breadcrumbs in the project root:
+
+1. **Scan for breadcrumbs:** Check for `.active-conversation`, `.active-research`, `.active-mock-ups`, `.active-plan`, `.active-code`, `.active-review`
+2. **Validate each:** For each breadcrumb found, verify the target folder exists and contains a valid output file with parseable YAML frontmatter. If not, delete the stale breadcrumb with a warning: "Removed stale .active-{skill} breadcrumb (target folder missing)."
+3. **If no valid breadcrumbs exist:** Skip the rest of 0-pre. Proceed to Phase 0a as normal (top-level workflow).
+4. **Determine the deepest active workflow:** If multiple valid breadcrumbs exist, follow `parent:` chains in each breadcrumb's target frontmatter. The workflow with the longest parent chain is the deepest. If multiple independent top-level breadcrumbs exist (none with parent fields), use the most recently modified breadcrumb as the comparison target.
+5. **Compare pipeline order:** This skill is `code` (order 5). The deepest active skill is order {M}.
+   - **Pipeline order:** conversation(1) → research(2) → mock-ups(3) → plan(4) → code(5) → review(6)
+   - If 5 > {M}: this is **advancing**. Skip the rest of 0-pre, proceed to Phase 0a as normal. Both breadcrumbs will coexist. Advancing means normal behavior — no new logic needed. The skill uses its existing folder rules. No parent field is set. No prompt is shown. No sub/ folder is created. Both the new skill's breadcrumb AND the existing skill's breadcrumb coexist.
+   - If 5 ≤ {M}: this is **branching**. Continue to step 6.
+6. **Branching prompt:**
+   - **Cross-skill:** "I see you're in /serious-{active_skill} for {slug}. This looks like it needs its own workflow. Link as a sub-workflow? (Y/N)"
+   - **Same-skill (code → code):** "I see you're already in /serious-code for {slug}. Start a nested /serious-code within it? (Y/N)" Note: the existing `.active-code` breadcrumb will be overwritten with the new sub-workflow's path.
+7. **If YES (sub-workflow):**
+   - Compute proposed depth: follow `parent:` chain from the proposed parent's frontmatter, count hops until no `parent:` field, add 1.
+   - **Depth guard:** If proposed depth ≥ 3, warn: "This would be depth {N} (3+ levels deep). Are you sure? (Y/N)". If No: do not create the sub-workflow, return without starting the new skill.
+   - Set `parent` in this workflow's frontmatter to the parent's output folder path
+   - Create output at `{parent_folder}/sub/{slug}/` instead of the normal location
+8. **If NO:** Create output in normal location, no parent field set.
+9. **Same-skill restoration:** On wrap-up/completion of this skill, if frontmatter has a `parent:` field and the parent was the same skill type (code), restore the breadcrumb: write `.active-code` with the parent's folder path as content. This works even if the parent was itself a sub-workflow (depth 2), because the parent's frontmatter has its own parent reference, and the breadcrumb just needs to point to the immediate parent.
+
 ### 0a. Auto-detect plans
 
 Before asking anything, scan the project:
 
-- Check `Research/features/*/phase_map.md` for multi-plan setups
-- Check `Research/features/*/implementation_plan.md` for single plans
+- Check `Research/features/*/phase_map.md` for multi-plan setups — verify `status: done` in YAML frontmatter (primary), fall back to `**Status: Complete**` bold headers for legacy files
+- Check `Research/features/*/implementation_plan.md` for single plans — same dual-check (YAML primary, bold header fallback)
 - Check `Research/bugs/*/` and `Research/exploratory/*/` similarly
+- Check sub-workflow paths: `Research/**/sub/*/implementation_plan.md` and `Research/**/sub/*/phase_map.md` (same dual-check)
 - If `$ARGUMENTS` specifies a path, use that directly
 
 ### 0b. Present what you found
@@ -80,11 +107,19 @@ Create the execution tracking files:
 └── evidence/
 ```
 
-**Write `.active-code`** to the project root containing the path to the plan folder. The Stop hook reads this.
+**Write `.active-code`** to the project root FIRST (before creating execution_log.md). Content is the relative path from project root to the plan folder. The Stop hook reads this.
 
 ### 0e. Initialize execution_log.md
 
 ```markdown
+---
+skill: serious-code
+slug: {slug}
+status: active
+parent:
+created: {date}
+---
+
 # Execution Log
 
 **Started:** {timestamp}
@@ -192,10 +227,17 @@ For each task in the plan's Master Checklist, in order:
    - serious-code-runtime-checker
    - serious-code-qa
 4. Collect verification results
-5. If all pass: update progress.md, mark task as completed, move to next task
-6. If any fail: update progress.md with failure details, STOP, report back
+5. MANDATORY: Dispatch the Completion Gate sub-agent (Step 2.5)
+   - It independently reads ALL acceptance criteria from the plan
+   - It greps the codebase for implementing code per AC
+   - It returns PASS/FAIL per AC
+   - It writes gate_passed.md to evidence/task_{NN}/
+   - A stop hook ENFORCES this — session cannot exit without it
+6. If all pass + gate passed: update progress.md, mark task as completed, move to next task
+7. If any fail: update progress.md with failure details, STOP, report back
 
 Do NOT skip tasks. Do NOT continue past a failed task.
+Do NOT skip the Completion Gate. The stop hook will block exit if you do.
 Write progress after every task completes or fails.
 ```
 
@@ -312,11 +354,61 @@ After the implementer completes AND the smoke test passes, spawn all four verifi
 - Independently re-verifies them (does not trust the implementer's self-report)
 - Returns: PASS/FAIL per spot-check
 
+### Step 2.5: Completion Gate (MANDATORY — CANNOT BE SKIPPED)
+
+> **Why this exists:** Implementing agents will build the easy parts, skip the hard parts, and self-report "done." This gate catches that. A stop hook enforces it — the session physically cannot exit without gate_passed.md for every task.
+
+After the 4 verification agents return (Step 2), but BEFORE marking the task complete, dispatch an independent **Completion Gate sub-agent**:
+
+```
+COMPLETION GATE — Task {task_id}: {task_name}
+
+You are an independent verifier. You did NOT implement this code.
+Your job is to verify that every acceptance criterion has implementing code.
+
+PLAN FILE: {plan_file_path}
+TASK NUMBER: {task_id}
+
+INSTRUCTIONS:
+1. Read the task's acceptance criteria from the plan file
+   (NOT from any implementer report or completion manifest)
+2. For EACH acceptance criterion:
+   a. Search the codebase for implementing code (grep, read files)
+   b. Determine: does code exist that implements this criterion?
+   c. Report: PASS (with file:line evidence) or FAIL (not found)
+3. Output a structured report with every AC, its verdict, and evidence
+
+RULES:
+- Do NOT trust any implementer self-report
+- Do NOT accept "INFRASTRUCTURE READY", "DEFERRED", "PARTIAL",
+  or any status other than PASS or FAIL
+- Either implementing code exists, or it doesn't
+- If you cannot find implementing code, it is a FAIL
+- Tests passing is NOT evidence of implementation — the agent may
+  have only written tests for the parts it built
+```
+
+**If ANY AC is FAIL:**
+- Task stays `in_progress`
+- Feed the failure list back to the implementer agent
+- Implementer fixes all failures
+- Re-run Step 2 (verification agents) AND Step 2.5 (gate)
+- Max 2 retries, then escalate to the user
+
+**If ALL ACs PASS:**
+- Write `gate_passed.md` to `evidence/task_{NN}/` with:
+  - Timestamp
+  - Full AC-by-AC verification log (criterion text, PASS/FAIL, file:line evidence)
+  - Count: {N}/{N} passed
+- Only THEN may the task be marked `completed` in progress.md
+
+> **The stop hook at `.claude/skills/serious-code/hooks/verify-completion-gate.sh` enforces this.** If any task evidence directory exists without `gate_passed.md`, the session cannot exit (hook returns exit code 2). The agent is forced to run the gate.
+
 ### Step 3: Evaluate
 
-The plan agent reads all verification results:
+The plan agent reads all verification results AND the Completion Gate result:
 
-- **All pass:** Task is complete. Update progress.md. Move to next task.
+- **All pass + gate passed:** Task is complete. Update progress.md. Move to next task.
 - **Any fail:** Task failed verification. Record failure details in progress.md. STOP.
 
 ### Step 4: Evidence
@@ -383,7 +475,7 @@ After all phases complete successfully:
 
 ### 2b. Clean up
 
-- Remove `.active-code` breadcrumb from project root
+- Set `status: done` in the YAML frontmatter of `execution_log.md`. Then remove `.active-code` breadcrumb from project root.
 - Clean up any remaining worktrees
 - Update `execution_log.md` with final status: Complete
 
@@ -431,3 +523,5 @@ If `/serious-code --resume` is invoked or the orchestrator detects an existing `
 9. **When tests pass but the feature doesn't work, investigate the gap.** The gap is always in a layer tests don't cover — caches, indexes, visibility culling, event propagation, async timing, build caches. Add a test for the missing layer, fix it, document it.
 10. **Rebuild dependencies in monorepos.** After modifying a dependency package, rebuild it before testing dependents. Restart dev servers that consume the modified package. Stale builds are a silent failure source.
 11. **The completion report is not optional.** Generate `completion_report.md` with full evidence summary. If the session is interrupted, resume must generate it.
+12. **The Completion Gate is enforced by a stop hook.** The hook at `.claude/skills/serious-code/hooks/verify-completion-gate.sh` checks that every task evidence directory contains `gate_passed.md`. If any are missing, the session cannot exit (exit code 2). You MUST run Step 2.5 for every task. There is no way around this — the hook runs outside your control.
+13. **"INFRASTRUCTURE READY" is not a valid status.** Every acceptance criterion is either PASS or FAIL. There is no partial credit. If code doesn't exist for an AC, it's a FAIL, even if related infrastructure was built.

@@ -726,7 +726,7 @@
   <!-- Workflow Diagram -->
   <section>
     <h2>Workflow</h2>
-    <p>Six workflow skills form a full development loop from ideation to implementation and back, plus one standalone image generation skill:</p>
+    <p>Eight workflow skills form a full development loop from ideation to implementation and back, with sub-workflow support for drilling into nested research/plan/code cycles, plus one standalone image generation skill:</p>
 
     <div class="diagram-container">
       <div class="diagram-title">Serious Workflow Pipeline</div>
@@ -774,6 +774,98 @@
     </div>
   </section>
 
+  <!-- Recursive Workflows -->
+  <section>
+    <h2>Recursive Workflows</h2>
+    <p>Real work isn't linear. During planning you discover sub-problems that need their own research; during code you find gaps that need their own conversation. Every <code>/serious-*</code> skill can spawn <strong>sub-workflows</strong> that nest inside their parent &mdash; creating a tree of related work instead of a flat sequence.</p>
+
+    <h3>The Problem</h3>
+    <p>Without recursion, you're forced to abandon your current workflow to investigate a sub-problem, or mentally track side-quests without any tooling. Example: you're in <code>/serious-plan</code> for a notifications feature when you realize the auth token expiry behavior is unclear. You need research, but you don't want to lose your planning context.</p>
+
+    <h3>Advancing vs Branching</h3>
+    <p>When you invoke a skill while another workflow is active, the system compares pipeline positions:</p>
+
+    <div class="diagram-container">
+      <div class="diagram-title">Pipeline Order</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;padding:16px 0;font-size:0.85em;">
+        <span style="background:var(--accent-bg);padding:4px 10px;border-radius:6px;border:1px solid var(--border);">conversation <span style="color:var(--text-muted)">(1)</span></span>
+        <span style="color:var(--text-muted)">&rarr;</span>
+        <span style="background:var(--accent-bg);padding:4px 10px;border-radius:6px;border:1px solid var(--border);">research <span style="color:var(--text-muted)">(2)</span></span>
+        <span style="color:var(--text-muted)">&rarr;</span>
+        <span style="background:var(--accent-bg);padding:4px 10px;border-radius:6px;border:1px solid var(--border);">mock-ups <span style="color:var(--text-muted)">(3)</span></span>
+        <span style="color:var(--text-muted)">&rarr;</span>
+        <span style="background:var(--accent-bg);padding:4px 10px;border-radius:6px;border:1px solid var(--border);">plan <span style="color:var(--text-muted)">(4)</span></span>
+        <span style="color:var(--text-muted)">&rarr;</span>
+        <span style="background:var(--accent-bg);padding:4px 10px;border-radius:6px;border:1px solid var(--border);">code <span style="color:var(--text-muted)">(5)</span></span>
+        <span style="color:var(--text-muted)">&rarr;</span>
+        <span style="background:var(--accent-bg);padding:4px 10px;border-radius:6px;border:1px solid var(--border);">review <span style="color:var(--text-muted)">(6)</span></span>
+      </div>
+    </div>
+
+    <div class="mode-cards">
+      <div class="mode-card quick">
+        <div class="mode-label">Advancing</div>
+        <h4>Normal forward flow &mdash; no prompt</h4>
+        <p>New skill is <em>later</em> in the pipeline than the active one. Example: <code>/serious-research</code> is active, you invoke <code>/serious-plan</code>. Plan (4) > Research (2) = advancing. The system proceeds normally &mdash; no prompt, no sub-workflow, no <code>parent:</code> field.</p>
+        <p style="margin-top:8px;font-size:0.85em;color:var(--text-muted)">This is the happy path. research &rarr; plan &rarr; code just works.</p>
+      </div>
+      <div class="mode-card deep">
+        <div class="mode-label">Branching</div>
+        <h4>Sub-workflow prompt</h4>
+        <p>New skill is <em>earlier or equal</em> in the pipeline. Example: <code>/serious-plan</code> is active, you invoke <code>/serious-research</code>. Research (2) &le; Plan (4) = branching. The system asks: <strong>&ldquo;I see you're in /serious-plan for notifications. Link this research as a sub-workflow?&rdquo;</strong></p>
+        <p style="margin-top:8px;font-size:0.85em;color:var(--text-muted)">Same-skill drilling works too: research &rarr; sub-research.</p>
+      </div>
+    </div>
+
+    <h3>What Happens When You Branch</h3>
+    <div class="diagram-container">
+      <div class="diagram-title">Example: Workflow Tree</div>
+      <div class="file-tree" style="font-size:0.85em;line-height:1.8;">
+<span style="color:var(--green)">&#10003;</span> notifications <span style="color:var(--text-muted)">(research)</span> &mdash; <span style="color:var(--text-muted)">Research/features/notifications/</span>
+  <span style="color:var(--accent)">&#9679;</span> &nbsp;&#9492; token-expiry <span style="color:var(--text-muted)">(research)</span> &mdash; <span style="color:var(--text-muted)">.../sub/token-expiry/</span>
+  <span style="color:var(--green)">&#10003;</span> &nbsp;&#9492; email-templates <span style="color:var(--text-muted)">(mock-ups)</span> &mdash; <span style="color:var(--text-muted)">.../sub/email-templates/</span>
+<span style="color:var(--green)">&#10003;</span> auth-redesign <span style="color:var(--text-muted)">(code)</span> &mdash; <span style="color:var(--text-muted)">Research/features/auth-redesign/</span>
+  <span style="color:var(--red)">&#10007;</span> &nbsp;&#9492; jwt-migration <span style="color:var(--text-muted)">(plan)</span> &mdash; <span style="color:var(--text-muted)">.../sub/jwt-migration/</span></div>
+    </div>
+
+    <h3>The Mechanics</h3>
+    <div class="card-grid">
+      <div class="card">
+        <h4>YAML Frontmatter</h4>
+        <p>Every workflow output file gets 5 standard fields: <code>skill</code>, <code>slug</code>, <code>status</code> (active/done/abandoned), <code>parent</code> (path to parent folder), and <code>created</code> (date). The <code>parent:</code> field is what links the tree together.</p>
+      </div>
+      <div class="card">
+        <h4>Breadcrumb Files</h4>
+        <p><code>.active-conversation</code>, <code>.active-research</code>, <code>.active-plan</code>, etc. in the project root. Each contains the relative path to the active workflow folder. These are the "live" signal &mdash; if a breadcrumb exists, that workflow is in progress.</p>
+      </div>
+      <div class="card">
+        <h4>Sub-Workflow Folders</h4>
+        <p>Sub-workflows live at <code>{parent}/sub/{slug}/</code>. This keeps the hierarchy visible in your file tree: <code>Research/features/notifications/sub/token-expiry/research.md</code>. Auto-detect scan paths include <code>**/sub/*/</code> so downstream skills find them.</p>
+      </div>
+      <div class="card">
+        <h4>Depth Guard</h4>
+        <p>At 3+ levels deep, the system warns: &ldquo;This would be depth N. Are you sure?&rdquo; Prevents runaway nesting. Depth is computed by following <code>parent:</code> chains in frontmatter.</p>
+      </div>
+    </div>
+
+    <h3>Same-Skill Drilling</h3>
+    <p>A special case: research spawning sub-research, or plan spawning sub-plan. The <code>.active-{skill}</code> breadcrumb gets overwritten (since both are the same skill type). When the sub-workflow completes or is abandoned, the breadcrumb is <strong>restored</strong> to point back to the parent. This works at any depth &mdash; even a depth-2 sub-workflow restoring to a depth-1 parent that is itself a sub-workflow.</p>
+
+    <h3>Utility Commands</h3>
+    <div class="mode-cards">
+      <div class="mode-card quick">
+        <div class="mode-label">/serious-status</div>
+        <h4>Where am I?</h4>
+        <p>Scans all workflow folders, reads frontmatter, builds the tree, and displays a flat table with status glyphs: <strong>&#10003;</strong> done, <strong>&#9679;</strong> active, <strong>&#9675;</strong> pending, <strong>&#10007;</strong> abandoned, <strong>?</strong> legacy. Works with both new (frontmatter) and old (bold header) formats.</p>
+      </div>
+      <div class="mode-card deep">
+        <div class="mode-label">/serious-abandon</div>
+        <h4>Bail out</h4>
+        <p>Marks the deepest active sub-workflow as abandoned, removes its breadcrumb, restores the parent context. Safety: refuses to abandon a parent with active children. Won't delete worktrees. Requires confirmation for top-level workflows.</p>
+      </div>
+    </div>
+  </section>
+
   <!-- What's Inside -->
   <section>
     <h2>What's Inside</h2>
@@ -784,7 +876,7 @@
 ├── <span class="file">README.md</span>                              <span class="comment"># Project documentation (markdown)</span>
 ├── <span class="file">README.html</span>                            <span class="comment"># Project documentation (HTML with light/dark mode)</span>
 ├── <span class="folder">.claude/</span>
-│   ├── <span class="folder">skills/</span>                            <span class="comment"># 24 auto-loading skills</span>
+│   ├── <span class="folder">skills/</span>                            <span class="comment"># 26 auto-loading skills</span>
 │   │   ├── <span class="file">serious-init/SKILL.md</span>          <span class="comment"># /serious-init — scaffold a new project</span>
 │   │   ├── <span class="file">serious-conversation/SKILL.md</span> <span class="comment"># /serious-conversation — persona panel</span>
 │   │   │   └── <span class="folder">personas/</span>              <span class="comment"># 10 built-in persona prompt files</span>
@@ -793,6 +885,8 @@
 │   │   ├── <span class="file">serious-plan/SKILL.md</span>          <span class="comment"># /serious-plan — implementation planning</span>
 │   │   ├── <span class="file">serious-code/SKILL.md</span>          <span class="comment"># /serious-code — plan execution with Agent Teams</span>
 │   │   ├── <span class="file">serious-review/SKILL.md</span>        <span class="comment"># /serious-review — structured review &amp; defect capture</span>
+│   │   ├── <span class="file">serious-status/SKILL.md</span>        <span class="comment"># /serious-status — workflow tree &amp; status dashboard</span>
+│   │   ├── <span class="file">serious-abandon/SKILL.md</span>       <span class="comment"># /serious-abandon — bail out of sub-workflows</span>
 │   │   ├── <span class="file">serious-bananas/SKILL.md</span>       <span class="comment"># /serious-bananas — image generation via Gemini</span>
 │   │   ├── <span class="file">hooks/SKILL.md</span>                 <span class="comment"># 17 feature-specific auto-loader skills</span>
 │   │   ├── <span class="file">subagents/SKILL.md</span>
@@ -994,6 +1088,7 @@
 
     <h3>The Flow</h3>
     <ul class="feature-list">
+      <li><strong>Build Gate</strong> &mdash; mandatory full project build before any review. If it fails, that's REVIEW-001 Critical before anything else.</li>
       <li><strong>Auto-detect context</strong> &mdash; scans for recent <code>/serious-code</code> output, flags missing deliverables</li>
       <li><strong>Confirm scope</strong> &mdash; presents what was found, asks to confirm</li>
       <li><strong>Choose mode</strong> &mdash; live capture, QA plan first, or both (default)</li>
@@ -1033,6 +1128,36 @@
     ├── findings.md        <span style="color:var(--text-muted)"># All issues with IDs, types, severities</span>
     ├── qa-plan.md         <span style="color:var(--text-muted)"># Generated QA checklist (if requested)</span>
     └── review-summary.md  <span style="color:var(--text-muted)"># Final synthesis — feeds into /serious-research</span></div>
+  </section>
+
+  <!-- Serious Status -->
+  <section>
+    <h2>/serious-status</h2>
+    <p>Read-only diagnostic that scans all workflow folders, reads YAML frontmatter, reconstructs the parent-child tree, and displays a flat table with status glyphs. Works with both new (frontmatter) and legacy (bold header) formats.</p>
+
+    <h3>What It Shows</h3>
+    <ul class="feature-list">
+      <li><strong>Workflow tree</strong> &mdash; parent-child relationships via <code>parent:</code> field in frontmatter</li>
+      <li><strong>Status glyphs</strong> &mdash; &#10003; done, &#9679; active, &#9675; pending, &#10007; abandoned, ? legacy</li>
+      <li><strong>Active detection</strong> &mdash; reads <code>.active-*</code> breadcrumb files as live signals</li>
+      <li><strong>Legacy support</strong> &mdash; falls back to bold markdown headers for pre-frontmatter files</li>
+      <li><strong>Warnings</strong> &mdash; flags stale breadcrumbs, orphaned workflows, malformed frontmatter</li>
+    </ul>
+  </section>
+
+  <!-- Serious Abandon -->
+  <section>
+    <h2>/serious-abandon</h2>
+    <p>Bail out of the deepest active sub-workflow. Sets <code>status: abandoned</code> in frontmatter, removes the breadcrumb, restores the parent context, and reports what you're returning to.</p>
+
+    <h3>Safety Features</h3>
+    <ul class="feature-list">
+      <li><strong>Depth-first</strong> &mdash; always targets the deepest active workflow (innermost sub-workflow first)</li>
+      <li><strong>Active children guard</strong> &mdash; refuses to abandon a parent with active sub-workflows</li>
+      <li><strong>Top-level confirmation</strong> &mdash; warns before abandoning a root workflow</li>
+      <li><strong>Worktree awareness</strong> &mdash; reports <code>/serious-code</code> worktrees but does not delete them</li>
+      <li><strong>Breadcrumb restoration</strong> &mdash; restores parent breadcrumb for same-skill drilling (e.g., research &rarr; sub-research)</li>
+    </ul>
   </section>
 
   <!-- Serious Bananas -->
@@ -1091,7 +1216,7 @@
         </div>
         <div class="layer layer-2">
           <div class="layer-header">
-            <span class="layer-name">Skills (24 auto-loaders)</span>
+            <span class="layer-name">Skills (26 auto-loaders)</span>
             <span class="layer-badge">On demand</span>
           </div>
           <p class="layer-desc">Cheat sheets with correct syntax, config, and patterns. Loaded when the topic comes up. Prevents hallucinated details. Includes 10 persona prompts.</p>
@@ -1126,7 +1251,7 @@
       </div>
       <div class="card">
         <h4>4. Workflow Skills</h4>
-        <p><code>/serious-init</code>, <code>/serious-conversation</code>, <code>/serious-research</code>, <code>/serious-mock-ups</code>, <code>/serious-plan</code>, <code>/serious-code</code>, <code>/serious-review</code>, and <code>/serious-bananas</code> load when invoked — providing step-by-step protocols from ideation through mock-ups, implementation, review, and image generation.</p>
+        <p><code>/serious-init</code>, <code>/serious-conversation</code>, <code>/serious-research</code>, <code>/serious-mock-ups</code>, <code>/serious-plan</code>, <code>/serious-code</code>, <code>/serious-review</code>, <code>/serious-status</code>, <code>/serious-abandon</code>, and <code>/serious-bananas</code> load when invoked — providing step-by-step protocols from ideation through mock-ups, implementation, review, status tracking, sub-workflow management, and image generation.</p>
       </div>
     </div>
   </section>
@@ -1201,8 +1326,8 @@ cp /path/to/template/_implementation_plan_template_v6.md ./_implementation_plan_
 
   <!-- Skills Table -->
   <section>
-    <h2>All 26 Skills</h2>
-    <p>7 workflow skills you invoke directly + 17 feature cheat sheets that auto-load when the topic comes up. Plus 10 built-in persona prompts and 5 Agent Teams agents.</p>
+    <h2>All 28 Skills</h2>
+    <p>9 workflow skills you invoke directly + 17 feature cheat sheets that auto-load when the topic comes up. Plus 10 built-in persona prompts and 5 Agent Teams agents.</p>
 
     <table>
       <thead>
@@ -1221,6 +1346,8 @@ cp /path/to/template/_implementation_plan_template_v6.md ./_implementation_plan_
         <tr><td><code>serious-code</code></td><td><span class="tag tag-workflow">workflow</span></td><td>execute plan, start coding, implement</td></tr>
         <tr><td><code>serious-review</code></td><td><span class="tag tag-workflow">workflow</span></td><td>review, QA, defect capture, feedback</td></tr>
         <tr><td><code>serious-bananas</code></td><td><span class="tag tag-workflow">workflow</span></td><td>generate image, generate diagram, Nano Banana</td></tr>
+        <tr><td><code>serious-status</code></td><td><span class="tag tag-workflow">workflow</span></td><td>workflow status, where am I, what am I working on</td></tr>
+        <tr><td><code>serious-abandon</code></td><td><span class="tag tag-workflow">workflow</span></td><td>abandon, bail out, go back to parent</td></tr>
         <tr><td><code>hooks</code></td><td><span class="tag tag-feature">feature</span></td><td>lifecycle events, pre/post tool use, automation</td></tr>
         <tr><td><code>skills-and-commands</code></td><td><span class="tag tag-feature">feature</span></td><td>custom commands, SKILL.md files</td></tr>
         <tr><td><code>mcp-integration</code></td><td><span class="tag tag-feature">feature</span></td><td>MCP servers, external tools, databases</td></tr>

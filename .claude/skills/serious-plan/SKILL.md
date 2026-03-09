@@ -23,14 +23,39 @@ The full v6 implementation plan template lives at:
 
 **Goal:** Figure out what input material exists and meet the user where they are.
 
+### 0-pre. Check for active parent workflow
+
+Before anything else, check for active workflow breadcrumbs in the project root:
+
+1. **Scan for breadcrumbs:** Check for `.active-conversation`, `.active-research`, `.active-mock-ups`, `.active-plan`, `.active-code`, `.active-review`
+2. **Validate each:** For each breadcrumb found, verify the target folder exists and contains a valid output file with parseable YAML frontmatter. If not, delete the stale breadcrumb with a warning: "Removed stale .active-{skill} breadcrumb (target folder missing)."
+3. **If no valid breadcrumbs exist:** Skip the rest of 0-pre. Proceed to Phase 0a as normal (top-level workflow).
+4. **Determine the deepest active workflow:** If multiple valid breadcrumbs exist, follow `parent:` chains in each breadcrumb's target frontmatter. The workflow with the longest parent chain is the deepest. If multiple independent top-level breadcrumbs exist (none with parent fields), use the most recently modified breadcrumb as the comparison target.
+5. **Compare pipeline order:** This skill is `plan` (order 4). The deepest active skill is order {M}.
+   - **Pipeline order:** conversation(1) → research(2) → mock-ups(3) → plan(4) → code(5) → review(6)
+   - If 4 > {M}: this is **advancing**. Skip the rest of 0-pre, proceed to Phase 0a as normal. Both breadcrumbs will coexist. Advancing means normal behavior — no new logic needed. The skill uses its existing folder rules. No parent field is set. No prompt is shown. No sub/ folder is created. Both the new skill's breadcrumb AND the existing skill's breadcrumb coexist.
+   - If 4 ≤ {M}: this is **branching**. Continue to step 6.
+6. **Branching prompt:**
+   - **Cross-skill:** "I see you're in /serious-{active_skill} for {slug}. This looks like it needs its own workflow. Link as a sub-workflow? (Y/N)"
+   - **Same-skill (plan → plan):** "I see you're already in /serious-plan for {slug}. Start a nested /serious-plan within it? (Y/N)" Note: the existing `.active-plan` breadcrumb will be overwritten with the new sub-workflow's path.
+7. **If YES (sub-workflow):**
+   - Compute proposed depth: follow `parent:` chain from the proposed parent's frontmatter, count hops until no `parent:` field, add 1.
+   - **Depth guard:** If proposed depth ≥ 3, warn: "This would be depth {N} (3+ levels deep). Are you sure? (Y/N)". If No: do not create the sub-workflow, return without starting the new skill.
+   - Set `parent` in this workflow's frontmatter to the parent's output folder path
+   - Create output at `{parent_folder}/sub/{slug}/` instead of the normal location
+8. **If NO:** Create output in normal location, no parent field set.
+9. **Same-skill restoration:** On wrap-up/completion of this skill, if frontmatter has a `parent:` field and the parent was the same skill type (plan), restore the breadcrumb: write `.active-plan` with the parent's folder path as content. This works even if the parent was itself a sub-workflow (depth 2), because the parent's frontmatter has its own parent reference, and the breadcrumb just needs to point to the immediate parent.
+
 ### 0a. Auto-detect existing research
 
 Before asking anything, scan the project:
 
-- Check `Research/bugs/*/research.md`, `Research/features/*/research.md`, `Research/exploratory/*/research.md` for files with `Status: Complete`
+- Check `Research/bugs/*/research.md`, `Research/features/*/research.md`, `Research/exploratory/*/research.md` for files with `status: done` in YAML frontmatter (primary), with fallback to `**Status: Complete**` bold headers for legacy files
+- Check sub-workflow paths: `Research/**/sub/*/research.md` (same dual-check)
 - Check legacy paths: `Bugs/*/research.md`, `New Features/*/research.md`
 - Check for `synthesis.md` files (produced by deep-mode `/serious-research`)
 - Check for `mock-ups/mock-up-summary.md` alongside research files (produced by `/serious-mock-ups`)
+- Check sub-workflow mock-ups: `Research/**/sub/*/mock-ups/mock-up-summary.md`
 - If `$ARGUMENTS` specifies a path, use that directly and skip to Phase 1
 
 ### 0b. Present what you found
@@ -84,6 +109,8 @@ If multiple plans: identify the clusters and propose them to the user. Each clus
 
 ### 0e. Determine the plan location
 
+**Write `.active-plan`** to the project root FIRST (before creating the plan file). Content is the relative path from project root to the plan folder.
+
 **Single plan:**
 - **If input came from `/serious-research`:** Create `implementation_plan.md` in the same folder as the research.
 - **If input came from a PRD or description:** Create a folder under `Research/features/{slug}/` (or `bugs/` or `exploratory/` as appropriate), put the plan there, and save the input material alongside it for traceability.
@@ -110,6 +137,18 @@ Research/features/{slug}/
 ## Phase 1: Plan Generation
 
 Read the v6 template file first. If a `mock-ups/mock-up-summary.md` exists alongside the research, read it too — use the component inventory for task breakdown, design decisions for acceptance criteria, screen flow for navigation tasks, and responsive notes for breakpoint tasks.
+
+The implementation_plan.md (or phase_map.md for multi-plan) MUST start with YAML frontmatter containing all 5 standard fields:
+
+```yaml
+---
+skill: serious-plan
+slug: {slug}
+status: active
+parent:
+created: {date}
+---
+```
 
 Then work through each section in order, filling it in based on the input material.
 
@@ -348,6 +387,8 @@ Before presenting to the user, verify each plan:
 ---
 
 ## Phase 3: Present to User
+
+After the plan is presented and acknowledged, set `status: done` in the YAML frontmatter. Then remove the `.active-plan` breadcrumb file from the project root.
 
 **Single plan — report:**
 - The plan file path

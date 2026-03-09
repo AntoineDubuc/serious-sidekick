@@ -26,6 +26,30 @@ If `$ARGUMENTS` is provided, treat it as context about what to review (e.g., a f
 
 **Goal:** Figure out what the user wants to review without making them explain what just happened.
 
+### 0-pre. Check for active parent workflow
+
+Before anything else, check for active workflow breadcrumbs in the project root:
+
+1. **Scan for breadcrumbs:** Check for `.active-conversation`, `.active-research`, `.active-mock-ups`, `.active-plan`, `.active-code`, `.active-review`
+2. **Validate each:** For each breadcrumb found, verify the target folder exists and contains a valid output file with parseable YAML frontmatter. If not, delete the stale breadcrumb with a warning: "Removed stale .active-{skill} breadcrumb (target folder missing)."
+3. **If no valid breadcrumbs exist:** Skip the rest of 0-pre. Proceed to Phase 0a as normal (top-level workflow).
+4. **Determine the deepest active workflow:** If multiple valid breadcrumbs exist, follow `parent:` chains in each breadcrumb's target frontmatter. The workflow with the longest parent chain is the deepest. If multiple independent top-level breadcrumbs exist (none with parent fields), use the most recently modified breadcrumb as the comparison target.
+5. **Compare pipeline order:** This skill is `review` (order 6). The deepest active skill is order {M}.
+   - **Pipeline order:** conversation(1) → research(2) → mock-ups(3) → plan(4) → code(5) → review(6)
+   - If 6 > {M}: this is **advancing**. Skip the rest of 0-pre, proceed to Phase 0a as normal. Both breadcrumbs will coexist. Advancing means normal behavior — no new logic needed. The skill uses its existing folder rules. No parent field is set. No prompt is shown. No sub/ folder is created. Both the new skill's breadcrumb AND the existing skill's breadcrumb coexist.
+   - If 6 ≤ {M}: this is **branching**. Continue to step 6.
+   - **Note:** Since review is order 6 (the highest), advancing applies when any other skill is active (orders 1-5). Branching only occurs for same-skill (review → review), since no skill has a higher order than 6.
+6. **Branching prompt:**
+   - **Cross-skill:** "I see you're in /serious-{active_skill} for {slug}. This looks like it needs its own workflow. Link as a sub-workflow? (Y/N)"
+   - **Same-skill (review → review):** "I see you're already in /serious-review for {slug}. Start a nested /serious-review within it? (Y/N)" Note: the existing `.active-review` breadcrumb will be overwritten with the new sub-workflow's path.
+7. **If YES (sub-workflow):**
+   - Compute proposed depth: follow `parent:` chain from the proposed parent's frontmatter, count hops until no `parent:` field, add 1.
+   - **Depth guard:** If proposed depth ≥ 3, warn: "This would be depth {N} (3+ levels deep). Are you sure? (Y/N)". If No: do not create the sub-workflow, return without starting the new skill.
+   - Set `parent` in this workflow's frontmatter to the parent's output folder path
+   - Create output at `{parent_folder}/sub/{slug}/` instead of the normal location
+8. **If NO:** Create output in normal location, no parent field set.
+9. **Same-skill restoration:** On wrap-up/completion of this skill, if frontmatter has a `parent:` field and the parent was the same skill type (review), restore the breadcrumb: write `.active-review` with the parent's folder path as content. This works even if the parent was itself a sub-workflow (depth 2), because the parent's frontmatter has its own parent reference, and the breadcrumb just needs to point to the immediate parent.
+
 ### 0a. Scan for recent serious work
 
 Check the current project for evidence of recent serious workflow output:
@@ -34,9 +58,10 @@ Check the current project for evidence of recent serious workflow output:
    - Recent git commits with serious-code patterns
    - Implementation plan files (`_implementation_plan_*.md`)
    - Any `Research/` folders with recent modifications
-2. **Research output** — `Research/` folders with `research.md` or `report.html`
-3. **Plans** — Implementation plan files
-4. **Conversation artifacts** — `Research/conversations/`
+   - Sub-workflow paths: `Research/**/sub/*/execution_log.md`
+2. **Research output** — `Research/` folders with `research.md` or `report.html`, including `Research/**/sub/*/research.md`
+3. **Plans** — Implementation plan files, including `Research/**/sub/*/implementation_plan.md`
+4. **Conversation artifacts** — `Research/conversations/`, including `Research/**/sub/*/conversation.md`
 
 ### 0b. Present what was found
 
@@ -74,13 +99,23 @@ QA/
 - `{descriptive-slug}` — short, descriptive, kebab-case, derived from what's being reviewed (e.g., `auth-flow-review`, `notification-system-v2`).
 - If the slug isn't obvious, ask the user.
 
-### 1b. Initialize findings.md
+### 1b. Create breadcrumb
+
+**Write `.active-review`** to the project root FIRST (before creating findings.md). Content is the relative path from project root to the review folder (e.g., `QA/auth-flow-review`).
+
+### 1c. Initialize findings.md
 
 ```markdown
+---
+skill: serious-review
+slug: {slug}
+status: active
+parent:
+created: {date}
+reviewing: {what's being reviewed — feature name, plan reference, commit range}
+---
+
 # Review Findings: {Title}
-**Date:** {date}
-**Reviewing:** {what's being reviewed — feature name, plan reference, commit range}
-**Status:** In Progress
 
 ---
 
@@ -88,6 +123,77 @@ QA/
 
 <!-- Issues are logged below as they're reported. Each gets a sequential ID. -->
 ```
+
+---
+
+## Phase 1.5: Build Gate
+
+**Goal:** Before reviewing any code, verify the project actually compiles and runs. This is mandatory and cannot be skipped.
+
+A review that only runs static analysis on individual files can miss that the project doesn't compile at all. The Build Gate catches this.
+
+### 1.5a. Determine the build command
+
+Read the implementation plan's Project Configuration section for `{BUILD_CMD}`, `{DEV_SERVER_CMD}`, or `{TEST_CMD}`. If no plan exists, detect from the project:
+
+| Project type | Build command | Run command |
+|-------------|---------------|-------------|
+| Flutter | `flutter build apk --debug` or `flutter build ios --debug --no-codesign` | `flutter run` |
+| Node.js | `npm run build` or `yarn build` | `npm start` or `npm run dev` |
+| Python | `pip install -e .` or `python -m py_compile` | `python -m {module}` |
+| Go | `go build ./...` | `go run .` |
+| Rust | `cargo build` | `cargo run` |
+| Generic | Look for `Makefile`, `build.sh`, or CI config | — |
+
+If you can't determine the build command, ask the user: "What command builds this project?"
+
+### 1.5b. Run the full build
+
+Run the build command. This is a **full project build**, not analysis of specific files.
+
+- Do NOT use `--filter`, `--target`, or file-specific flags
+- Do NOT substitute a linter/analyzer for the build command — they check different things (e.g., `flutter analyze` vs `flutter build`, `eslint` vs `tsc`, `pylint` vs `python -m py_compile`)
+- If the project has multiple build targets (iOS, Android, web, etc.), build at least one
+
+### 1.5c. Evaluate the result
+
+**If the build succeeds:** Note it in findings.md as a passing gate and proceed to Phase 2.
+
+```markdown
+## Build Gate
+- **Status:** ✅ PASS
+- **Command:** {command run}
+- **Output:** Build completed successfully
+```
+
+**If the build fails:** This is automatically **REVIEW-001**, severity **Critical**, type **Bug**.
+
+```markdown
+## Build Gate
+- **Status:** ❌ FAIL
+- **Command:** {command run}
+- **Errors:** {build error output}
+
+### REVIEW-001: Project does not compile
+- **Type:** Bug
+- **Severity:** Critical
+- **Location:** {files referenced in build errors}
+- **Description:** Full project build fails. No features can be verified on a real device until this is fixed.
+- **Build output:** {relevant error lines}
+```
+
+**After a build failure:**
+1. Log REVIEW-001 to findings.md immediately
+2. Tell the user: "The project doesn't build. This is Critical finding REVIEW-001. All other review findings are secondary until this is fixed."
+3. Ask: "Want to continue reviewing code anyway (findings will be logged but the app can't be tested), or fix the build first?"
+4. If the user continues: proceed to Phase 2, but add a banner to the review summary: "⚠️ BUILD BROKEN — all findings are from static analysis only, not verified in a running app."
+
+### 1.5d. Optionally launch the app
+
+If the build succeeds and a run command is available, attempt to launch:
+- Verify the app starts without immediate crashes
+- Note any startup errors as findings
+- This step is best-effort — some projects can't be launched in a review context (headless servers, CLI tools, etc.)
 
 ---
 
@@ -232,7 +338,7 @@ Read all of `findings.md` and produce a synthesis:
 
 ### 5b. Update findings.md
 
-Set **Status** to `Complete`. Add a footer with totals.
+Set `status: done` in the YAML frontmatter of `findings.md`. Then remove the `.active-review` breadcrumb file from the project root. Add a footer with totals.
 
 ---
 
@@ -277,6 +383,8 @@ If `/serious-review` is invoked and a `QA/{slug}/` folder already exists with an
 4. **Classify honestly.** Don't downgrade severity to make the output look better.
 5. **The summary is research input.** Format it so `/serious-research` can consume it directly.
 6. **Respect the user's time.** Phase 0 and 1 should take under 2 minutes. The user came here to give feedback, not answer setup questions.
+7. **The Build Gate is not optional.** Always run a full project build before any code-level review. A linter is not a compiler (`flutter analyze` ≠ `flutter build`, `eslint` ≠ `tsc`, `pylint` ≠ `python -m py_compile`). Linting individual files is not compiling the project. If you can't build, say so — don't silently fall back to static analysis only.
+8. **"Pre-existing" doesn't mean "ignore."** If the build fails due to pre-existing errors, that's still a Critical finding. The app doesn't compile — nothing else can be verified on a real device. Log it.
 
 ---
 

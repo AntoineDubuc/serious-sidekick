@@ -129,6 +129,29 @@ Default to 3 threads. Use 4-5 only for complex multi-dimensional topics.
 
 **Goal:** Create the folder structure and initialize all files.
 
+### 0-pre. Check for active parent workflow
+
+Before anything else, check for active workflow breadcrumbs in the project root:
+
+1. **Scan for breadcrumbs:** Check for `.active-conversation`, `.active-research`, `.active-mock-ups`, `.active-plan`, `.active-code`, `.active-review`
+2. **Validate each:** For each breadcrumb found, verify the target folder exists and contains a valid output file with parseable YAML frontmatter. If not, delete the stale breadcrumb with a warning: "Removed stale .active-{skill} breadcrumb (target folder missing)."
+3. **If no valid breadcrumbs exist:** Skip the rest of 0-pre. Proceed to Phase 1a as normal (top-level workflow).
+4. **Determine the deepest active workflow:** If multiple valid breadcrumbs exist, follow `parent:` chains in each breadcrumb's target frontmatter. The workflow with the longest parent chain is the deepest. If multiple independent top-level breadcrumbs exist (none with parent fields), use the most recently modified breadcrumb as the comparison target.
+5. **Compare pipeline order:** This skill is `research` (order 2). The deepest active skill is order {M}.
+   - **Pipeline order:** conversation(1) → research(2) → mock-ups(3) → plan(4) → code(5) → review(6)
+   - If 2 > {M}: this is **advancing**. Skip the rest of 0-pre, proceed to Phase 1a as normal. Both breadcrumbs will coexist. Advancing means normal behavior — no new logic needed. The skill uses its existing folder rules. No parent field is set. No prompt is shown. No sub/ folder is created. Both the new skill's breadcrumb AND the existing skill's breadcrumb coexist.
+   - If 2 ≤ {M}: this is **branching**. Continue to step 6.
+6. **Branching prompt:**
+   - **Cross-skill:** "I see you're in /serious-{active_skill} for {slug}. This looks like it needs its own workflow. Link as a sub-workflow? (Y/N)"
+   - **Same-skill (research → research):** "I see you're already in /serious-research for {slug}. Start a nested /serious-research within it? (Y/N)" Note: the existing `.active-research` breadcrumb will be overwritten with the new sub-workflow's path.
+7. **If YES (sub-workflow):**
+   - Compute proposed depth: follow `parent:` chain from the proposed parent's frontmatter, count hops until no `parent:` field, add 1.
+   - **Depth guard:** If proposed depth ≥ 3, warn: "This would be depth {N} (3+ levels deep). Are you sure? (Y/N)". If No: do not create the sub-workflow, return without starting the new skill.
+   - Set `parent` in this workflow's frontmatter to the parent's output folder path
+   - Create output at `{parent_folder}/sub/{slug}/` instead of the normal location
+8. **If NO:** Create output in normal location, no parent field set.
+9. **Same-skill restoration:** On wrap-up/completion of this skill, if frontmatter has a `parent:` field and the parent was the same skill type (research), restore the breadcrumb: write `.active-research` with the parent's folder path as content. This works even if the parent was itself a sub-workflow (depth 2), because the parent's frontmatter has its own parent reference, and the breadcrumb just needs to point to the immediate parent.
+
 ### 1a. Create the folder structure
 
 ```
@@ -144,7 +167,7 @@ Research/
 - Create `Research/` and the relevant subdirectory at the project root if they don't exist.
 - `{descriptive-slug}` should be short, descriptive, kebab-case (e.g., `auth-token-expiry`, `notification-architecture-eval`).
 - If the slug isn't obvious from context, ask the user.
-- **Write `.active-research`** to the project root containing the full path to the research folder. The Stop hook reads this to know where to append to `notebook.md`.
+- **Write `.active-research`** to the project root FIRST (before creating research.md). Content is the relative path from project root to the research folder (e.g., `Research/features/auth-token-expiry`). The Stop hook reads this to know where to append to `notebook.md`.
 
 ### 1b. Initialize common files
 
@@ -172,13 +195,18 @@ Research/
 **research.md** — The polished deliverable (built incrementally):
 
 ```markdown
-# {Research Title}
+---
+skill: serious-research
+slug: {slug}
+status: active
+parent:
+created: {date}
+classification: Bug / Feature / Exploratory
+scope: Online only / Codebase only / Both
+mode: Quick / Deep
+---
 
-**Date:** {date}
-**Classification:** Bug / Feature / Exploratory
-**Scope:** Online only / Codebase only / Both
-**Mode:** Quick / Deep
-**Status:** In Progress
+# {Research Title}
 
 ## Summary
 {To be written after research is complete}
@@ -758,7 +786,7 @@ Report to the user:
 - Personas that reviewed
 - Recommended next step (usually: `/serious-plan`)
 
-**Cleanup:** Remove the `.active-research` breadcrumb file from the project root.
+**Cleanup:** Set `status: done` in the YAML frontmatter of `research.md`. Then remove the `.active-research` breadcrumb file from the project root.
 
 ---
 

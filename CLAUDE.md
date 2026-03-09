@@ -37,6 +37,38 @@ This project includes six workflow skills for structured development:
 
 **Typical workflow:** `/serious-conversation` → `/serious-research` → `/serious-mock-ups` → `/serious-plan` → `/serious-code` → done
 
+## Workflow Frontmatter Standard
+
+All skill primary output files use YAML frontmatter for workflow tracking:
+
+```yaml
+---
+skill: serious-research
+slug: auth-token-expiry
+status: active
+parent: Research/features/auth
+created: 2026-03-08
+---
+```
+
+**Required fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `skill` | string | Which `/serious-*` skill created this file |
+| `slug` | string | Kebab-case workflow identifier |
+| `status` | enum | `active`, `done`, `abandoned` |
+| `parent` | string | Relative path from project root to parent workflow folder. Absent for top-level workflows. |
+| `created` | date | ISO date when the workflow started |
+
+**Pipeline order:** `conversation(1) → research(2) → mock-ups(3) → plan(4) → code(5) → review(6)`
+
+**Advancing vs branching:**
+- New skill order **>** active skill order = **advancing** (no prompt, normal behavior)
+- New skill order **≤** active skill order = **branching** (prompt for sub-workflow linking)
+
+**Breadcrumb files:** Each skill writes `.active-{skill-name}` to the project root at startup (content = relative path to output folder). Removed at completion. Used by `/serious-status` and parent auto-detection.
+
 ## Claude Code Feature Reference
 
 Detailed feature documentation lives in `./Claude Code Features/`. Before answering questions about Claude Code capabilities, read the relevant `research.md` file.

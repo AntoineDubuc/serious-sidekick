@@ -29,6 +29,30 @@ Use this BEFORE research — for ideation, understanding, brainstorming, or expl
 
 ## Phase 0: Discovery
 
+### 0-pre. Check for active parent workflow
+
+Before anything else, check for active workflow breadcrumbs in the project root:
+
+1. **Scan for breadcrumbs:** Check for `.active-conversation`, `.active-research`, `.active-mock-ups`, `.active-plan`, `.active-code`, `.active-review`
+2. **Validate each:** For each breadcrumb found, verify the target folder exists and contains a valid output file with parseable YAML frontmatter. If not, delete the stale breadcrumb with a warning: "Removed stale .active-{skill} breadcrumb (target folder missing)."
+3. **If no valid breadcrumbs exist:** Skip the rest of 0-pre. Proceed to Phase 0a as normal (top-level workflow).
+4. **Determine the deepest active workflow:** If multiple valid breadcrumbs exist, follow `parent:` chains in each breadcrumb's target frontmatter. The workflow with the longest parent chain is the deepest. If multiple independent top-level breadcrumbs exist (none with parent fields), use the most recently modified breadcrumb as the comparison target.
+5. **Compare pipeline order:** This skill is `conversation` (order 1). The deepest active skill is order {M}.
+   - **Pipeline order:** conversation(1) → research(2) → mock-ups(3) → plan(4) → code(5) → review(6)
+   - If 1 > {M}: this is **advancing**. Skip the rest of 0-pre, proceed to Phase 0a as normal. Both breadcrumbs will coexist.
+   - If 1 ≤ {M}: this is **branching**. Continue to step 6.
+   - **Note:** Since conversation is order 1 (the lowest), it can never be greater than any active skill's order. Advancing never applies to conversation — it will always branch when another workflow is active. The only branching case is same-skill (conversation → conversation).
+6. **Branching prompt:**
+   - **Cross-skill:** "I see you're in /serious-{active_skill} for {slug}. This looks like it needs its own workflow. Link as a sub-workflow? (Y/N)"
+   - **Same-skill (conversation → conversation):** "I see you're already in /serious-conversation for {slug}. Start a nested /serious-conversation within it? (Y/N)" Note: the existing `.active-conversation` breadcrumb will be overwritten with the new sub-workflow's path.
+7. **If YES (sub-workflow):**
+   - Compute proposed depth: follow `parent:` chain from the proposed parent's frontmatter, count hops until no `parent:` field, add 1.
+   - **Depth guard:** If proposed depth ≥ 3, warn: "This would be depth {N} (3+ levels deep). Are you sure? (Y/N)". If No: do not create the sub-workflow, return without starting the new skill.
+   - Set `parent` in this workflow's frontmatter to the parent's output folder path
+   - Create output at `{parent_folder}/sub/{slug}/` instead of the normal location
+8. **If NO:** Create output in normal location, no parent field set.
+9. **Same-skill restoration:** On wrap-up/completion of this skill, if frontmatter has a `parent:` field and the parent was the same skill type (conversation), restore the breadcrumb: write `.active-conversation` with the parent's folder path as content. This works even if the parent was itself a sub-workflow (depth 2), because the parent's frontmatter has its own parent reference, and the breadcrumb just needs to point to the immediate parent.
+
 ### 0a. Ask two questions
 
 **Question 1:** "What do you want to talk about?"
@@ -78,11 +102,29 @@ Research/conversations/{slug}/
 
 Copy each selected persona's `prompt.md` from the built-in templates (or from the library for saved customs). For new custom personas, generate using the template (see Custom Personas below).
 
+Initialize `conversation.md` with YAML frontmatter:
+
+```markdown
+---
+skill: serious-conversation
+slug: {slug}
+status: active
+parent:
+created: {YYYY-MM-DD}
+---
+
+# Conversation: {Topic}
+
+...
+```
+
+The `parent` field is left empty for now (populated by Phase 0-pre if this is a sub-workflow).
+
 Tell the user: **"I've set up the panel. The persona prompts are in `personas/`. You can review or edit them before we start. Say 'go' when ready."**
 
 ### 0e. Write the `.active-conversation` breadcrumb
 
-Write the full path to the conversation folder to `.active-conversation` in the project root. The Stop hook reads this to know where to append the conversation log.
+Write the `.active-conversation` breadcrumb FIRST (before creating conversation.md). Content is the relative path from project root to the conversation folder (e.g., `Research/conversations/auth-discussion`). The Stop hook reads this to know where to append the conversation log.
 
 ---
 
@@ -256,7 +298,7 @@ If yes, copy their `prompt.md` to `Research/conversations/_personas/{name}/promp
 
 ### 3c. Clean up
 
-Remove the `.active-conversation` breadcrumb file from the project root.
+Set `status: done` in the YAML frontmatter of `conversation.md`. Then remove the `.active-conversation` breadcrumb file from the project root.
 
 Report:
 - The conversation folder path

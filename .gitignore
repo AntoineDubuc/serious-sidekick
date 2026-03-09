@@ -15,5 +15,5 @@ linkedin_images/
 .DS_Store
 Thumbs.db
 
-# Research breadcrumb
-.active-research
+# Workflow breadcrumbs (active workflow tracking)
+.active-*
