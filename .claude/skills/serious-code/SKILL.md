@@ -364,7 +364,8 @@ After the 4 verification agents return (Step 2), but BEFORE marking the task com
 COMPLETION GATE — Task {task_id}: {task_name}
 
 You are an independent verifier. You did NOT implement this code.
-Your job is to verify that every acceptance criterion has implementing code.
+Your job is to verify that every acceptance criterion has implementing code
+AND that the code is reachable (not dead code).
 
 PLAN FILE: {plan_file_path}
 TASK NUMBER: {task_id}
@@ -376,16 +377,44 @@ INSTRUCTIONS:
    a. Search the codebase for implementing code (grep, read files)
    b. Determine: does code exist that implements this criterion?
    c. Report: PASS (with file:line evidence) or FAIL (not found)
-3. Output a structured report with every AC, its verdict, and evidence
+3. For EACH "visible to user" acceptance criterion, run the
+   REACHABILITY CHECK (see below)
+4. Output a structured report with every AC, its verdict, and evidence
+
+REACHABILITY CHECK (for "visible to user" ACs):
+Code existing in a file is NOT enough. The code must be WIRED IN.
+For each new component/widget/view/endpoint:
+   a. Find the new component (class, function, widget, route handler)
+   b. Find its PARENT CONTAINER — the file that should render/call/mount it
+   c. Verify the parent container IMPORTS the new component
+   d. Verify the parent container INSTANTIATES or CALLS the new component
+   e. If the new component REPLACES an old one, verify the old one is
+      REMOVED from the parent container
+   f. Report: WIRED (with parent file:line showing import + usage)
+      or DEAD CODE (component exists but no parent references it)
+
+DEAD CODE = FAIL. A component that exists but is never rendered,
+called, or mounted is not implemented — it is dead code.
+
+Common dead-code patterns to catch:
+- Widget file created but never added to a parent widget tree
+- API route handler created but never registered in the router
+- Service class created but never injected/instantiated
+- React component created but never imported in a page/layout
+- Database migration created but never run
+- CSS/style file created but never imported
 
 RULES:
 - Do NOT trust any implementer self-report
 - Do NOT accept "INFRASTRUCTURE READY", "DEFERRED", "PARTIAL",
   or any status other than PASS or FAIL
-- Either implementing code exists, or it doesn't
+- Either implementing code exists AND is reachable, or it doesn't
 - If you cannot find implementing code, it is a FAIL
+- If code exists but is not wired into its parent, it is a FAIL
 - Tests passing is NOT evidence of implementation — the agent may
   have only written tests for the parts it built
+- A unit test for a dead-code component will pass. That proves
+  nothing about whether the user can see/use the component.
 ```
 
 **If ANY AC is FAIL:**
@@ -399,6 +428,7 @@ RULES:
 - Write `gate_passed.md` to `evidence/task_{NN}/` with:
   - Timestamp
   - Full AC-by-AC verification log (criterion text, PASS/FAIL, file:line evidence)
+  - For visible-to-user ACs: parent file:line showing import + instantiation
   - Count: {N}/{N} passed
 - Only THEN may the task be marked `completed` in progress.md
 
@@ -525,3 +555,4 @@ If `/serious-code --resume` is invoked or the orchestrator detects an existing `
 11. **The completion report is not optional.** Generate `completion_report.md` with full evidence summary. If the session is interrupted, resume must generate it.
 12. **The Completion Gate is enforced by a stop hook.** The hook at `.claude/skills/serious-code/hooks/verify-completion-gate.sh` checks that every task evidence directory contains `gate_passed.md`. If any are missing, the session cannot exit (exit code 2). You MUST run Step 2.5 for every task. There is no way around this — the hook runs outside your control.
 13. **"INFRASTRUCTURE READY" is not a valid status.** Every acceptance criterion is either PASS or FAIL. There is no partial credit. If code doesn't exist for an AC, it's a FAIL, even if related infrastructure was built.
+14. **Dead code is not implementation.** A widget/component/handler that exists in its own file but is never imported, instantiated, or mounted by a parent container is dead code. The Completion Gate must verify reachability for all "visible to user" ACs: find the parent container, confirm it imports the new component, confirm it instantiates/renders it, confirm any replaced component is removed. Dead code = FAIL.

@@ -1472,6 +1472,8 @@
       <li><strong>Evidence generation</strong> — every task produces implementation, review, test, runtime, and QA reports</li>
       <li><strong>Failure handling</strong> — failed plans stop immediately; other parallel plans continue; user decides to fix, skip, rollback, or abort</li>
       <li><strong>Resume mode</strong> — reads <code>execution_log.md</code> + <code>progress.md</code> to find the stopping point and pick up where it left off</li>
+      <li><strong>Completion Gate</strong> — independent sub-agent verifies every acceptance criterion has implementing code. Enforced by a stop hook (session cannot exit without <code>gate_passed.md</code> for each task)</li>
+      <li><strong>Dead-code detection</strong> — the Completion Gate runs a reachability check for all "visible to user" ACs: finds the new component, verifies the parent container imports and instantiates it, verifies any replaced component is removed. A widget that exists but is never rendered = FAIL</li>
       <li><strong>Completion report</strong> — generated at end of execution with full evidence summary</li>
       <li><strong>Stop hook tracking</strong> — uses <code>.active-code</code> breadcrumb to track <code>execution_log.md</code></li>
     </ul>

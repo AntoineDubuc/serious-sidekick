@@ -799,7 +799,7 @@
         </div>
         <div class="cmd-card c-green reveal delay-3">
           <div class="cmd-name">/serious-code</div>
-          <div class="cmd-desc">Executes plans with 5 Agent Teams agents per task: implementer, reviewer, test runner, runtime checker, QA.</div>
+          <div class="cmd-desc">Executes plans with 5 Agent Teams agents per task. Completion Gate verifies every AC has reachable code &mdash; dead code (built but never wired in) is a FAIL.</div>
           <div class="cmd-tag t-green">Execution</div>
         </div>
         <div class="cmd-card c-purple reveal">
@@ -1089,7 +1089,7 @@
           <div class="step-num" style="background:var(--green-bg);color:var(--green);">D</div>
           <div class="step-content">
             <h3>Have a plan? Build it.</h3>
-            <p><code>/serious-code</code> &mdash; TDD execution with 5 verification agents per task.</p>
+            <p><code>/serious-code</code> &mdash; TDD execution with 5 verification agents + Completion Gate that catches dead code.</p>
           </div>
         </div>
         <div class="step reveal">
