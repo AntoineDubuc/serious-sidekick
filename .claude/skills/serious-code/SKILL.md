@@ -2,19 +2,6 @@
 name: serious-code
 description: "Execute implementation plans from /serious-plan with TDD, parallel agents, and verification. Use when the user says 'serious code', 'execute the plan', 'implement the plan', 'start coding', or wants to move from planning to implementation."
 user-invocable: true
-hooks:
-  Stop:
-    - matcher: "*"
-      hooks:
-        - type: command
-          command: "bash .claude/skills/serious-code/hooks/verify-completion-gate.sh"
-          timeout: 30
-        - type: prompt
-          prompt: |
-            If a serious code session is active (check for .active-code file in project root),
-            read the execution folder path from it, then update execution_log.md with the latest
-            status: which phase is active, which plans are running/completed/failed, and any
-            errors encountered. Include timestamp. Keep it concise.
 ---
 
 # Serious Code
@@ -432,7 +419,7 @@ RULES:
   - Count: {N}/{N} passed
 - Only THEN may the task be marked `completed` in progress.md
 
-> **The stop hook at `.claude/skills/serious-code/hooks/verify-completion-gate.sh` enforces this.** If any task evidence directory exists without `gate_passed.md`, the session cannot exit (hook returns exit code 2). The agent is forced to run the gate.
+> **A stop hook enforces this.** The hook is registered in `.claude/settings.json` (installed by `/serious-init`) and runs `verify-completion-gate.sh`. If any task evidence directory exists without `gate_passed.md`, the session cannot exit (hook returns exit code 2). The agent is forced to run the gate.
 
 ### Step 3: Evaluate
 
@@ -553,6 +540,6 @@ If `/serious-code --resume` is invoked or the orchestrator detects an existing `
 9. **When tests pass but the feature doesn't work, investigate the gap.** The gap is always in a layer tests don't cover — caches, indexes, visibility culling, event propagation, async timing, build caches. Add a test for the missing layer, fix it, document it.
 10. **Rebuild dependencies in monorepos.** After modifying a dependency package, rebuild it before testing dependents. Restart dev servers that consume the modified package. Stale builds are a silent failure source.
 11. **The completion report is not optional.** Generate `completion_report.md` with full evidence summary. If the session is interrupted, resume must generate it.
-12. **The Completion Gate is enforced by a stop hook.** The hook at `.claude/skills/serious-code/hooks/verify-completion-gate.sh` checks that every task evidence directory contains `gate_passed.md`. If any are missing, the session cannot exit (exit code 2). You MUST run Step 2.5 for every task. There is no way around this — the hook runs outside your control.
+12. **The Completion Gate is enforced by a stop hook.** The hook (registered in `.claude/settings.json` by `/serious-init`) checks that every task evidence directory contains `gate_passed.md`. If any are missing, the session cannot exit (exit code 2). You MUST run Step 2.5 for every task. There is no way around this — the hook runs outside your control.
 13. **"INFRASTRUCTURE READY" is not a valid status.** Every acceptance criterion is either PASS or FAIL. There is no partial credit. If code doesn't exist for an AC, it's a FAIL, even if related infrastructure was built.
 14. **Dead code is not implementation.** A widget/component/handler that exists in its own file but is never imported, instantiated, or mounted by a parent container is dead code. The Completion Gate must verify reachability for all "visible to user" ACs: find the parent container, confirm it imports the new component, confirm it instantiates/renders it, confirm any replaced component is removed. Dead code = FAIL.
