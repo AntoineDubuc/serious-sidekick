@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Serious Sidekick — Skills Guide</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --bg2: #ffffff;
+    --bg3: #f3f4f6;
+    --text: #111827;
+    --text2: #4b5563;
+    --text3: #9ca3af;
+    --accent: #6c5ce7;
+    --accent2: #a29bfe;
+    --accent-bg: rgba(108,92,231,0.08);
+    --border: #e5e7eb;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+    --card-hover: 0 8px 30px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+    --green: #10b981;
+    --green-bg: #ecfdf5;
+    --blue: #3b82f6;
+    --blue-bg: #eff6ff;
+    --amber: #f59e0b;
+    --amber-bg: #fffbeb;
+    --orange: #f97316;
+    --orange-bg: #fff7ed;
+    --purple: #8b5cf6;
+    --purple-bg: #f5f3ff;
+    --red: #ef4444;
+    --red-bg: #fef2f2;
+    --pink: #ec4899;
+    --pink-bg: #fdf2f8;
+    --glow: rgba(108,92,231,0.15);
+    --toggle-bg: #e5e7eb;
+    --term-bg: #1e1b2e;
+    --term-text: #e2e0f0;
+    --term-accent: #a29bfe;
+    --term-dim: #6b6890;
+    --term-green: #34d399;
+    --term-blue: #60a5fa;
+    --term-amber: #fbbf24;
+    --term-red: #f87171;
+  }
+  [data-theme="dark"] {
+    --bg: #09090b;
+    --bg2: #18181b;
+    --bg3: #1f1f23;
+    --text: #f4f4f5;
+    --text2: #a1a1aa;
+    --text3: #52525b;
+    --accent: #a29bfe;
+    --accent2: #6c5ce7;
+    --accent-bg: rgba(162,155,254,0.1);
+    --border: #27272a;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    --card-hover: 0 8px 30px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.2);
+    --green: #34d399;
+    --green-bg: rgba(16,185,129,0.1);
+    --blue: #60a5fa;
+    --blue-bg: rgba(59,130,246,0.1);
+    --amber: #fbbf24;
+    --amber-bg: rgba(245,158,11,0.1);
+    --orange: #fb923c;
+    --orange-bg: rgba(249,115,22,0.1);
+    --purple: #a78bfa;
+    --purple-bg: rgba(139,92,246,0.1);
+    --red: #f87171;
+    --red-bg: rgba(239,68,68,0.1);
+    --pink: #f472b6;
+    --pink-bg: rgba(236,72,153,0.1);
+    --glow: rgba(162,155,254,0.12);
+    --toggle-bg: #27272a;
+    --term-bg: #0d0b1a;
+    --term-text: #d0cee0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    transition: background 0.4s ease, color 0.3s ease;
+    overflow-x: hidden;
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── Theme Toggle ── */
+  .theme-toggle {
+    position: fixed; top: 20px; right: 24px; z-index: 100;
+    width: 48px; height: 26px; border-radius: 13px;
+    background: var(--toggle-bg); border: none; cursor: pointer;
+    transition: background 0.3s;
+    display: flex; align-items: center; padding: 3px;
+  }
+  .theme-toggle::after {
+    content: '';
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--accent);
+    transition: transform 0.3s cubic-bezier(0.68,-0.55,0.27,1.55);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  [data-theme="dark"] .theme-toggle::after { transform: translateX(22px); }
+  .theme-label {
+    position: fixed; top: 50px; right: 24px; z-index: 100;
+    font-size: 10px; color: var(--text3); letter-spacing: 0.5px;
+    text-align: center; width: 48px;
+  }
+
+  /* ── Layout ── */
+  .container { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── Reveal ── */
+  .reveal {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .reveal.delay-1 { transition-delay: 0.1s; }
+  .reveal.delay-2 { transition-delay: 0.2s; }
+  .reveal.delay-3 { transition-delay: 0.3s; }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 100px 0 50px;
+    text-align: center;
+    position: relative;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+    pointer-events: none;
+    animation: pulse 4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.5; transform: translateX(-50%) scale(1); }
+    50% { opacity: 1; transform: translateX(-50%) scale(1.05); }
+  }
+  .hero-tag {
+    display: inline-block;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-bg);
+    padding: 6px 14px; border-radius: 20px;
+    margin-bottom: 20px;
+    animation: slideDown 0.6s ease both;
+  }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .hero h1 {
+    font-size: clamp(28px, 5vw, 44px);
+    font-weight: 700; letter-spacing: -1px;
+    line-height: 1.15; margin-bottom: 16px;
+    animation: slideDown 0.6s ease 0.1s both;
+    position: relative;
+  }
+  .hero h1 span {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    font-size: 17px; color: var(--text2);
+    max-width: 540px; margin: 0 auto;
+    animation: slideDown 0.6s ease 0.2s both;
+    position: relative;
+  }
+  .hero-meta {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 24px; padding: 8px 16px;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; font-size: 13px; color: var(--text2);
+    animation: slideDown 0.6s ease 0.3s both;
+    position: relative;
+  }
+
+  /* ── Sections ── */
+  section { padding: 44px 0; }
+  .section-label {
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 8px;
+  }
+  section h2 {
+    font-size: 26px; font-weight: 700;
+    letter-spacing: -0.5px; margin-bottom: 8px;
+  }
+  section > .container > p { color: var(--text2); margin-bottom: 20px; }
+
+  /* ── Divider ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 8px 0;
+  }
+
+  /* ── Terminal ── */
+  .term {
+    background: var(--term-bg);
+    border: 1px solid rgba(162,155,254,0.15);
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin: 14px 0;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .term:hover {
+    border-color: rgba(162,155,254,0.35);
+    box-shadow: 0 0 20px rgba(108,92,231,0.1);
+  }
+  .term-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px; padding-bottom: 8px;
+    border-bottom: 1px solid rgba(162,155,254,0.1);
+  }
+  .term-dots { display: flex; gap: 5px; }
+  .term-dots span {
+    width: 10px; height: 10px; border-radius: 50%; opacity: 0.5;
+  }
+  .term-dots span:nth-child(1) { background: #ff5f56; }
+  .term-dots span:nth-child(2) { background: #ffbd2e; }
+  .term-dots span:nth-child(3) { background: #27c93f; }
+  .term-title {
+    font-size: 11px; color: var(--term-dim);
+    letter-spacing: 0.5px; margin-left: 4px;
+  }
+  .term-body {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 13.5px; line-height: 1.7;
+  }
+  .term-line {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 1px 0;
+  }
+  .t-prompt { color: var(--term-accent); user-select: none; flex-shrink: 0; }
+  .t-cmd { color: var(--term-text); }
+  .t-out { color: var(--term-dim); padding: 1px 0; font-size: 13px; }
+  .t-green { color: var(--term-green); }
+  .t-blue { color: var(--term-blue); }
+  .t-amber { color: var(--term-amber); }
+  .t-red { color: var(--term-red); }
+  .t-accent { color: var(--term-accent); }
+
+  /* ── Inline code ── */
+  code {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    background: var(--accent-bg);
+    color: var(--accent);
+    padding: 2px 7px;
+    border-radius: 5px;
+  }
+  kbd {
+    display: inline-block;
+    font-family: 'SF Mono', monospace; font-size: 12px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 5px; padding: 2px 7px;
+    box-shadow: 0 1px 0 var(--border);
+    color: var(--text); line-height: 1.4;
+  }
+
+  /* ── Skill Section ── */
+  .skill-section {
+    padding: 48px 0;
+    border-top: 1px solid var(--border);
+  }
+  .skill-header {
+    display: flex; align-items: flex-start; gap: 16px;
+    margin-bottom: 20px;
+  }
+  .skill-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+  .skill-header h2 {
+    font-size: 22px; margin-bottom: 2px;
+  }
+  .skill-header .skill-cmd {
+    font-family: 'SF Mono', monospace;
+    font-size: 13px; color: var(--accent);
+    font-weight: 600;
+  }
+  .skill-intro {
+    font-size: 15px; color: var(--text2);
+    margin-bottom: 24px; line-height: 1.7;
+  }
+  .skill-number {
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  /* ── When/What boxes ── */
+  .when-what {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 18px 0;
+  }
+  @media (max-width: 550px) {
+    .when-what { grid-template-columns: 1fr; }
+  }
+  .ww-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .ww-box h4 {
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 0.8px; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .ww-box ul {
+    list-style: none; padding: 0;
+  }
+  .ww-box li {
+    font-size: 14px; color: var(--text2);
+    padding: 3px 0;
+    padding-left: 18px;
+    position: relative;
+  }
+  .ww-box li::before {
+    content: '';
+    position: absolute; left: 0; top: 10px;
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .ww-when h4 { color: var(--green); }
+  .ww-when li::before { background: var(--green); }
+  .ww-what h4 { color: var(--blue); }
+  .ww-what li::before { background: var(--blue); }
+
+  /* ── Steps ── */
+  .steps { margin: 20px 0; }
+  .step {
+    display: flex; gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    flex-shrink: 0;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--accent-bg);
+    color: var(--accent);
+    font-weight: 700; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--accent);
+  }
+  .step-content h4 {
+    font-size: 15px; font-weight: 600;
+    margin-bottom: 3px;
+  }
+  .step-content p {
+    font-size: 14px; color: var(--text2);
+  }
+
+  /* ── Tip / Warning ── */
+  .tip, .warning {
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 18px 0;
+    font-size: 14px; line-height: 1.6;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .tip {
+    background: var(--blue-bg);
+    border-left: 3px solid var(--blue);
+  }
+  .warning {
+    background: var(--amber-bg);
+    border-left: 3px solid var(--amber);
+  }
+  .tip-icon, .warn-icon {
+    flex-shrink: 0; font-size: 16px; margin-top: 1px;
+  }
+
+  /* ── Output Preview ── */
+  .output-preview {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 16px 0;
+  }
+  .output-preview h4 {
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 0.8px; text-transform: uppercase;
+    color: var(--text3); margin-bottom: 10px;
+  }
+  .output-tree {
+    font-family: 'SF Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text2);
+  }
+  .output-tree .folder { color: var(--blue); font-weight: 600; }
+  .output-tree .file { color: var(--text2); }
+  .output-tree .highlight { color: var(--green); font-weight: 600; }
+
+  /* ── Pipeline ── */
+  .pipeline {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; flex-wrap: wrap;
+    margin: 24px 0;
+    padding: 20px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .pipe-box {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px; font-weight: 700;
+    font-family: 'SF Mono', monospace;
+    white-space: nowrap;
+  }
+  .pipe-arrow { color: var(--text3); font-size: 16px; }
+  .c-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber); }
+  .c-blue { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue); }
+  .c-pink { background: var(--pink-bg); color: var(--pink); border: 1px solid var(--pink); }
+  .c-orange { background: var(--orange-bg); color: var(--orange); border: 1px solid var(--orange); }
+  .c-green { background: var(--green-bg); color: var(--green); border: 1px solid var(--green); }
+  .c-purple { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple); }
+  .c-red { background: var(--red-bg); color: var(--red); border: 1px solid var(--red); }
+
+  /* ── Example Scenario ── */
+  .scenario {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin: 18px 0;
+  }
+  .scenario-label {
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.8px; text-transform: uppercase;
+    color: var(--purple); margin-bottom: 8px;
+  }
+  .scenario p {
+    font-size: 14px; color: var(--text2);
+    margin-bottom: 6px;
+    line-height: 1.6;
+  }
+  .scenario p:last-child { margin-bottom: 0; }
+  .scenario strong { color: var(--text); }
+
+  /* ── Utility Cards ── */
+  .util-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  @media (max-width: 550px) {
+    .util-grid { grid-template-columns: 1fr; }
+  }
+  .util-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--card-shadow);
+    transition: box-shadow 0.3s, transform 0.3s;
+  }
+  .util-card:hover {
+    box-shadow: var(--card-hover);
+    transform: translateY(-2px);
+  }
+  .util-card h3 {
+    font-family: 'SF Mono', monospace;
+    font-size: 14px; font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .util-card p {
+    font-size: 13px; color: var(--text2);
+    line-height: 1.5;
+  }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 24px 0;
+  }
+  .toc h3 {
+    font-size: 14px; font-weight: 700;
+    margin-bottom: 12px; color: var(--text3);
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .toc-list {
+    list-style: none; padding: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 24px;
+  }
+  @media (max-width: 550px) {
+    .toc-list { grid-template-columns: 1fr; }
+  }
+  .toc-list li { font-size: 14px; }
+  .toc-list a {
+    color: var(--text2);
+    text-decoration: none;
+    transition: color 0.2s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .toc-list a:hover { color: var(--accent); }
+  .toc-num {
+    display: inline-block;
+    width: 20px; height: 20px;
+    border-radius: 5px;
+    font-size: 11px; font-weight: 700;
+    text-align: center; line-height: 20px;
+    flex-shrink: 0;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center;
+    padding: 48px 0 36px;
+    font-size: 13px;
+    color: var(--text3);
+  }
+  .footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .footer a:hover { text-decoration: underline; }
+
+  /* ── Subtle subsection heading ── */
+  .sub-heading {
+    font-size: 16px; font-weight: 600;
+    margin: 24px 0 10px;
+  }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark/light mode"></button>
+<div class="theme-label">theme</div>
+
+<!-- ═══════════════════ HERO ═══════════════════ -->
+<header class="hero">
+  <div class="container">
+    <div class="hero-tag">Skills Guide</div>
+    <h1>How to Use <span>Serious Sidekick</span></h1>
+    <p>A step-by-step guide to every skill. No technical background needed &mdash; just type the commands and follow along.</p>
+    <div class="hero-meta">10 minute read</div>
+  </div>
+</header>
+
+<!-- ═══════════════════ OVERVIEW ═══════════════════ -->
+<section>
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">The Big Picture</div>
+      <h2>Six skills, one pipeline</h2>
+      <p>Serious Sidekick gives you a structured way to go from "I have an idea" to "it's built and tested." You can use any skill on its own, or chain them together.</p>
+    </div>
+
+    <div class="pipeline reveal delay-1">
+      <div class="pipe-box c-amber">/serious-conversation</div>
+      <div class="pipe-arrow">&rarr;</div>
+      <div class="pipe-box c-blue">/serious-research</div>
+      <div class="pipe-arrow">&rarr;</div>
+      <div class="pipe-box c-pink">/serious-mock-ups</div>
+      <div class="pipe-arrow">&rarr;</div>
+      <div class="pipe-box c-orange">/serious-plan</div>
+      <div class="pipe-arrow">&rarr;</div>
+      <div class="pipe-box c-green">/serious-code</div>
+      <div class="pipe-arrow">&rarr;</div>
+      <div class="pipe-box c-purple">/serious-review</div>
+    </div>
+
+    <div class="tip reveal delay-2">
+      <div class="tip-icon">&#128161;</div>
+      <div><strong>You don't have to use them all.</strong> Have a bug? Jump straight to <code>/serious-research</code>. Know exactly what to build? Start at <code>/serious-plan</code>. Each skill works on its own.</div>
+    </div>
+
+    <div class="toc reveal delay-2">
+      <h3>On this page</h3>
+      <ol class="toc-list">
+        <li><a href="#conversation"><span class="toc-num" style="background:var(--amber-bg);color:var(--amber);">1</span> /serious-conversation</a></li>
+        <li><a href="#research"><span class="toc-num" style="background:var(--blue-bg);color:var(--blue);">2</span> /serious-research</a></li>
+        <li><a href="#mockups"><span class="toc-num" style="background:var(--pink-bg);color:var(--pink);">3</span> /serious-mock-ups</a></li>
+        <li><a href="#plan"><span class="toc-num" style="background:var(--orange-bg);color:var(--orange);">4</span> /serious-plan</a></li>
+        <li><a href="#code"><span class="toc-num" style="background:var(--green-bg);color:var(--green);">5</span> /serious-code</a></li>
+        <li><a href="#review"><span class="toc-num" style="background:var(--purple-bg);color:var(--purple);">6</span> /serious-review</a></li>
+        <li><a href="#utilities"><span class="toc-num" style="background:var(--bg3);color:var(--text3);">+</span> Utility skills</a></li>
+        <li><a href="#tips"><span class="toc-num" style="background:var(--bg3);color:var(--text3);">?</span> Tips &amp; FAQ</a></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════ 1. CONVERSATION ═══════════════════ -->
+<div class="skill-section" id="conversation">
+  <div class="container">
+    <div class="reveal">
+      <div class="skill-number" style="color:var(--amber);">Skill 1 of 6</div>
+      <div class="skill-header">
+        <div class="skill-icon" style="background:var(--amber-bg);color:var(--amber);">&#128172;</div>
+        <div>
+          <h2>Brainstorm with AI Personas</h2>
+          <div class="skill-cmd">/serious-conversation</div>
+        </div>
+      </div>
+      <p class="skill-intro">
+        Think of this as a roundtable discussion. You describe a topic, and Claude creates a panel of fictional experts &mdash; an architect, a skeptic, a user advocate, etc. &mdash; who each give their perspective. You read their ideas, respond, and they refine. It's brainstorming, but structured.
+      </p>
+    </div>
+
+    <div class="when-what reveal delay-1">
+      <div class="ww-box ww-when">
+        <h4>When to use it</h4>
+        <ul>
+          <li>You have a vague idea and want to explore it</li>
+          <li>You want to see different perspectives before deciding</li>
+          <li>You're stuck and need creative input</li>
+          <li>You want to think through trade-offs</li>
+        </ul>
+      </div>
+      <div class="ww-box ww-what">
+        <h4>What you get</h4>
+        <ul>
+          <li>Multiple expert viewpoints per round</li>
+          <li>A synthesis that merges the best ideas</li>
+          <li>Versioned artifacts saved to your project</li>
+          <li>A record you can hand off to other skills</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sub-heading reveal">How to use it</div>
+
+    <div class="term reveal delay-1">
+      <div class="term-header">
+        <div class="term-dots"><span></span><span></span><span></span></div>
+        <div class="term-title">What you type</div>
+      </div>
+      <div class="term-body">
+        <div class="term-line">
+          <span class="t-prompt">></span>
+          <span class="t-cmd">/serious-conversation</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="steps reveal delay-1">
+      <div class="step">
+        <div class="step-num" style="background:var(--amber-bg);color:var(--amber);border-color:var(--amber);">1</div>
+        <div class="step-content">
+          <h4>Claude asks: "What do you want to explore?"</h4>
+          <p>Describe your idea in plain language. It doesn't need to be polished. Example: <em>"I want to add push notifications to my app but I'm not sure how."</em></p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--amber-bg);color:var(--amber);border-color:var(--amber);">2</div>
+        <div class="step-content">
+          <h4>Claude picks personas and they each weigh in</h4>
+          <p>You'll see responses from several AI "experts" &mdash; each with a different angle. The Architect thinks about structure, the Skeptic pokes holes, the Pragmatist focuses on what's practical.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--amber-bg);color:var(--amber);border-color:var(--amber);">3</div>
+        <div class="step-content">
+          <h4>You respond and they refine</h4>
+          <p>Tell them what resonated, what you disagree with, or ask a follow-up. They'll adjust and go another round. You do as many rounds as you need.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--amber-bg);color:var(--amber);border-color:var(--amber);">4</div>
+        <div class="step-content">
+          <h4>When you're satisfied, the conversation is saved</h4>
+          <p>Everything gets saved to <code>Research/conversations/</code> in your project. You can reference it later or feed it into <code>/serious-research</code> or <code>/serious-plan</code>.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="scenario reveal delay-2">
+      <div class="scenario-label">Example scenario</div>
+      <p><strong>You:</strong> "I need a way for users to share their workout data with a coach. Should it be real-time or just a daily summary?"</p>
+      <p><strong>Architect:</strong> "Real-time has infrastructure costs. Start with batched summaries."</p>
+      <p><strong>User Advocate:</strong> "Coaches want to intervene mid-workout. Real-time matters."</p>
+      <p><strong>Pragmatist:</strong> "Ship daily summaries now, add real-time as a premium feature later."</p>
+      <p><strong>You:</strong> "I like the phased approach. Let's go with that."</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 2. RESEARCH ═══════════════════ -->
+<div class="skill-section" id="research">
+  <div class="container">
+    <div class="reveal">
+      <div class="skill-number" style="color:var(--blue);">Skill 2 of 6</div>
+      <div class="skill-header">
+        <div class="skill-icon" style="background:var(--blue-bg);color:var(--blue);">&#128269;</div>
+        <div>
+          <h2>Investigate Before You Build</h2>
+          <div class="skill-cmd">/serious-research</div>
+        </div>
+      </div>
+      <p class="skill-intro">
+        Before writing any code, you need to understand the problem. This skill does structured investigation &mdash; it reads your codebase, finds the relevant files, traces how things connect, and writes up findings with evidence. Think of it as hiring a detective for your codebase.
+      </p>
+    </div>
+
+    <div class="when-what reveal delay-1">
+      <div class="ww-box ww-when">
+        <h4>When to use it</h4>
+        <ul>
+          <li>A bug you can't figure out</li>
+          <li>You want to add a feature but don't know what it would touch</li>
+          <li>You need to understand how something works before changing it</li>
+          <li>You want documented findings, not just a chat answer</li>
+        </ul>
+      </div>
+      <div class="ww-box ww-what">
+        <h4>What you get</h4>
+        <ul>
+          <li>A <code>research.md</code> file with structured findings</li>
+          <li>Root cause analysis (for bugs)</li>
+          <li>List of affected files and components</li>
+          <li>Recommended fix or approach</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sub-heading reveal">How to use it</div>
+
+    <div class="term reveal delay-1">
+      <div class="term-header">
+        <div class="term-dots"><span></span><span></span><span></span></div>
+        <div class="term-title">What you type</div>
+      </div>
+      <div class="term-body">
+        <div class="term-line">
+          <span class="t-prompt">></span>
+          <span class="t-cmd">/serious-research</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="steps reveal delay-1">
+      <div class="step">
+        <div class="step-num" style="background:var(--blue-bg);color:var(--blue);border-color:var(--blue);">1</div>
+        <div class="step-content">
+          <h4>Claude asks what to investigate</h4>
+          <p>Describe the problem or question. Example: <em>"Users are getting logged out randomly after about 30 minutes."</em></p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--blue-bg);color:var(--blue);border-color:var(--blue);">2</div>
+        <div class="step-content">
+          <h4>Claude asks: quick or deep?</h4>
+          <p><strong>Quick</strong> (5-10 min): Claude investigates on its own, then has AI personas review the findings.<br>
+          <strong>Deep</strong> (15-30 min): Multiple AI agents investigate in parallel, grade evidence, and do adversarial verification. Use for complex or critical issues.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--blue-bg);color:var(--blue);border-color:var(--blue);">3</div>
+        <div class="step-content">
+          <h4>Claude reads your code and investigates</h4>
+          <p>It searches through your project files, traces function calls, reads configuration, and pieces together what's happening. You can watch it work or go grab a coffee.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--blue-bg);color:var(--blue);border-color:var(--blue);">4</div>
+        <div class="step-content">
+          <h4>You get a research report</h4>
+          <p>A complete <code>research.md</code> file is saved to <code>Research/bugs/</code>, <code>Research/features/</code>, or <code>Research/exploratory/</code> depending on what it was. This file feeds directly into <code>/serious-plan</code>.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="output-preview reveal delay-2">
+      <h4>What the output looks like</h4>
+      <div class="output-tree">
+        <span class="folder">Research/</span><br>
+        &nbsp;&nbsp;<span class="folder">bugs/</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="folder">random-logout/</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="highlight">research.md</span> &larr; <span style="color:var(--text3)">the main report</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">evidence/</span> &larr; <span style="color:var(--text3)">supporting files</span>
+      </div>
+    </div>
+
+    <div class="tip reveal">
+      <div class="tip-icon">&#128161;</div>
+      <div><strong>When in doubt, use quick mode.</strong> It's fast and covers most cases. Save deep mode for bugs you've already spent hours on, or for changes that touch many parts of your app.</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 3. MOCK-UPS ═══════════════════ -->
+<div class="skill-section" id="mockups">
+  <div class="container">
+    <div class="reveal">
+      <div class="skill-number" style="color:var(--pink);">Skill 3 of 6</div>
+      <div class="skill-header">
+        <div class="skill-icon" style="background:var(--pink-bg);color:var(--pink);">&#127912;</div>
+        <div>
+          <h2>Visualize Before Planning</h2>
+          <div class="skill-cmd">/serious-mock-ups</div>
+        </div>
+      </div>
+      <p class="skill-intro">
+        Before writing a detailed plan, it helps to see what you're building. This skill generates UI wireframes and visual mock-ups from your research, so you can agree on what the screens look like before anyone writes code. It creates a component inventory and design decisions that feed directly into <code>/serious-plan</code>.
+      </p>
+    </div>
+
+    <div class="when-what reveal delay-1">
+      <div class="ww-box ww-when">
+        <h4>When to use it</h4>
+        <ul>
+          <li>You're building a new screen or UI feature</li>
+          <li>You want to agree on the look before coding</li>
+          <li>You need to communicate a design to someone</li>
+          <li>You want mock-ups to guide your plan</li>
+        </ul>
+      </div>
+      <div class="ww-box ww-what">
+        <h4>What you get</h4>
+        <ul>
+          <li>Wireframe or visual mock-ups</li>
+          <li>Component inventory (list of UI pieces)</li>
+          <li>Design decision log</li>
+          <li>Screen flow diagram</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sub-heading reveal">How to use it</div>
+
+    <div class="term reveal delay-1">
+      <div class="term-header">
+        <div class="term-dots"><span></span><span></span><span></span></div>
+        <div class="term-title">What you type</div>
+      </div>
+      <div class="term-body">
+        <div class="term-line">
+          <span class="t-prompt">></span>
+          <span class="t-cmd">/serious-mock-ups</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="steps reveal delay-1">
+      <div class="step">
+        <div class="step-num" style="background:var(--pink-bg);color:var(--pink);border-color:var(--pink);">1</div>
+        <div class="step-content">
+          <h4>Claude finds your research</h4>
+          <p>If you ran <code>/serious-research</code> first, Claude picks up where you left off. Otherwise, describe what you want to mock up.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--pink-bg);color:var(--pink);border-color:var(--pink);">2</div>
+        <div class="step-content">
+          <h4>Choose a fidelity level</h4>
+          <p><strong>Wireframe:</strong> Simple boxes and lines. <strong>Visual:</strong> Styled with colors and spacing. <strong>Interactive flow:</strong> Shows how screens connect to each other.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--pink-bg);color:var(--pink);border-color:var(--pink);">3</div>
+        <div class="step-content">
+          <h4>Review and iterate</h4>
+          <p>Claude shows you mock-ups. You give feedback ("make the button bigger", "add a search bar"). It revises. Each version is saved with a version number.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--pink-bg);color:var(--pink);border-color:var(--pink);">4</div>
+        <div class="step-content">
+          <h4>Output feeds into planning</h4>
+          <p>The component list and design decisions are picked up automatically by <code>/serious-plan</code>, so your plan matches what you approved visually.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip reveal delay-2">
+      <div class="tip-icon">&#128161;</div>
+      <div><strong>This step is optional.</strong> If you're fixing a bug or building something with no UI, skip straight to <code>/serious-plan</code>. Mock-ups are most useful when you're building new screens or reworking existing ones.</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 4. PLAN ═══════════════════ -->
+<div class="skill-section" id="plan">
+  <div class="container">
+    <div class="reveal">
+      <div class="skill-number" style="color:var(--orange);">Skill 4 of 6</div>
+      <div class="skill-header">
+        <div class="skill-icon" style="background:var(--orange-bg);color:var(--orange);">&#128203;</div>
+        <div>
+          <h2>Create the Implementation Plan</h2>
+          <div class="skill-cmd">/serious-plan</div>
+        </div>
+      </div>
+      <p class="skill-intro">
+        This is where your idea becomes a step-by-step action plan. Claude takes your research (or description) and generates a detailed plan: what to build, in what order, what tests to write, and how to verify each piece works. The plan is reviewed by AI personas before you see it.
+      </p>
+    </div>
+
+    <div class="when-what reveal delay-1">
+      <div class="ww-box ww-when">
+        <h4>When to use it</h4>
+        <ul>
+          <li>You know what to build and want a roadmap</li>
+          <li>After research, to turn findings into action</li>
+          <li>Before coding, so nothing gets missed</li>
+          <li>To coordinate multi-part changes</li>
+        </ul>
+      </div>
+      <div class="ww-box ww-what">
+        <h4>What you get</h4>
+        <ul>
+          <li>A detailed <code>implementation_plan.md</code></li>
+          <li>Numbered tasks with acceptance criteria</li>
+          <li>Test-first (TDD) instructions per task</li>
+          <li>Risk levels and rollback plans</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sub-heading reveal">How to use it</div>
+
+    <div class="term reveal delay-1">
+      <div class="term-header">
+        <div class="term-dots"><span></span><span></span><span></span></div>
+        <div class="term-title">What you type</div>
+      </div>
+      <div class="term-body">
+        <div class="term-line">
+          <span class="t-prompt">></span>
+          <span class="t-cmd">/serious-plan</span>
+        </div>
+        <div class="term-line">
+          <span class="t-out">&nbsp;</span>
+        </div>
+        <div class="term-line">
+          <span class="t-out"><span class="t-green">Found completed research at</span></span>
+        </div>
+        <div class="term-line">
+          <span class="t-out"><span class="t-blue">Research/bugs/random-logout/research.md</span></span>
+        </div>
+        <div class="term-line">
+          <span class="t-out">Use this as the basis for the plan?</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="steps reveal delay-1">
+      <div class="step">
+        <div class="step-num" style="background:var(--orange-bg);color:var(--orange);border-color:var(--orange);">1</div>
+        <div class="step-content">
+          <h4>Claude finds your research (or asks for input)</h4>
+          <p>If you did <code>/serious-research</code>, Claude finds it automatically. Otherwise, you can point it to a document or just describe what you want to build.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--orange-bg);color:var(--orange);border-color:var(--orange);">2</div>
+        <div class="step-content">
+          <h4>Claude generates the plan</h4>
+          <p>It breaks the work into numbered tasks (usually 3-7), each with specific acceptance criteria &mdash; clear checkboxes that define "done." Each task includes which files to change and what tests to write.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--orange-bg);color:var(--orange);border-color:var(--orange);">3</div>
+        <div class="step-content">
+          <h4>AI personas review the plan</h4>
+          <p>A Senior Engineer checks for technical gaps. An Integration Architect checks for conflicts. Issues are fixed automatically &mdash; you see the final, reviewed version.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--orange-bg);color:var(--orange);border-color:var(--orange);">4</div>
+        <div class="step-content">
+          <h4>You approve the plan</h4>
+          <p>Review it, ask questions, request changes. Once you're happy, the plan is ready for <code>/serious-code</code> to execute.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="scenario reveal delay-2">
+      <div class="scenario-label">What a plan looks like (simplified)</div>
+      <p><strong>Task 0:</strong> Smoke test &mdash; reproduce the logout bug in the running app.</p>
+      <p><strong>Task 1:</strong> Fix token refresh logic in <code>auth/token.js</code>. Acceptance: token refreshes 5 min before expiry.</p>
+      <p><strong>Task 2:</strong> Add retry logic for failed refresh attempts. Acceptance: 3 retries with backoff.</p>
+      <p><strong>Task 3:</strong> Final smoke test &mdash; user stays logged in for 2+ hours.</p>
+    </div>
+
+    <div class="warning reveal">
+      <div class="warn-icon">&#9888;&#65039;</div>
+      <div><strong>Big projects get split.</strong> If the work is large (8+ tasks or spans multiple areas), Claude will propose splitting it into multiple smaller plans that can run in parallel. This is normal and good.</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 5. CODE ═══════════════════ -->
+<div class="skill-section" id="code">
+  <div class="container">
+    <div class="reveal">
+      <div class="skill-number" style="color:var(--green);">Skill 5 of 6</div>
+      <div class="skill-header">
+        <div class="skill-icon" style="background:var(--green-bg);color:var(--green);">&#9889;</div>
+        <div>
+          <h2>Execute the Plan</h2>
+          <div class="skill-cmd">/serious-code</div>
+        </div>
+      </div>
+      <p class="skill-intro">
+        This is where the code actually gets written. Claude reads your plan and works through each task in order: writes a failing test first, writes the code to make it pass, then verifies everything works. Five separate AI agents check each task independently. Nothing gets marked "done" unless all checks pass.
+      </p>
+    </div>
+
+    <div class="when-what reveal delay-1">
+      <div class="ww-box ww-when">
+        <h4>When to use it</h4>
+        <ul>
+          <li>You have an approved plan from <code>/serious-plan</code></li>
+          <li>You want code written and verified automatically</li>
+          <li>You want evidence that each task actually works</li>
+        </ul>
+      </div>
+      <div class="ww-box ww-what">
+        <h4>What you get</h4>
+        <ul>
+          <li>Working code committed to your project</li>
+          <li>Tests for every acceptance criterion</li>
+          <li>Evidence reports proving each task works</li>
+          <li>A completion report summarizing everything</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sub-heading reveal">How to use it</div>
+
+    <div class="term reveal delay-1">
+      <div class="term-header">
+        <div class="term-dots"><span></span><span></span><span></span></div>
+        <div class="term-title">What you type</div>
+      </div>
+      <div class="term-body">
+        <div class="term-line">
+          <span class="t-prompt">></span>
+          <span class="t-cmd">/serious-code</span>
+        </div>
+        <div class="term-line">
+          <span class="t-out">&nbsp;</span>
+        </div>
+        <div class="term-line">
+          <span class="t-out"><span class="t-green">Found plan at</span> <span class="t-blue">Research/bugs/random-logout/implementation_plan.md</span></span>
+        </div>
+        <div class="term-line">
+          <span class="t-out">3 tasks, 1 high-risk. Execute?</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="steps reveal delay-1">
+      <div class="step">
+        <div class="step-num" style="background:var(--green-bg);color:var(--green);border-color:var(--green);">1</div>
+        <div class="step-content">
+          <h4>Claude finds your plan and shows a summary</h4>
+          <p>You'll see how many tasks, their risk levels, and what's about to happen. Say <strong>"Go"</strong> to start.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--green-bg);color:var(--green);border-color:var(--green);">2</div>
+        <div class="step-content">
+          <h4>For each task, Claude runs the full cycle</h4>
+          <p>
+            <strong>Smoke test</strong> &rarr; see the current behavior<br>
+            <strong>Stub check</strong> &rarr; catch placeholder code<br>
+            <strong>Write failing test</strong> &rarr; define what "working" means<br>
+            <strong>Write code</strong> &rarr; make the test pass<br>
+            <strong>Verify</strong> &rarr; 5 AI agents check independently<br>
+            <strong>Smoke test again</strong> &rarr; confirm it works in the actual app
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--green-bg);color:var(--green);border-color:var(--green);">3</div>
+        <div class="step-content">
+          <h4>If anything fails, it stops and tells you</h4>
+          <p>Claude won't silently skip a failed task. It stops, explains what went wrong, and asks how you want to proceed: fix it, skip it, or roll back.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--green-bg);color:var(--green);border-color:var(--green);">4</div>
+        <div class="step-content">
+          <h4>You get a completion report</h4>
+          <p>When all tasks pass, Claude generates a report: what was built, what tests were written, all verification results, and evidence for each task.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="output-preview reveal delay-2">
+      <h4>What the evidence looks like</h4>
+      <div class="output-tree">
+        <span class="folder">evidence/</span><br>
+        &nbsp;&nbsp;<span class="folder">task_01/</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">implementation.md</span> &larr; <span style="color:var(--text3)">what was changed</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">review.md</span> &larr; <span style="color:var(--text3)">code review results</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">tests.md</span> &larr; <span style="color:var(--text3)">test output</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">runtime.md</span> &larr; <span style="color:var(--text3)">does it work in the app?</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">qa.md</span> &larr; <span style="color:var(--text3)">spot-check results</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="highlight">gate_passed.md</span> &larr; <span style="color:var(--text3)">proof it's done</span><br>
+        &nbsp;&nbsp;<span class="folder">task_02/</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;...<br>
+        <span class="highlight">completion_report.md</span>
+      </div>
+    </div>
+
+    <div class="tip reveal">
+      <div class="tip-icon">&#128161;</div>
+      <div><strong>You can walk away.</strong> Once you say "Go", Claude works through the tasks on its own. Come back and check the progress in the execution log. If something needs your input, it'll wait for you.</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 6. REVIEW ═══════════════════ -->
+<div class="skill-section" id="review">
+  <div class="container">
+    <div class="reveal">
+      <div class="skill-number" style="color:var(--purple);">Skill 6 of 6</div>
+      <div class="skill-header">
+        <div class="skill-icon" style="background:var(--purple-bg);color:var(--purple);">&#128270;</div>
+        <div>
+          <h2>Review What Was Built</h2>
+          <div class="skill-cmd">/serious-review</div>
+        </div>
+      </div>
+      <p class="skill-intro">
+        After code is written, review it. This skill does a structured review of the work, captures any defects, and if something needs fixing, it creates a new research/plan/code cycle to address it. Think of it as quality control that feeds problems back into the pipeline.
+      </p>
+    </div>
+
+    <div class="when-what reveal delay-1">
+      <div class="ww-box ww-when">
+        <h4>When to use it</h4>
+        <ul>
+          <li>After <code>/serious-code</code> finishes</li>
+          <li>When you want a second opinion on recent changes</li>
+          <li>To capture defects and cycle them back through the pipeline</li>
+        </ul>
+      </div>
+      <div class="ww-box ww-what">
+        <h4>What you get</h4>
+        <ul>
+          <li>Structured review of all changes</li>
+          <li>Defect list with severity</li>
+          <li>Automatic cycle-back for fixes</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sub-heading reveal">How to use it</div>
+
+    <div class="term reveal delay-1">
+      <div class="term-header">
+        <div class="term-dots"><span></span><span></span><span></span></div>
+        <div class="term-title">What you type</div>
+      </div>
+      <div class="term-body">
+        <div class="term-line">
+          <span class="t-prompt">></span>
+          <span class="t-cmd">/serious-review</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="steps reveal delay-1">
+      <div class="step">
+        <div class="step-num" style="background:var(--purple-bg);color:var(--purple);border-color:var(--purple);">1</div>
+        <div class="step-content">
+          <h4>Claude reviews the recent work</h4>
+          <p>It looks at what was built, checks it against the plan, and identifies any issues &mdash; missing edge cases, inconsistencies, potential bugs.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--purple-bg);color:var(--purple);border-color:var(--purple);">2</div>
+        <div class="step-content">
+          <h4>Defects get captured and categorized</h4>
+          <p>Each issue gets a severity (critical, major, minor) and a description. You decide which ones to fix.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--purple-bg);color:var(--purple);border-color:var(--purple);">3</div>
+        <div class="step-content">
+          <h4>Fixes cycle back through the pipeline</h4>
+          <p>If something needs fixing, it becomes a mini research &rarr; plan &rarr; code cycle (a "sub-workflow"). Your main work stays intact.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ UTILITIES ═══════════════════ -->
+<div class="skill-section" id="utilities">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">Utility Skills</div>
+      <h2>The supporting cast</h2>
+      <p>These aren't part of the main pipeline, but you'll use them regularly.</p>
+    </div>
+
+    <div class="util-grid reveal delay-1">
+      <div class="util-card">
+        <h3>/serious-init</h3>
+        <p>Set up a new project with Serious Sidekick. Run this once per project. It copies all the skills, hooks, templates, and documentation into your project folder.</p>
+        <div class="term" style="margin-top:12px;padding:12px 16px;">
+          <div class="term-body">
+            <div class="term-line">
+              <span class="t-prompt">></span>
+              <span class="t-cmd">/serious-init</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="util-card">
+        <h3>/serious-status</h3>
+        <p>See all your active and completed workflows in a tree view. Shows what's in progress, what's done, and what was abandoned. Great for when you lose track of where you are.</p>
+        <div class="term" style="margin-top:12px;padding:12px 16px;">
+          <div class="term-body">
+            <div class="term-line">
+              <span class="t-prompt">></span>
+              <span class="t-cmd">/serious-status</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="util-card">
+        <h3>/serious-abandon</h3>
+        <p>Hit a dead end? This cleanly exits the current workflow and returns you to the parent. Nothing is deleted &mdash; your work stays for reference, it's just marked "abandoned."</p>
+        <div class="term" style="margin-top:12px;padding:12px 16px;">
+          <div class="term-body">
+            <div class="term-line">
+              <span class="t-prompt">></span>
+              <span class="t-cmd">/serious-abandon</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="util-card">
+        <h3>/serious-bananas</h3>
+        <p>Generate images and diagrams using Google's Gemini AI. Claude asks you 6 questions (what, type, style, ratio, variations, save location) then generates the image. Requires a Gemini API key in your <code>.env</code> file.</p>
+        <div class="term" style="margin-top:12px;padding:12px 16px;">
+          <div class="term-body">
+            <div class="term-line">
+              <span class="t-prompt">></span>
+              <span class="t-cmd">/serious-bananas</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ TIPS ═══════════════════ -->
+<div class="skill-section" id="tips">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">Tips &amp; FAQ</div>
+      <h2>Things worth knowing</h2>
+    </div>
+
+    <div class="steps reveal delay-1">
+      <div class="step">
+        <div class="step-num" style="background:var(--amber-bg);color:var(--amber);border-color:var(--amber);">?</div>
+        <div class="step-content">
+          <h4>Do I have to use them in order?</h4>
+          <p>No. Each skill works on its own. If you already know what to build, start at <code>/serious-plan</code>. If you already have a plan, start at <code>/serious-code</code>. The pipeline is a suggestion, not a requirement.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--blue-bg);color:var(--blue);border-color:var(--blue);">?</div>
+        <div class="step-content">
+          <h4>What if I need to go back a step?</h4>
+          <p>That's what sub-workflows are for. If you're in <code>/serious-plan</code> and realize you need more research, just type <code>/serious-research</code>. Claude will ask if you want to link it as a sub-workflow. When the research is done, you pick up planning where you left off.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--green-bg);color:var(--green);border-color:var(--green);">?</div>
+        <div class="step-content">
+          <h4>Where does everything get saved?</h4>
+          <p>All output goes in a <code>Research/</code> folder inside your project, organized by type: <code>Research/bugs/</code>, <code>Research/features/</code>, <code>Research/exploratory/</code>, or <code>Research/conversations/</code>. Everything is plain Markdown files &mdash; you can read them in any text editor.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--orange-bg);color:var(--orange);border-color:var(--orange);">?</div>
+        <div class="step-content">
+          <h4>Can I use this on any project?</h4>
+          <p>Yes. Run <code>/serious-init</code> in any project folder. It works with any programming language and any framework. The skills don't write language-specific code themselves &mdash; they guide Claude, which adapts to your stack.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--purple-bg);color:var(--purple);border-color:var(--purple);">?</div>
+        <div class="step-content">
+          <h4>What if something goes wrong during /serious-code?</h4>
+          <p>Claude stops at the failed task and asks you what to do. Your options: fix the issue and resume, skip the task, roll back the changes, or abort everything. Nothing is silently skipped. You can also use <code>/serious-code --resume</code> to pick up where it left off in a new session.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--pink-bg);color:var(--pink);border-color:var(--pink);">?</div>
+        <div class="step-content">
+          <h4>How is this different from just asking Claude to code?</h4>
+          <p>When you just ask Claude to code, it writes something, says "done", and moves on. There's no verification, no evidence, no plan. Serious Sidekick adds structure: research before building, plans reviewed by personas, code verified by 5 independent agents, evidence that proves each piece works. It's the difference between "I think it works" and "here's proof it works."</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip reveal delay-2">
+      <div class="tip-icon">&#128161;</div>
+      <div><strong>First time?</strong> Try this: open Claude Code in any project, type <code>/serious-research</code>, and describe something you've been curious about in your codebase. See what you learn. That's the best way to get started.</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ FOOTER ═══════════════════ -->
+<footer class="footer">
+  <div class="container">
+    <a href="https://github.com/AntoineDubuc/serious-sidekick">Serious Sidekick</a> &mdash; built for humans, not robots.
+  </div>
+</footer>
+
+<script>
+  // Theme toggle
+  function toggleTheme() {
+    const html = document.documentElement;
+    const current = html.getAttribute('data-theme');
+    html.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+    localStorage.setItem('ss-theme', html.getAttribute('data-theme'));
+    updateLabel();
+  }
+  function updateLabel() {
+    const label = document.querySelector('.theme-label');
+    label.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+  (function() {
+    const saved = localStorage.getItem('ss-theme');
+    const prefer = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', saved || prefer);
+    updateLabel();
+  })();
+
+  // Scroll reveal
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }});
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+  // Smooth scroll for TOC
+  document.querySelectorAll('.toc-list a').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href')).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
