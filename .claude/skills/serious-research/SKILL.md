@@ -2,16 +2,6 @@
 name: serious-research
 description: "Structured research with two modes — quick (single-threaded, persona reviews) or deep (parallel agents, evidence grading, adversarial verification, HTML report). Use when the user says 'research this properly', 'serious research', 'deep research', or wants thorough investigation of a bug, feature, or open question."
 user-invocable: true
-hooks:
-  Stop:
-    - matcher: "*"
-      handler:
-        type: prompt
-        prompt: |
-          If a serious research session is active (check for .active-research file in project root),
-          read the research folder path from it, then append a summary of the latest exchange
-          to notebook.md in that folder. Include timestamp and key points. Keep it concise.
-          This ensures findings survive context compaction.
 ---
 
 # Serious Research
@@ -331,6 +321,24 @@ For every component that will be changed, identify **what consumes its output**:
 
 Write the consumer chain to notebook.md. These consumers are potential failure points that the plan must cover.
 
+#### 2-pre-e. Sync Pairs
+
+After mapping downstream consumers, identify **functions that must produce equivalent output** — code paths that represent the same data or behavior but exist in separate locations. These drift silently over time because nothing enforces agreement.
+
+For each pair found, document:
+
+| Function A | Function B | Must agree on |
+|-----------|-----------|---------------|
+
+Common sync-pair patterns:
+- **Write/apply pairs** — one function writes a property, another applies it (e.g., `writeProperty` vs `applyPropertyToNode`)
+- **Serialize/deserialize pairs** — one function converts to storage format, another reads it back (e.g., `mapNode` vs `boardToRenderable`)
+- **Descriptor/handler pairs** — one function declares field names or types, another uses them (e.g., `getTextFieldConfig` vs `textRegions`)
+- **Create/update pairs** — one function initializes defaults, another modifies them (e.g., `createNode` vs `updateNode`)
+- **Route declaration/handler pairs** — one file declares routes, another implements handlers
+
+Write sync pairs to notebook.md and include them in the Findings section of research.md. These flow directly into the plan's task descriptions — when a task modifies Function A, the plan must also cover Function B.
+
 ---
 
 ### Quick Mode — Single-Threaded Research
@@ -364,6 +372,7 @@ Execute a sequential research loop:
 - [ ] Full execution path is traced from user action to visible result (if applicable)
 - [ ] Optimization/caching layers in the path are identified and documented
 - [ ] Downstream consumers of changed components are listed
+- [ ] Sync pairs are identified (functions that must produce equivalent output)
 - [ ] Smoke test baseline is captured (if applicable)
 
 After completing the research loop, **skip to Phase 5** (Review & Finalization).

@@ -291,6 +291,7 @@ For each task, fill in:
   - What renders data from the changed data source?
   - What caches/indexes recompute when this data changes?
   - List each downstream consumer and whether it handles the new behavior correctly.
+- **Reference implementation** *(when applicable)* — if the research identified sync pairs (functions that must produce equivalent output), specify the counterpart function that this task's code must match. Format: `Match [function name] at [file:line] — case-for-case, field-for-field.` This tells the implementer exactly what to stay in sync with, preventing drift between parallel code paths.
 - **Acceptance criteria** — concrete, testable `- [ ]` items (see quality bar below)
 - **Negative tests** — what should NOT happen
 - **Evidence requirements** — specific proof items
@@ -376,6 +377,7 @@ Before presenting to the user, verify each plan:
 - [ ] TDD Protocol section is present and unmodified
 - [ ] Inline QA Protocol v6 section is present and unmodified
 - [ ] Input source is documented in the Appendix
+- [ ] If research identified sync pairs, every task that modifies one side of a pair has a Reference Implementation field pointing to the other side
 
 **Additional checks for multiple plans:**
 - [ ] No two plans in the same phase modify the same files
