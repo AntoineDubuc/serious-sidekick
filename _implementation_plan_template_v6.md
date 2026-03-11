@@ -28,6 +28,8 @@
 | `{VERIFICATION_AGENT}` | e.g. `Playwright MCP`, `Puppeteer`, `curl` | Primary tool for runtime verification |
 | `{SCREENSHOT_TOOL}` | e.g. `Playwright screenshot`, `browser_take_screenshot` | Tool used to capture visual evidence |
 | `{MAX_RETRIES}` | `3` | Max verification failures before escalating to user |
+| `{STUB_PATTERNS}` | e.g. `["throw UnimplementedException", "// TODO", "placeholder"]` | Code patterns that indicate stub/hollow implementations. The implementer must not leave these in production code. Checked after each file write. |
+| `{RUNTIME_VERIFY_CMD}` | e.g. `flutter test integration_test/`, `npx playwright test`, `curl` | Command or tool to verify the app works at runtime (not just compiles). Used for inter-plan regression checks. Leave empty if no runtime verification is available. |
 
 ---
 

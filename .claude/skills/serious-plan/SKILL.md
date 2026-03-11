@@ -164,6 +164,8 @@ Then work through each section in order, filling it in based on the input materi
 - Detect project tooling from the codebase: package.json, Makefile, pyproject.toml, etc.
 - If unsure about a command, check the codebase or ask the user
 - Set `{EVIDENCE_ROOT}` to `./evidence` inside the plan folder
+- Set `{STUB_PATTERNS}` — project-specific patterns that indicate hollow/stub code (e.g., `throw UnimplementedException`, `// TODO`, `return null`, `Scaffold()`, `placeholder`). These are checked after each file write during implementation.
+- Set `{RUNTIME_VERIFY_CMD}` — command to verify the app works at runtime, used for inter-plan regression checks (e.g., `flutter test integration_test/`, `npx playwright test`). Leave empty if unavailable.
 
 ### Product Manager Review
 - Translate findings into feature descriptions

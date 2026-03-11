@@ -251,16 +251,31 @@ For each completed plan's worktree, merge sequentially:
 
 Failed plans' worktrees are NOT merged. They remain for the user to inspect or resume.
 
-#### 1f. Report phase results
+#### 1f. Inter-Plan Regression Check (multi-plan only)
+
+After all plans in a phase complete and worktrees are merged, but **before** reporting results to the user:
+
+1. **Skip if:** This is Phase 1 (no previous phase to regress against), or `{RUNTIME_VERIFY_CMD}` is not set in any plan's Project Configuration.
+2. **Collect previous phases' visible-to-user ACs:** Read the progress files and plans for all completed phases. Extract every acceptance criterion tagged "visible to user."
+3. **Run regression:** For each previous-phase visible-to-user AC, use `{RUNTIME_VERIFY_CMD}` (or the equivalent check from the AC) to verify the behavior still works after the current phase's merge.
+4. **If any regression found:**
+   - Record the regression in `execution_log.md` under a new `## Regressions` section: which AC, which plan broke it, what the expected vs actual behavior is.
+   - **STOP.** Report the regression to the user before proceeding. The user decides: fix it now (re-open the offending plan), roll back the current phase, or accept the regression.
+5. **If all pass:** Note in `execution_log.md`: "Phase {N} regression check: all previous ACs verified."
+
+This catches cases where Plan B's merge breaks something Plan A built — the exact failure mode that single-plan verification cannot detect.
+
+#### 1g. Report phase results
 
 Present to the user:
 - Which plans succeeded, which failed
+- Regression check results (if applicable)
 - For failures: which task, what went wrong, options (fix and resume, skip, roll back, abort)
 - For successes: brief summary of what was implemented
 
 Wait for user approval before next phase.
 
-#### 1g. Handle failures
+#### 1h. Handle failures
 
 If a plan failed:
 - The user can: fix the issue and resume (re-run the failed plan from the failed task), skip the plan, roll back the plan's changes, or abort everything
@@ -272,7 +287,7 @@ If a plan failed:
 
 This is what happens inside each plan agent for each task. The plan agent dispatches to Agent Teams agents.
 
-The full cycle is: **SMOKE → RED → GREEN → VERIFY → SMOKE**
+The full cycle is: **SMOKE → STUB CHECK → RED → GREEN → VERIFY → SMOKE**
 
 "Tests pass" is a necessary condition. "User can see/use it" is the sufficient condition.
 
@@ -304,6 +319,21 @@ The implementer:
 - Rebuild the modified package before testing dependents
 - Restart any running dev servers that consume the modified package
 - Track which packages were modified and which dependents need rebuilding
+
+### Step 1.25: Stub Detection
+
+After the implementer completes, scan all files changed in this task for stub patterns defined in the plan's `{STUB_PATTERNS}` configuration:
+
+1. Get the list of files changed by the implementer
+2. For each file, grep for every pattern in `{STUB_PATTERNS}`
+3. If any match is found:
+   - Report the file, line number, and matching pattern
+   - Feed the list back to the implementer: "These patterns indicate hollow/stub code. Replace with real implementations."
+   - The implementer fixes all matches
+   - Re-scan until clean
+4. If `{STUB_PATTERNS}` is empty or not set, skip this step
+
+This catches empty method bodies, placeholder returns, TODO markers, and framework-specific stubs before they reach verification.
 
 ### Step 1.5: Post-Implementation Smoke Test
 
@@ -543,3 +573,5 @@ If `/serious-code --resume` is invoked or the orchestrator detects an existing `
 12. **The Completion Gate is enforced by a stop hook.** The hook (registered in `.claude/settings.json` by `/serious-init`) checks that every task evidence directory contains `gate_passed.md`. If any are missing, the session cannot exit (exit code 2). You MUST run Step 2.5 for every task. There is no way around this — the hook runs outside your control.
 13. **"INFRASTRUCTURE READY" is not a valid status.** Every acceptance criterion is either PASS or FAIL. There is no partial credit. If code doesn't exist for an AC, it's a FAIL, even if related infrastructure was built.
 14. **Dead code is not implementation.** A widget/component/handler that exists in its own file but is never imported, instantiated, or mounted by a parent container is dead code. The Completion Gate must verify reachability for all "visible to user" ACs: find the parent container, confirm it imports the new component, confirm it instantiates/renders it, confirm any replaced component is removed. Dead code = FAIL.
+15. **Stub code must be caught before verification.** Step 1.25 scans for `{STUB_PATTERNS}` after implementation. If stubs are found, the implementer must replace them with real code before proceeding. An empty method body or TODO placeholder that reaches verification is a process failure.
+16. **Inter-plan regression is mandatory for multi-plan phases.** After merging a phase's worktrees (Step 1f), re-verify all previous phases' visible-to-user ACs using `{RUNTIME_VERIFY_CMD}`. If any regress, stop and report before starting the next phase. A green phase that silently breaks a previous phase is worse than a red phase.
