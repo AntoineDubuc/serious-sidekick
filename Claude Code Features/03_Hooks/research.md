@@ -72,6 +72,7 @@ The configuration has three levels of nesting:
 | `ConfigChange` | When a configuration file changes during a session |
 | `WorktreeCreate` | When a worktree is being created |
 | `WorktreeRemove` | When a worktree is being removed |
+| `InstructionsLoaded` | When a CLAUDE.md or `.claude/rules/*.md` file is loaded into context |
 | `PreCompact` | Before context compaction |
 | `SessionEnd` | When a session terminates |
 
@@ -88,7 +89,7 @@ The matcher is a regex string. Use `"*"`, `""`, or omit entirely to match all oc
 | `SubagentStart` / `SubagentStop` | agent type | `Bash`, `Explore`, `Plan` |
 | `PreCompact` | compaction trigger | `manual`, `auto` |
 | `ConfigChange` | config source | `user_settings`, `project_settings`, `skills` |
-| `UserPromptSubmit`, `Stop`, `TeammateIdle`, `TaskCompleted`, `WorktreeCreate`, `WorktreeRemove` | no matcher support | always fires |
+| `UserPromptSubmit`, `Stop`, `TeammateIdle`, `TaskCompleted`, `WorktreeCreate`, `WorktreeRemove`, `InstructionsLoaded` | no matcher support | always fires |
 
 ### Handler Types
 
@@ -117,6 +118,14 @@ The matcher is a regex string. Use `"*"`, `""`, or omit entirely to match all oc
 ```json
 { "type": "agent", "prompt": "Verify the code follows conventions: $ARGUMENTS", "timeout": 60 }
 ```
+
+### Hook Type Compatibility by Event
+
+Not all events support all four handler types:
+
+**All four types** (`command`, `http`, `prompt`, `agent`): `PermissionRequest`, `PostToolUse`, `PostToolUseFailure`, `PreToolUse`, `Stop`, `SubagentStop`, `TaskCompleted`, `UserPromptSubmit`
+
+**Command only**: `ConfigChange`, `InstructionsLoaded`, `Notification`, `PreCompact`, `SessionEnd`, `SessionStart`, `SubagentStart`, `TeammateIdle`, `WorktreeCreate`, `WorktreeRemove`
 
 ### Common Handler Fields
 
@@ -257,6 +266,14 @@ exit 0
 | `Notification`, `SubagentStart`, `SessionStart`, `SessionEnd`, `PreCompact` | No | Shows stderr to user only |
 | `WorktreeCreate` | Yes | Any non-zero exit code fails creation |
 | `WorktreeRemove` | No | Failures logged in debug mode only |
+| `InstructionsLoaded` | No | Exit code is ignored |
+
+### Stop Hook Details
+- Stop hooks fire when Claude finishes responding (NOT on user interrupt)
+- Stop hooks receive `stop_hook_active` (boolean) and `last_assistant_message` (string) in addition to common fields
+- Check `stop_hook_active` to prevent infinite loops — it's `true` when Claude is already continuing from a previous stop hook
+- To block Claude from stopping: exit 2 (stderr fed to Claude as reason), or exit 0 with JSON `{ "decision": "block", "reason": "..." }`
+- Prompt-type Stop hooks must return `{ "ok": false, "reason": "..." }` to block, `{ "ok": true }` to allow
 
 ### PreToolUse Decision Control
 The `hookSpecificOutput` object supports:
@@ -286,7 +303,8 @@ The `hookSpecificOutput` object supports:
 - All matching hooks run in parallel; identical handlers are deduplicated.
 - Command hooks are deduplicated by command string; HTTP hooks by URL.
 - Hooks run in the current directory with Claude Code's environment.
-- `$CLAUDE_PROJECT_DIR` references the project root; `${CLAUDE_PLUGIN_ROOT}` references the plugin root.
+- `$CLAUDE_PROJECT_DIR` references the project root. **Wrap in quotes for paths with spaces:** `"$CLAUDE_PROJECT_DIR"/.claude/hooks/my-hook.sh`
+- `${CLAUDE_PLUGIN_ROOT}` references the plugin root.
 - `$CLAUDE_CODE_REMOTE` is set to `"true"` in remote web environments.
 - `CLAUDE_ENV_FILE` is available only for `SessionStart` hooks.
 - Hook changes in settings files require review via `/hooks` menu; Claude Code captures a snapshot at startup.
