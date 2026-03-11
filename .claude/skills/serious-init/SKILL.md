@@ -103,7 +103,7 @@ The hook entry to ensure exists:
         "hooks": [
           {
             "type": "command",
-            "command": "bash $CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/verify-completion-gate.sh",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/verify-completion-gate.sh\"",
             "timeout": 30
           }
         ]
