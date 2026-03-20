@@ -72,7 +72,20 @@ Before executing, verify:
 
 If validation fails, report what's wrong and ask the user to fix the plan or re-run `/serious-plan`.
 
-### 0d. Set up tracking
+### 0d. Upstream extract-mode pre-check
+
+Once the upstream plan artifact is identified and validated (from 0a/0b/0c):
+
+1. **If no upstream artifact is specified** (no `source` field or it is empty in the plan's frontmatter): output "No upstream artifact specified — skipping verification." Skip the rest of 0d.
+2. **If the upstream path does not exist on disk**: warn "Upstream artifact at [path] not found — skipping verification." Proceed without blocking.
+3. **Read the upstream artifact's YAML frontmatter.** If frontmatter is malformed or unparseable, warn and proceed with heading-based extraction only — do NOT block.
+4. **Run extract-mode** per the protocol in `.claude/skills/_shared/handoff-verifier.md`: read the upstream artifact (the plan's `source` research.md), extract enumerable items from contract sections (Findings, Recommendations), output "Found N items from M sections in [path]. Proceeding." Write `_extracted_items.md` to this skill's output folder (the plan folder).
+5. **Retroactive verification check** (immediate upstream only — do NOT recurse):
+   - If the upstream artifact's frontmatter has no `verified` field, run full verification on it before proceeding.
+   - If `verified_hash` exists but does not match the current upstream content hash, re-verify.
+   - If the upstream artifact's own `source` field points to an unverified artifact (chain gap), warn: "Note: [upstream path]'s own upstream at [source path] has not been verified. Consider running verification on the full chain." Do NOT recurse — warn only.
+
+### 0e. Set up tracking
 
 Create the execution tracking files:
 
@@ -96,7 +109,7 @@ Create the execution tracking files:
 
 **Write `.active-code`** to the project root FIRST (before creating execution_log.md). Content is the relative path from project root to the plan folder. The Stop hook reads this.
 
-### 0e. Initialize execution_log.md
+### 0f. Initialize execution_log.md
 
 ```markdown
 ---
@@ -105,6 +118,7 @@ slug: {slug}
 status: active
 parent:
 created: {date}
+source: # Set to the path of the implementation_plan.md consumed
 ---
 
 # Execution Log
@@ -130,7 +144,7 @@ created: {date}
 (none yet)
 ```
 
-### 0f. Initialize per-plan progress.md files
+### 0g. Initialize per-plan progress.md files
 
 ```markdown
 # Progress: {Plan Name}
@@ -520,13 +534,29 @@ After all phases complete successfully:
 - Worktree merges: {N} (conflicts: {N})
 ```
 
-### 2b. Clean up
+### 2b. Upstream Traceability Verification
+
+Before cleanup, verify that the code execution covered everything from the upstream plan.
+
+If the `source` field in `execution_log.md` frontmatter is empty, skip this step.
+
+If the `source` field points to an `implementation_plan.md` (or `phase_map.md`), run the verifier:
+
+```
+.claude/skills/_shared/handoff-verifier.md
+```
+**Spawn a verification sub-agent using the Agent tool with the protocol described in this file. Pass these parameters:**
+- **Upstream artifact:** the path in the `source` frontmatter field (`implementation_plan.md` or `phase_map.md`)
+- **Downstream artifact:** the path to this skill's `completion_report.md` output (or `execution_log.md` if no completion report yet)
+- **Match strategy:** `exact`
+
+### 2c. Clean up
 
 - Set `status: done` in the YAML frontmatter of `execution_log.md`. Then remove `.active-code` breadcrumb from project root.
 - Clean up any remaining worktrees
 - Update `execution_log.md` with final status: Complete
 
-### 2c. Report to user
+### 2d. Report to user
 
 Present:
 - Completion report path

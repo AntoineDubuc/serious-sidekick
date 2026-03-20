@@ -91,7 +91,20 @@ Whatever the source, assess whether there's enough to generate a quality plan:
 **If input is a brief description (option 4), add a disclaimer to the plan:**
 > "This plan was generated from a brief description, not structured research. Consider running `/serious-research` if you need higher confidence before implementation."
 
-### 0d. Assess scope — single plan or multiple plans?
+### 0d. Upstream extract-mode pre-check
+
+Once the upstream research artifact is identified (from 0a/0b/0c):
+
+1. **If no upstream artifact is specified** (plan generated from description, `source` will be empty): output "No upstream artifact specified — skipping verification." Skip the rest of 0d.
+2. **If the upstream path does not exist on disk**: warn "Upstream artifact at [path] not found — skipping verification." Proceed without blocking.
+3. **Read the upstream artifact's YAML frontmatter.** If frontmatter is malformed or unparseable, warn and proceed with heading-based extraction only — do NOT block.
+4. **Run extract-mode** per the protocol in `.claude/skills/_shared/handoff-verifier.md`: read the upstream artifact, extract enumerable items from contract sections (Findings, Recommendations), output "Found N items from M sections in [path]. Proceeding." Write `_extracted_items.md` to this plan's output folder.
+5. **Retroactive verification check** (immediate upstream only — do NOT recurse):
+   - If the upstream artifact's frontmatter has no `verified` field, run full verification on it before proceeding.
+   - If `verified_hash` exists but does not match the current upstream content hash, re-verify.
+   - If the upstream artifact's own `source` field points to an unverified artifact (chain gap), warn: "Note: [upstream path]'s own upstream at [source path] has not been verified. Consider running verification on the full chain." Do NOT recurse — warn only.
+
+### 0e. Assess scope — single plan or multiple plans?
 
 Before creating any files, assess whether the work should be one plan or many:
 
@@ -107,7 +120,7 @@ Before creating any files, assess whether the work should be one plan or many:
 
 If multiple plans: identify the clusters and propose them to the user. Each cluster becomes its own focused plan. The user approves the split before you generate.
 
-### 0e. Determine the plan location
+### 0f. Determine the plan location
 
 **Write `.active-plan`** to the project root FIRST (before creating the plan file). Content is the relative path from project root to the plan folder.
 
@@ -147,6 +160,7 @@ slug: {slug}
 status: active
 parent:
 created: {date}
+source: # Set to the path of the research.md consumed, or leave empty if plan was generated from description
 ---
 ```
 
@@ -391,6 +405,36 @@ Before presenting to the user, verify each plan:
 ---
 
 ## Phase 3: Present to User
+
+### Upstream Traceability Verification
+
+Before presenting results to the user, verify that the plan covers everything from the upstream research (if one exists).
+
+If the `source` field in the plan's frontmatter is empty (plan was generated from a description), skip this step.
+
+If the `source` field points to a `research.md`, run the verifier:
+
+```
+.claude/skills/_shared/handoff-verifier.md
+```
+**Spawn a verification sub-agent using the Agent tool with the protocol described in this file. Pass these parameters:**
+- **Upstream artifact:** the path in the `source` frontmatter field (`research.md`)
+- **Downstream artifact:** the path to this skill's `implementation_plan.md` (or `phase_map.md` for multi-plan) output
+- **Match strategy:** `structural`
+
+### Conditional Mock-Ups Verification
+
+If a `mock-up-summary.md` exists alongside the research (in a `mock-ups/` subdirectory of the research folder), run a second verification to ensure the plan covers the mock-up deliverables:
+
+```
+.claude/skills/_shared/handoff-verifier.md
+```
+**Spawn a verification sub-agent using the Agent tool with the protocol described in this file. Pass these parameters:**
+- **Upstream artifact:** the path to the `mock-up-summary.md` (Component Inventory + Design Decisions table rows)
+- **Downstream artifact:** the path to this skill's `implementation_plan.md` (or `phase_map.md` for multi-plan) output
+- **Match strategy:** `structural`
+
+If no `mock-up-summary.md` exists, skip this second verification.
 
 After the plan is presented and acknowledged, set `status: done` in the YAML frontmatter. Then remove the `.active-plan` breadcrumb file from the project root.
 

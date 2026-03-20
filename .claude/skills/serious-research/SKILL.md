@@ -55,7 +55,20 @@ This scope constrains all downstream phases:
 - **Codebase only:** Thread agents use `Read`, `Glob`, `Grep`, `Bash` (for git log, etc.) only. No `WebSearch`, `WebFetch`.
 - **Both:** All tools available.
 
-### 0c. Classify the work
+### 0c. Upstream extract-mode pre-check
+
+If the upstream conversation `summary.md` is known (e.g., from `$ARGUMENTS`, auto-detection, or user input):
+
+1. **If no upstream artifact is specified** (no conversation summary provided): output "No upstream artifact specified — skipping verification." Skip the rest of 0c.
+2. **If the upstream path does not exist on disk**: warn "Upstream artifact at [path] not found — skipping verification." Proceed without blocking.
+3. **Read the upstream artifact's YAML frontmatter.** If frontmatter is malformed or unparseable, warn and proceed with heading-based extraction only — do NOT block.
+4. **Run extract-mode** per the protocol in `.claude/skills/_shared/handoff-verifier.md`: read the upstream artifact, extract enumerable items from contract sections (Key insights, Unresolved tensions, Open questions), output "Found N items from M sections in [path]. Proceeding." Write `_extracted_items.md` to this research's output folder.
+5. **Retroactive verification check** (immediate upstream only — do NOT recurse):
+   - If the upstream artifact's frontmatter has no `verified` field, run full verification on it before proceeding.
+   - If `verified_hash` exists but does not match the current upstream content hash, re-verify.
+   - If the upstream artifact's own `source` field points to an unverified artifact (chain gap), warn: "Note: [upstream path]'s own upstream at [source path] has not been verified. Consider running verification on the full chain." Do NOT recurse — warn only.
+
+### 0d. Classify the work
 
 Determine the category:
 
@@ -65,7 +78,7 @@ Determine the category:
 | **Feature** | New capability, enhancement, improvement to build |
 | **Exploratory** | Open-ended question, architecture evaluation, competitive analysis, technology comparison — not tied to a specific bug or feature |
 
-### 0d. Recommend the mode
+### 0e. Recommend the mode
 
 | Mode | When to recommend | What it does |
 |------|-------------------|--------------|
@@ -85,7 +98,7 @@ Determine the category:
 - Multiple stakeholders will read the output
 - The topic has conflicting information online
 
-### 0e. Present the scoping brief
+### 0f. Present the scoping brief
 
 Present a brief for user approval:
 
@@ -191,6 +204,7 @@ slug: {slug}
 status: active
 parent:
 created: {date}
+source: # Set to the path of the conversation summary.md consumed, or leave empty if no conversation upstream
 classification: Bug / Feature / Exploratory
 scope: Online only / Codebase only / Both
 mode: Quick / Deep
@@ -205,10 +219,18 @@ mode: Quick / Deep
 {Context and motivation — fill in as you learn}
 
 ## Findings
-{Main research content — build incrementally}
+
+### Finding 1: [title]
+{Claim, evidence, and analysis}
+
+### Finding 2: [title]
+{Claim, evidence, and analysis}
+
+(Continue numbered findings as needed: ### Finding 3: [title], etc.)
 
 ## Recommendations
-{To be written after research is complete}
+- {Actionable recommendation based on findings}
+- {Additional recommendations as bulleted list items}
 
 ## References
 {URLs, file paths, citations — add as you go}
@@ -794,6 +816,22 @@ Report to the user:
 - QA pass rate
 - Personas that reviewed
 - Recommended next step (usually: `/serious-plan`)
+
+### Upstream Traceability Verification
+
+Before cleanup, verify that this research covers everything from the upstream conversation (if one exists).
+
+If the `source` field in `research.md` frontmatter is empty (no upstream conversation), skip this step.
+
+If the `source` field points to a conversation `summary.md`, run the verifier:
+
+```
+.claude/skills/_shared/handoff-verifier.md
+```
+**Spawn a verification sub-agent using the Agent tool with the protocol described in this file. Pass these parameters:**
+- **Upstream artifact:** the path in the `source` frontmatter field (conversation `summary.md`)
+- **Downstream artifact:** the path to this skill's `research.md` output
+- **Match strategy:** `semantic`
 
 **Cleanup:** Set `status: done` in the YAML frontmatter of `research.md`. Then remove the `.active-research` breadcrumb file from the project root.
 

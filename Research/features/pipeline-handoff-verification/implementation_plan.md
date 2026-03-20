@@ -5,6 +5,9 @@ status: done
 parent: Research/features/pipeline-handoff-verification
 created: 2026-03-19
 source: Research/features/pipeline-handoff-verification/research.md
+verified: 2026-03-20
+verified_source: Research/features/pipeline-handoff-verification/research.md
+verified_hash: 41b58026
 ---
 
 # Implementation Plan: Pipeline Handoff Verification
@@ -236,13 +239,16 @@ This implementation adds an automatic quality gate at every skill handoff in the
 - [ ] **Minimum substance threshold** requires at least 2 of 5 signals: (1) concrete action item (not a restatement), (2) design decision with rationale, (3) acceptance criteria (checkboxes), (4) code reference (path/function/line), (5) data model or schema definition
 - [ ] **Substance examples** include at least 2 positive (COVERED) and 2 negative (SHIRKED) examples with signal counts, matching those in research Finding 3
 - [ ] **Worked examples for ambiguous cases** include at least 4 examples: 1 semantic match (conversation→research), 1 structural match (research→plan), 1 exact match (plan→code), 1 empty-section case (e.g., "Unresolved tensions: None" → 0 items extracted, no warning)
-- [ ] **Output format** contains all mandatory elements: (1) numbered checklist, (2) disposition label per item (5 types with emoji markers), (3) confidence indicator `[high/medium/low]`, (4) location reference (section/line in downstream), (5) verdict line (PASS / PASS WITH DEFERRALS / FAIL with counts), (6) fix instructions on FAIL (path + re-run command), (7) override syntax reminder on FAIL, (8) upstream incompleteness warning footer
-- [ ] **Verdict rules**: PASS = all COVERED/OVERRIDE; PASS WITH DEFERRALS = any DEFERRED, no SHIRKED/MISSING; FAIL = any SHIRKED or MISSING
+- [ ] **Output format** contains all mandatory elements: (1) numbered checklist, (2) disposition label per item (6 types with emoji markers: ✅ COVERED, ⚠️ DEFERRED, 🚫 SHIRKED, ❌ MISSING, ✅ OVERRIDE, 🔀 CONTRADICTED), (3) confidence indicator `[high/medium/low]`, (4) location reference (section/line in downstream), (5) verdict line (PASS / PASS WITH DEFERRALS / FAIL with counts), (6) fix instructions on FAIL (path + re-run command), (7) override syntax reminder on FAIL, (8) upstream incompleteness warning footer, (9) feedback prompt asking user to flag misclassifications
+- [ ] **Verdict rules**: PASS = all COVERED/OVERRIDE; PASS WITH DEFERRALS = any DEFERRED (max 3), no SHIRKED/MISSING/CONTRADICTED; FAIL = any SHIRKED, MISSING, or CONTRADICTED, or more than 3 DEFERRED without `[MASS-DEFER-APPROVED]`
 - [ ] **Frontmatter stamp spec** defines `verified` (date), `verified_source` (upstream path), `verified_hash` (8 chars) with hash computation rules specifying all 5 steps: (a) extract only contract sections per transition, (b) strip leading/trailing whitespace per line, (c) normalize line endings to LF, (d) compute SHA-256, (e) store first 8 characters
 - [ ] **Match strategy parameter** spec defines 3 modes (semantic / structural / exact) — the calling skill passes this
 - [ ] **Context window guard**: chunk into batches of 10 if extracted items exceed 20, aggregate results
 - [ ] **Marker conventions**: `[DEFERRED: reason]` for legitimate deferrals, `[VERIFIED: override — reason]` for user overrides (reason required for marker to be recognized)
 - [ ] **Multi-plan verification protocol**: when the downstream artifact is a phase_map.md with multiple plans, (a) extract items from upstream, (b) read phase map to determine item-to-plan allocation, (c) verify each plan against its assigned items independently, (d) each plan gets its own `verified` stamp, (e) output shows per-plan verification with item allocation
+- [ ] **Contradiction detection**: for each upstream item found in the downstream artifact, check whether the downstream's treatment REVERSES or NEGATES the upstream's position. Examples: upstream says "use short-lived tokens" → downstream says "use long-lived tokens"; upstream says "require rate limiting" → downstream says "rate limiting is unnecessary." Flag as 🔀 CONTRADICTED — a 6th disposition. Contradictions are always FAIL (same as SHIRKED/MISSING).
+- [ ] **DEFERRED item limits**: if more than 3 items are DEFERRED in a single verification run, the verdict escalates from "PASS WITH DEFERRALS" to "FAIL — too many deferrals, user confirmation required." The user must explicitly approve with `[MASS-DEFER-APPROVED: reason]` in the downstream artifact to proceed.
+- [ ] **Feedback prompt**: after outputting the traceability checklist, the verifier appends: "Were any items misclassified? If so, note which items and the correct disposition. This feedback improves future verification accuracy." User responses are logged in `_traceability_check.md` under a `## Feedback` section.
 
 **Negative tests:**
 - [ ] File does NOT have `user-invocable: true` in frontmatter
@@ -297,12 +303,12 @@ This implementation adds an automatic quality gate at every skill handoff in the
 
 ### Task 3: Add Source Field, Verifier Blocks, and CLAUDE.md Update
 
-**Risk:** M — Modifying 4 SKILL.md files and CLAUDE.md with new instruction blocks and fields.
+**Risk:** M — Modifying 5 SKILL.md files and CLAUDE.md with new instruction blocks and fields.
 **Depends on:** Task 1 (verifier file must exist for references to be valid at runtime).
 
-**Intent:** Wire the verifier into each downstream skill by (1) adding a `source` field to output frontmatter specs, (2) adding a verifier instruction block at the completion phase of each skill, (3) handling the mock-ups→plan conditional transition, and (4) updating CLAUDE.md's frontmatter standard with new fields.
+**Intent:** Wire the verifier into each downstream skill by (1) adding a `source` field to output frontmatter specs, (2) adding a verifier instruction block at the completion phase of each skill, (3) handling the mock-ups→plan conditional transition, (4) adding the research→mock-ups transition, and (5) updating CLAUDE.md's frontmatter standard with new fields.
 
-**Scope:** "Done" means each downstream SKILL.md tells Claude to (a) populate the `source` frontmatter field during output generation and (b) spawn a verification sub-agent before marking the skill complete. CLAUDE.md is updated with the 4 new frontmatter fields.
+**Scope:** "Done" means each downstream SKILL.md tells Claude to (a) populate the `source` frontmatter field during output generation and (b) spawn a verification sub-agent before marking the skill complete. CLAUDE.md is updated with the new frontmatter fields.
 
 **Context:** This is the integration point — connecting the shared verifier (Task 1) to the individual skills. The verifier runs automatically because it's instructed in the SKILL.md, not because the user invokes it.
 
@@ -310,6 +316,7 @@ This implementation adds an automatic quality gate at every skill handoff in the
 - `.claude/skills/serious-research/SKILL.md` — Phase 6 (Handoff): add verifier block
 - `.claude/skills/serious-plan/SKILL.md` — Phase 3 (Present to User): add verifier block
 - `.claude/skills/serious-code/SKILL.md` — completion section: add verifier block
+- `.claude/skills/serious-mock-ups/SKILL.md` — completion section: add verifier block (research→mock-ups)
 - `.claude/skills/serious-plan/SKILL.md` — conditional mock-ups→plan verifier
 - `CLAUDE.md` — Workflow Frontmatter Standard section
 
@@ -325,6 +332,8 @@ This implementation adds an automatic quality gate at every skill handoff in the
 - [ ] serious-plan SKILL.md: output frontmatter template includes `source:` field with instruction: "Set to the path of the research.md consumed, or leave empty if plan was generated from description"
 - [ ] serious-plan SKILL.md: **Phase 3 (Present to User)** includes verifier instruction block referencing `.claude/skills/_shared/handoff-verifier.md` with `match_strategy: structural`
 - [ ] serious-plan SKILL.md: **Conditional mock-ups verifier** — if mock-ups were consumed (mock-up-summary.md exists alongside research), a second verifier invocation runs against `mock-up-summary.md` with `match_strategy: structural`, checking Component Inventory and Design Decisions table rows
+- [ ] serious-mock-ups SKILL.md: output frontmatter template includes `source:` field with instruction: "Set to the path of the research.md consumed"
+- [ ] serious-mock-ups SKILL.md: **completion section** includes verifier instruction block referencing `.claude/skills/_shared/handoff-verifier.md` with `match_strategy: structural` (upstream: research.md Findings + Recommendations → downstream: mock-up-summary.md Component Inventory + Design Decisions)
 - [ ] serious-code SKILL.md: output frontmatter template includes `source:` field with instruction: "Set to the path of the implementation_plan.md consumed"
 - [ ] serious-code SKILL.md: **completion section** includes verifier instruction block referencing `.claude/skills/_shared/handoff-verifier.md` with `match_strategy: exact`
 - [ ] Each verifier block uses the established pattern: fenced code block with path, then bold instruction to spawn a sub-agent (Agent tool) — matching serious-plan's template reference pattern
@@ -346,7 +355,7 @@ This implementation adds an automatic quality gate at every skill handoff in the
 
 ### Task 4: Wire Extract-Mode and Retroactive Checks into Phase 0
 
-**Risk:** M — Adding startup logic to 3 SKILL.md files.
+**Risk:** M — Adding startup logic to 4 SKILL.md files.
 **Depends on:** Task 1 (verifier file exists), Task 3 (source field exists in output templates).
 
 **Intent:** Add the extract-mode pre-check and retroactive verification logic to Phase 0 of each downstream skill, so the verifier validates upstream artifacts before the skill burns time producing output.
@@ -357,6 +366,7 @@ This implementation adds an automatic quality gate at every skill handoff in the
 
 **Key components:**
 - `.claude/skills/serious-research/SKILL.md` — Phase 0, after step 0b (scope determination)
+- `.claude/skills/serious-mock-ups/SKILL.md` — Phase 0, after research auto-detection
 - `.claude/skills/serious-plan/SKILL.md` — Phase 0, after step 0c (input validation)
 - `.claude/skills/serious-code/SKILL.md` — Phase 0, after plan auto-detection and validation
 
@@ -409,11 +419,11 @@ This implementation adds an automatic quality gate at every skill handoff in the
 - The verifier prompt at `.claude/skills/_shared/handoff-verifier.md`
 
 **Acceptance criteria:**
-- [ ] Create a synthetic known-bad artifact pair with intentional: 1 omission, 1 shirked item (hollow section), 1 shirked item (LLM-specific pattern), 1 legitimately deferred item with `[DEFERRED: reason]`, 1 override with `[VERIFIED: override — reason]`. Document in `{EVIDENCE_ROOT}/assets/task_05_synthetic_artifact.md`
+- [ ] Create a synthetic known-bad artifact pair with intentional: 1 omission, 1 shirked item (hollow section), 1 shirked item (LLM-specific pattern), 1 legitimately deferred item with `[DEFERRED: reason]`, 1 override with `[VERIFIED: override — reason]`, 1 contradiction (downstream reverses upstream's position). Document in `{EVIDENCE_ROOT}/assets/task_05_synthetic_artifact.md`
 - [ ] Verifier tested on all 3 upstream→downstream artifact pairs (2 real + 1 synthetic)
 - [ ] Each test: hand-label expected dispositions for every extracted item BEFORE running the verifier
 - [ ] Each test: run verifier and compare actual vs expected dispositions
-- [ ] Document accuracy: agreement rate (verifier vs hand labels) per disposition type (COVERED, SHIRKED, MISSING, DEFERRED, OVERRIDE)
+- [ ] Document accuracy: agreement rate (verifier vs hand labels) per disposition type (COVERED, SHIRKED, MISSING, DEFERRED, OVERRIDE, CONTRADICTED)
 - [ ] If accuracy < 85% on any disposition type, identify the failure pattern and adjust the verifier prompt
 - [ ] Test the context window guard: run the verifier against the synthetic artifact with >20 extracted items (pad the synthetic artifact if needed). Verify output shows batched processing.
 - [ ] All test results documented in `{EVIDENCE_ROOT}/assets/task_05_verifier_output.md`
@@ -488,11 +498,7 @@ This implementation adds an automatic quality gate at every skill handoff in the
 
 ### Out of Scope
 
-- Contradiction detection (detecting when downstream says the opposite of upstream) — deferred to v2
-- DEFERRED item limits (capping how many items can be deferred per artifact) — needs usage data first
-- Automated feedback loop (prompting users to report misclassifications) — deferred to v2
-- `_shared/phase-0-pre.md` extraction (the DRY fix for Phase 0-pre) — separate workflow
-- research→mock-ups transition verification — deferred until mock-ups usage patterns are established
+- `_shared/phase-0-pre.md` extraction (the DRY fix for Phase 0-pre) — separate feature, different workflow. Handoff verification and Phase 0-pre deduplication are independent concerns.
 
 ### Input Source
 
@@ -505,3 +511,4 @@ Conversation: `Research/conversations/pipeline-handoff-verification/summary.md`
 |---|---|
 | 2026-03-19 | Initial plan generated from research |
 | 2026-03-19 | v2: Integrated QA Engineer review (16 findings: 3C, 7M, 6m) and Senior Engineer review (7 findings: 1C, 2M, 4m). Added multi-plan verification to Task 1. Added mock-ups→plan conditional verifier to Task 3. Added CLAUDE.md update to Task 3. Added non-existent source path and malformed frontmatter handling to Task 4. Added synthetic known-bad artifact and chunking guard test to Task 5. Added re-run versioning test to Task 6. Specified exact placement for all SKILL.md additions. Added explicit task dependencies. Fixed task count math. Enumerated all acceptance criteria to be self-contained (no cross-referencing needed). |
+| 2026-03-20 | v3: Eliminated all "deferred to v2" items. Added contradiction detection (6th disposition: CONTRADICTED). Added DEFERRED item limits (max 3 per artifact, then FAIL). Added feedback prompt for misclassification reporting. Added research→mock-ups transition to Task 3 and Task 4 (serious-mock-ups SKILL.md). Out of Scope reduced to 1 item (_shared/phase-0-pre.md — genuinely separate feature). |

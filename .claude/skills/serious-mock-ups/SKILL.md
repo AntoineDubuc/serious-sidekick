@@ -60,7 +60,20 @@ Before asking anything, scan the project:
 **If nothing found:**
 > "No research found. You can: point me to a research file, describe what you want to mock up, or run `/serious-research` first."
 
-### 0c. Identify UI surfaces
+### 0c. Upstream extract-mode pre-check
+
+Once the upstream research artifact is identified (from 0a/0b):
+
+1. **If no upstream artifact is specified** (no research selected or user is describing from scratch): output "No upstream artifact specified — skipping verification." Skip the rest of 0c.
+2. **If the upstream path does not exist on disk**: warn "Upstream artifact at [path] not found — skipping verification." Proceed without blocking.
+3. **Read the upstream artifact's YAML frontmatter.** If frontmatter is malformed or unparseable, warn and proceed with heading-based extraction only — do NOT block.
+4. **Run extract-mode** per the protocol in `.claude/skills/_shared/handoff-verifier.md`: read the upstream artifact, extract enumerable items from contract sections (Findings, Recommendations), output "Found N items from M sections in [path]. Proceeding." Write `_extracted_items.md` to this skill's mock-ups output folder.
+5. **Retroactive verification check** (immediate upstream only — do NOT recurse):
+   - If the upstream artifact's frontmatter has no `verified` field, run full verification on it before proceeding.
+   - If `verified_hash` exists but does not match the current upstream content hash, re-verify.
+   - If the upstream artifact's own `source` field points to an unverified artifact (chain gap), warn: "Note: [upstream path]'s own upstream at [source path] has not been verified. Consider running verification on the full chain." Do NOT recurse — warn only.
+
+### 0d. Identify UI surfaces
 
 Read the research (or user description) and extract every user-facing component, screen, view, or interaction mentioned. Present them as a numbered checklist:
 
@@ -74,7 +87,7 @@ Read the research (or user description) and extract every user-facing component,
 
 If the research doesn't mention specific UI surfaces, ask the user to describe what screens/views they're envisioning.
 
-### 0d. Choose fidelity level
+### 0e. Choose fidelity level
 
 Ask which fidelity level to start with:
 
@@ -84,7 +97,7 @@ Ask which fidelity level to start with:
 
 Default to **Both** — wireframes are fast and establish structure; visuals bring it to life after.
 
-### 0e. Set up the mock-ups folder
+### 0f. Set up the mock-ups folder
 
 **Write `.active-mock-ups`** to the project root FIRST (before creating mock-up-summary.md). Content is the relative path from project root to the mock-ups folder.
 
@@ -114,6 +127,7 @@ slug: {slug}
 status: active
 parent:
 created: {date}
+source: # Set to the path of the research.md consumed
 ---
 
 # Mock-Up Summary: {Title}
@@ -416,11 +430,27 @@ This summary is auto-detected by `/serious-plan`. The following feed directly in
 - **State variations** → edge case acceptance criteria
 ```
 
-### 4b. Cleanup
+### 4b. Upstream Traceability Verification
+
+Before cleanup, verify that the mock-ups cover everything from the upstream research.
+
+If the `source` field in `mock-up-summary.md` frontmatter is empty, skip this step.
+
+If the `source` field points to a `research.md`, run the verifier:
+
+```
+.claude/skills/_shared/handoff-verifier.md
+```
+**Spawn a verification sub-agent using the Agent tool with the protocol described in this file. Pass these parameters:**
+- **Upstream artifact:** the path in the `source` frontmatter field (`research.md` — Findings + Recommendations sections)
+- **Downstream artifact:** the path to this skill's `mock-up-summary.md` output (Component Inventory + Design Decisions sections)
+- **Match strategy:** `structural`
+
+### 4c. Cleanup
 
 Set `status: done` in the YAML frontmatter of `mock-up-summary.md`. Then remove the `.active-mock-ups` breadcrumb file from the project root.
 
-### 4c. Report to user
+### 4d. Report to user
 
 Present:
 - The mock-ups folder path

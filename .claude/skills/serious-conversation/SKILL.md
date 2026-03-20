@@ -194,15 +194,33 @@ explains the reasoning. This is a PROPOSAL, not a conclusion.]
 - [things that didn't get resolved this round]
 ```
 
-Present the synthesis to the user.
+**Present the full synthesis to the user in the chat.** Do NOT just say "I've written the synthesis to result_vN.md" — the user is having a conversation, not reading files. Present the complete synthesis inline in plain PM language:
+
+- **What the panel said** — one paragraph per persona, in plain language, no jargon
+- **Where they agree** — bullet points
+- **Where they disagree** — bullet points describing the tension, not just the positions
+- **Synthesis** — your proposed position, explained clearly for a non-technical reader
+- **Open questions** — if any remain
+
+The `result_vN.md` file is the archival record. The chat message is what the user actually reads.
 
 ### Step 3: User discusses with Orchestrator
 
-The user reads the synthesis and reacts. This is freeform conversation between the user and the Orchestrator.
+The user reacts to the synthesis. This is freeform conversation between the user and the Orchestrator.
 
 - If the user pushes back, refine the synthesis
 - If the user asks questions, answer them
 - If the user wants to go deeper on one persona's angle, discuss it
+
+**When the Orchestrator has questions for the user**, present each one using this format:
+
+1. **Context** — why this question matters right now (1-2 sentences)
+2. **The question** — clear, specific, one question at a time
+3. **Recommended option** — what the Orchestrator thinks is best, with a short explanation of why
+4. **Other options** (3-5) — each with a brief trade-off
+5. **Why the recommended option won** — what made the alternatives worse
+
+Do NOT dump multiple questions in one message. Ask one, wait for the answer, then ask the next.
 
 **After 2-3 exchanges**, check in: "Are we ready to finalize this round, or keep discussing?"
 

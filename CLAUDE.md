@@ -61,6 +61,15 @@ created: 2026-03-08
 | `parent` | string | Relative path from project root to parent workflow folder. Absent for top-level workflows. |
 | `created` | date | ISO date when the workflow started |
 
+**Optional fields (set by skills and verifier):**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `source` | string | Path to the upstream artifact consumed (e.g., `Research/features/auth/research.md`). Empty if no upstream. |
+| `verified` | date | ISO date when the handoff verifier last passed on this artifact. Set automatically by the verifier. |
+| `verified_source` | string | Path to the upstream artifact that was verified against. Set automatically by the verifier. |
+| `verified_hash` | string | First 8 characters of the SHA-256 hash of the upstream artifact's contract sections. Used for staleness detection. |
+
 **Pipeline order:** `conversation(1) → research(2) → mock-ups(3) → plan(4) → code(5) → review(6)`
 
 **Advancing vs branching:**
