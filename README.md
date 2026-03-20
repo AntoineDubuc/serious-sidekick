@@ -29,13 +29,12 @@ The toolkit is a pipeline. Each stage produces artifacts that feed the next, and
 
 ```mermaid
 graph LR
-    A["💬 Conversation"] --> B["🔍 Research"]
-    B --> C["🎨 Mock-ups"]
-    B --> D["📋 Plan"]
-    C --> D
-    D --> E["⚡ Code"]
+    A["💬 Conversation"] -->|"🛡️ verify"| B["🔍 Research"]
+    B -->|"🛡️ verify"| C["🎨 Mock-ups"]
+    B -->|"🛡️ verify"| D["📋 Plan"]
+    C -->|"🛡️ verify"| D
+    D -->|"🛡️ verify"| E["⚡ Code"]
     E --> F["✅ Review"]
-    F -.->|"defects cycle back"| B
 
     style A fill:#4a9eff,stroke:#357abd,color:#fff
     style B fill:#ff6b6b,stroke:#c0392b,color:#fff
@@ -45,22 +44,24 @@ graph LR
     style F fill:#1abc9c,stroke:#16a085,color:#fff
 ```
 
+**Drift is caught where it happens, not at the end.** Every 🛡️ is an independent verifier that fires before the downstream skill finishes. If research drops a conversation insight, it gets caught before the plan ever starts — not after code is written.
+
 <br>
 
 <table>
 <tr>
 <td width="50%" valign="top">
 
-### 🛡️ What Catches the Drift
+### 🛡️ What Happens at Each Handoff
 
-At every arrow in that diagram, an independent verifier:
+Before a skill marks itself done, an independent sub-agent:
 
 1. **Extracts** every item from the upstream artifact
-2. **Checks** whether the downstream output addresses each one
+2. **Checks** whether the current skill's output addresses each one
 3. **Classifies** each as covered, missing, shirked, contradicted, deferred, or overridden
-4. **Blocks** if anything was dropped or waved away
+4. **Blocks** if anything was dropped — the skill loops and fixes before proceeding
 
-The verifier catches 11 patterns of scope shirking — including LLM-specific ones like "this should be handled by a configurable policy layer" (sounds smart, does nothing).
+No drift accumulates. No defects pile up for a review phase to catch. Each step is clean before the next one starts.
 
 </td>
 <td width="50%" valign="top">
@@ -80,6 +81,7 @@ Source: research.md (8 findings)
 8. Revocation        → ✅ Override
 
 Verdict: FAIL — 1 shirked, 1 missing
+→ Skill loops to fix before finishing
 ```
 
 </td>
