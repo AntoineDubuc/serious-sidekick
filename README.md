@@ -27,22 +27,7 @@ You tell an AI to build something. It says "done." You check — half the requir
 
 The toolkit is a pipeline. Each stage produces artifacts that feed the next, and **automatic verification at every handoff ensures nothing gets lost.**
 
-```mermaid
-graph LR
-    A["💬 Conversation"] -->|"🛡️ verify"| B["🔍 Research"]
-    B -->|"🛡️ verify"| C["🎨 Mock-ups"]
-    B -->|"🛡️ verify"| D["📋 Plan"]
-    C -->|"🛡️ verify"| D
-    D -->|"🛡️ verify"| E["⚡ Code"]
-    E --> F["✅ Review"]
-
-    style A fill:#4a9eff,stroke:#357abd,color:#fff
-    style B fill:#ff6b6b,stroke:#c0392b,color:#fff
-    style C fill:#ffd93d,stroke:#f39c12,color:#000
-    style D fill:#6bcb77,stroke:#27ae60,color:#fff
-    style E fill:#9b59b6,stroke:#8e44ad,color:#fff
-    style F fill:#1abc9c,stroke:#16a085,color:#fff
-```
+<img src="images/readme/pipeline_flow.png" alt="Pipeline flow diagram showing Conversation → Research → Mock-ups → Plan → Code → Review with verification shields at every handoff" width="100%">
 
 **Drift is caught where it happens, not at the end.** Every 🛡️ is an independent verifier that fires before the downstream skill finishes. If research drops a conversation insight, it gets caught before the plan ever starts — not after code is written.
 
@@ -96,24 +81,7 @@ Verdict: FAIL — 1 shirked, 1 missing
 
 A structured conversation with a panel of AI personas. Each persona brings a different perspective — the Architect thinks about systems, the Skeptic pokes holes, the Pragmatist pushes for simplicity.
 
-```mermaid
-graph TD
-    U["You describe the topic"] --> O["Orchestrator distributes"]
-    O --> P1["🏗️ Architect"]
-    O --> P2["🤔 Skeptic"]
-    O --> P3["⚡ Pragmatist"]
-    O --> P4["👤 DX Advocate"]
-    P1 --> S["Orchestrator synthesizes"]
-    P2 --> S
-    P3 --> S
-    P4 --> S
-    S --> U2["You react & refine"]
-    U2 -->|"next round"| O
-
-    style U fill:#4a9eff,stroke:#357abd,color:#fff
-    style U2 fill:#4a9eff,stroke:#357abd,color:#fff
-    style S fill:#6bcb77,stroke:#27ae60,color:#fff
-```
+<img src="images/readme/conversation_panel.png" alt="Conversation panel diagram showing Orchestrator distributing to personas, synthesizing, and looping with user" width="100%">
 
 - **10 built-in personas** — Architect, Skeptic, Pragmatist, Product Thinker, Debugger, Security Mind, DX Advocate, Mentor, Optimizer, Historian
 - **Create custom personas** from a description or by cloning an existing one
@@ -167,19 +135,7 @@ Three fidelity levels — wireframe (ASCII), visual (Gemini-generated), and inte
 
 Generates implementation plans using the v6 template. Not a to-do list — a contract with testable acceptance criteria, TDD protocol, and independent review.
 
-```mermaid
-graph TD
-    P["Plan Generated"] --> PA["Phase A: Persona Reviews"]
-    PA -->|"Critical found?"| FIX1["Fix & re-review"]
-    FIX1 --> PA
-    PA -->|"Clean"| PB["Phase B: Mechanical Reviews"]
-    PB -->|"File paths wrong?"| FIX2["Fix & re-review"]
-    FIX2 --> PB
-    PB -->|"Clean"| DONE["Plan Ready"]
-
-    style P fill:#6bcb77,stroke:#27ae60,color:#fff
-    style DONE fill:#4a9eff,stroke:#357abd,color:#fff
-```
+<img src="images/readme/plan_review.png" alt="Plan review diagram showing Phase A persona reviews, Phase B mechanical reviews, severity-based convergence, and multi-plan integration review" width="100%">
 
 - **Adaptive persona pipeline** — selects reviewers based on what the plan touches (UI → End User, auth → Security Reviewer, async → Concurrency Engineer)
 - **Severity-weighted convergence** — any Critical finding forces re-review, max 3 rounds
@@ -192,23 +148,7 @@ graph TD
 
 Each task goes through a cycle with 5 independent agents. No self-grading.
 
-```mermaid
-graph LR
-    IMP["🔨 Implementer"] --> REV["👀 Reviewer"]
-    IMP --> TEST["🧪 Test Runner"]
-    IMP --> RUN["🖥️ Runtime Checker"]
-    IMP --> QA["🔍 QA Spot-Check"]
-    REV --> GATE["🚪 Completion Gate"]
-    TEST --> GATE
-    RUN --> GATE
-    QA --> GATE
-    GATE -->|"All pass"| NEXT["✅ Next Task"]
-    GATE -->|"Any fail"| IMP
-
-    style IMP fill:#9b59b6,stroke:#8e44ad,color:#fff
-    style GATE fill:#e74c3c,stroke:#c0392b,color:#fff
-    style NEXT fill:#6bcb77,stroke:#27ae60,color:#fff
-```
+<img src="images/readme/code_execution.png" alt="Code execution cycle showing Smoke Test → Implementer → Stub Detection → Post-Impl Smoke → 4 Parallel Verification Agents → Completion Gate" width="100%">
 
 - **TDD enforced** — every acceptance criterion gets a failing test FIRST, then implementation
 - **Completion Gate** — an independent agent verifies every criterion has implementing code AND that the code is reachable (catches dead code). A stop hook enforces this — the session can't exit without it.
@@ -329,25 +269,7 @@ This means Claude always *knows* what it can do (CLAUDE.md), gets the right synt
 
 The handoff verifier is the system's immune system. It runs automatically — no commands, no flags, no opt-in.
 
-```mermaid
-graph TD
-    START["Skill starts"] --> EXTRACT["Extract items from upstream"]
-    EXTRACT --> CHECK{"Upstream verified?"}
-    CHECK -->|"No stamp"| RETRO["Run retroactive verification"]
-    CHECK -->|"Hash mismatch"| RETRO
-    CHECK -->|"Valid"| WORK["Skill does its work"]
-    RETRO --> WORK
-    WORK --> VERIFY["Verify downstream against upstream"]
-    VERIFY --> RESULT{"All items covered?"}
-    RESULT -->|"Yes"| STAMP["Stamp frontmatter ✅"]
-    RESULT -->|"Gaps found"| FAIL["Show checklist, block"]
-    FAIL --> FIX["User fixes gaps"]
-    FIX --> WORK
-
-    style START fill:#4a9eff,stroke:#357abd,color:#fff
-    style STAMP fill:#6bcb77,stroke:#27ae60,color:#fff
-    style FAIL fill:#e74c3c,stroke:#c0392b,color:#fff
-```
+<img src="images/readme/verification_flow.png" alt="Automatic handoff verification system showing Phase 0 Extract Mode and Completion Verify Mode with 6 disposition types" width="100%">
 
 **Six dispositions** — each item gets classified:
 
