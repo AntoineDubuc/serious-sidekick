@@ -17,3 +17,9 @@ Thumbs.db
 
 # Workflow breadcrumbs (active workflow tracking)
 .active-*
+
+# Session context (personal, not for template consumers)
+context.md
+
+# Research artifacts (generated per-project, not part of the template)
+Research/
