@@ -492,8 +492,10 @@
     <div class="toc reveal">
       <h3>On this page</h3>
       <ol class="toc-list">
+        <li><a href="#whatsnew"><span class="toc-num" style="background:var(--red-bg);color:var(--red);">&#9733;</span> What's New in v1.2</a></li>
         <li><a href="#quickstart"><span class="toc-num" style="background:var(--green-bg);color:var(--green);">&#10003;</span> Quick Start</a></li>
         <li><a href="#pipeline"><span class="toc-num" style="background:var(--accent-bg);color:var(--accent);">&#9654;</span> Pipeline Overview</a></li>
+        <li><a href="#verification"><span class="toc-num" style="background:var(--red-bg);color:var(--red);">&#128737;</span> Handoff Verification</a></li>
         <li><a href="#conversation"><span class="toc-num" style="background:var(--amber-bg);color:var(--amber);">1</span> /serious-conversation</a></li>
         <li><a href="#research"><span class="toc-num" style="background:var(--blue-bg);color:var(--blue);">2</span> /serious-research</a></li>
         <li><a href="#mockups"><span class="toc-num" style="background:var(--pink-bg);color:var(--pink);">3</span> /serious-mock-ups</a></li>
@@ -503,13 +505,50 @@
         <li><a href="#utilities"><span class="toc-num" style="background:var(--bg3);color:var(--text3);">+</span> Utility Skills</a></li>
         <li><a href="#recursive"><span class="toc-num" style="background:var(--accent-bg);color:var(--accent);">&#9733;</span> Recursive Workflows</a></li>
         <li><a href="#layers"><span class="toc-num" style="background:var(--bg3);color:var(--text3);">&#9776;</span> Knowledge Layers</a></li>
-        <li><a href="#features"><span class="toc-num" style="background:var(--bg3);color:var(--text3);">38</span> Feature Index</a></li>
+        <li><a href="#features"><span class="toc-num" style="background:var(--bg3);color:var(--text3);">39</span> Feature Index</a></li>
         <li><a href="#faq"><span class="toc-num" style="background:var(--bg3);color:var(--text3);">?</span> FAQ</a></li>
       </ol>
     </div>
   </div>
 </section>
 
+
+<!-- ═══════════════════ WHAT'S NEW ═══════════════════ -->
+<section id="whatsnew">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">v1.2.0</div>
+      <h2>What's New</h2>
+      <p>Agents that police themselves, verification at every handoff, and Nano Banana 2.</p>
+    </div>
+
+    <div class="util-grid reveal delay-1">
+      <div class="util-card">
+        <h3>Anti-Rationalization Tables</h3>
+        <p>Each agent now has a table of excuses it might generate to skip its own protocol, with explanations of why each is wrong. Implementer: 8 TDD-skipping rationalizations. Reviewer: 7 review-softening rationalizations. QA: 6 spot-check shortcuts.</p>
+      </div>
+      <div class="util-card">
+        <h3>Two-Stage Code Review</h3>
+        <p>The Reviewer runs two separate passes. Stage 1: spec compliance &mdash; every criterion gets COMPLIANT / PARTIAL / MISSING / WRONG. Any MISSING or WRONG = automatic FAIL. Stage 2: code quality. Prevents "works great, wrong thing" from slipping through.</p>
+      </div>
+      <div class="util-card">
+        <h3>Anti-Sycophancy</h3>
+        <p>Reviewer and QA agents are forbidden from performative praise. Both verify independently against the codebase, not the implementer's self-report. QA's rule: "If you find no problems, be suspicious of yourself."</p>
+      </div>
+      <div class="util-card">
+        <h3>Nano Banana 2</h3>
+        <p><code>/serious-bananas</code> upgraded to <code>gemini-3.1-flash-image-preview</code>. 4K resolution, dark mode style, 14 aspect ratios, reference images, search grounding, and iterative editing. Three model tiers.</p>
+      </div>
+    </div>
+
+    <div class="tip reveal delay-2">
+      <div class="tip-icon">&#128161;</div>
+      <div><strong>Credit where it's due.</strong> Anti-rationalization tables, two-stage review, and anti-sycophancy guidance were inspired by <a href="https://github.com/obra/superpowers" style="color:var(--accent);">obra/superpowers</a>. We studied their approach to keeping AI agents honest and adapted it for Serious Sidekick's pipeline.</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
 
 <!-- ═══════════════════ QUICK START ═══════════════════ -->
 <section id="quickstart">
@@ -594,6 +633,65 @@
     </div>
   </div>
 </section>
+
+<hr class="divider">
+
+
+<!-- ═══════════════════ HANDOFF VERIFICATION ═══════════════════ -->
+<div class="skill-section" id="verification">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">Pipeline Integrity</div>
+      <h2>Automatic Handoff Verification</h2>
+      <p>Every arrow in the pipeline above is guarded. An independent verifier fires at each handoff to check that nothing was dropped, deferred, or half-done. No commands, no flags &mdash; it just happens.</p>
+    </div>
+
+    <div class="steps reveal delay-1">
+      <div class="step">
+        <div class="step-num" style="background:var(--red-bg);color:var(--red);border-color:var(--red);">1</div>
+        <div class="step-content">
+          <h4>Extract</h4>
+          <p>An independent sub-agent reads the upstream artifact and pulls out every enumerable item &mdash; findings, decisions, requirements, criteria.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--red-bg);color:var(--red);border-color:var(--red);">2</div>
+        <div class="step-content">
+          <h4>Check</h4>
+          <p>For each item, the verifier checks whether the downstream output actually addresses it &mdash; not just mentions it, but gives it real substance.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--red-bg);color:var(--red);border-color:var(--red);">3</div>
+        <div class="step-content">
+          <h4>Classify</h4>
+          <p>Each item gets one of 6 dispositions: <strong>Covered</strong>, <strong>Deferred</strong> (max 3), <strong>Shirked</strong>, <strong>Missing</strong>, <strong>Contradicted</strong>, or <strong>Override</strong>.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--red-bg);color:var(--red);border-color:var(--red);">4</div>
+        <div class="step-content">
+          <h4>Block</h4>
+          <p>Any shirked or missing items = FAIL. The skill loops and fixes before proceeding. Drift is caught at the handoff, not at the end.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="output-preview reveal delay-2">
+      <h4>11 shirking patterns detected</h4>
+      <div class="output-tree">
+        <strong>6 general:</strong> "future enhancement," hollow sections with headings but no content, vague hand-waves, scope deferral to v2...<br>
+        <strong>5 LLM-specific:</strong> "configurable policy layer," "this should be abstracted," confidence-sounding non-answers...<br><br>
+        <span class="highlight">Max 3 deferrals per artifact &mdash; more requires explicit approval</span>
+      </div>
+    </div>
+
+    <div class="tip reveal">
+      <div class="tip-icon">&#128161;</div>
+      <div><strong>Retroactive verification.</strong> Artifacts created before the verifier existed get caught the moment someone tries to use them. The system checks for a verification stamp in the frontmatter &mdash; if it's missing, verification runs before proceeding.</div>
+    </div>
+  </div>
+</div>
 
 <hr class="divider">
 
@@ -927,7 +1025,7 @@
           <div class="skill-cmd">/serious-code</div>
         </div>
       </div>
-      <p class="skill-intro">This is where code gets written. Claude reads your plan and works through each task: writes a failing test first, writes the code to make it pass, then 5 separate AI agents verify. Nothing gets marked "done" unless all checks pass.</p>
+      <p class="skill-intro">This is where code gets written. Claude reads your plan and works through each task: writes a failing test first, writes the code to make it pass, then 5 separate AI agents verify. The agents are hardened against the same LLM failure modes they're meant to catch &mdash; each has anti-rationalization tables and the Reviewer and QA run with anti-sycophancy rules. Nothing gets marked "done" unless all checks pass.</p>
     </div>
 
     <div class="sub-heading reveal">The execution cycle per task</div>
@@ -947,11 +1045,11 @@
 
     <div class="sub-heading reveal">The 5 verification agents</div>
     <div class="persona-grid reveal delay-1">
-      <div class="persona-card"><h4>Implementer</h4><p>TDD: writes failing test, then code</p></div>
-      <div class="persona-card"><h4>Code Reviewer</h4><p>Quality, patterns, security, plan adherence</p></div>
+      <div class="persona-card"><h4>Implementer</h4><p>Strict TDD with anti-rationalization table (8 excuses for skipping tests, each debunked)</p></div>
+      <div class="persona-card"><h4>Code Reviewer</h4><p>Two-stage review: spec compliance first (COMPLIANT/PARTIAL/MISSING/WRONG), then code quality. Anti-sycophancy + anti-rationalization (7 excuses)</p></div>
       <div class="persona-card"><h4>Test Runner</h4><p>Static analysis + full test suite</p></div>
       <div class="persona-card"><h4>Runtime Checker</h4><p>Does it work in the actual app?</p></div>
-      <div class="persona-card"><h4>QA Spot-Checker</h4><p>Independently re-verifies 3 random criteria</p></div>
+      <div class="persona-card"><h4>QA Spot-Checker</h4><p>Adversarial re-verification of 3+ random criteria. Anti-sycophancy + anti-rationalization (6 excuses). "If you find no problems, be suspicious of yourself."</p></div>
     </div>
 
     <div class="steps reveal delay-2">
@@ -1095,7 +1193,7 @@
       </div>
       <div class="util-card">
         <h3>/serious-bananas</h3>
-        <p>Generate images and diagrams via Gemini. 6-question interview, up to 4 variations. Requires <code>GEMINI_API_KEY</code> in <code>.env</code>.</p>
+        <p>Nano Banana 2 image generation via Gemini (<code>gemini-3.1-flash-image-preview</code>). 4K resolution, dark mode, 14 aspect ratios, reference images, iterative editing. Three model tiers: NB2 (default), Pro (complex), v1 (budget). Requires <code>GEMINI_API_KEY</code> in <code>.env</code>.</p>
       </div>
     </div>
   </div>
@@ -1199,7 +1297,7 @@
       </div>
       <div class="layer">
         <div class="layer-head">
-          <span class="layer-name">38 Research Docs</span>
+          <span class="layer-name">39 Research Docs</span>
           <span class="layer-pill">When needed</span>
         </div>
         <div class="layer-desc">Full references with official doc excerpts, all config options, and source URLs. Only loaded when explicitly read.</div>
@@ -1219,7 +1317,7 @@
   <div class="container">
     <div class="reveal">
       <div class="section-label">Reference</div>
-      <h2>38 Features Across 9 Categories</h2>
+      <h2>39 Features Across 9 Categories</h2>
       <p>Detailed documentation for every Claude Code feature, organized in <code>Claude Code Features/</code>.</p>
     </div>
 

@@ -6,6 +6,32 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ---
 
+## [1.2.0] — 2026-03-22
+
+### Harder to fool, harder to game
+
+After a thorough competitive analysis of [obra/superpowers](https://github.com/obra/superpowers) (105K stars), we identified three patterns they use to keep AI agents honest — and adapted all three for Serious Sidekick. Credit where it's due: Superpowers showed us what "take the work seriously" looks like when you apply it to the agents themselves.
+
+#### Added
+
+- **Anti-rationalization tables** — Each agent now has a table of excuses it might generate to skip its own protocol, with explanations of why each excuse is wrong and what to do instead. The Implementer has 8 TDD-skipping rationalizations ("this is too simple to test," "I'll write tests after"), the Reviewer has 7 review-softening rationalizations ("the tests pass so it must be correct," "the implementer probably had a good reason"), and QA has 6 spot-check shortcuts ("the implementer already tested this," "3 spot-checks is probably enough"). Inspired by Superpowers' anti-rationalization tables in their TDD and debugging skills.
+
+- **Two-stage code review** — The Reviewer agent now runs two separate passes. Stage 1: spec compliance — every acceptance criterion gets a verdict (COMPLIANT / PARTIAL / MISSING / WRONG). Any MISSING or WRONG = automatic FAIL regardless of code quality. Stage 2: code quality — security, consistency, test quality. This prevents "correct but wrong" implementations from slipping through because the code is clean. Inspired by Superpowers' separation of spec reviewers from code reviewers.
+
+- **Anti-sycophancy guidance** — The Reviewer and QA agents are now explicitly forbidden from performative praise ("Great work!", "Nice implementation!"). Both are instructed to verify independently against the codebase, not against the implementer's self-report. QA is told: "If you find none, be suspicious of yourself." Inspired by Superpowers' "receiving code review" skill and pushback protocol.
+
+- **Nano Banana 2 image generation** — `/serious-bananas` default model changed to `gemini-3.1-flash-image-preview`. New capabilities: 4K resolution, dark mode style, 14 aspect ratios, reference image support, search grounding, iterative editing, and thinking mode. Three model tiers: Nano Banana 2 (default), Pro (complex compositions), v1 (budget).
+
+#### Changed
+
+- **README revamp** — Rewritten in PM-friendly language with progressive disclosure. Five dark-mode Gemini-generated diagrams (pipeline overview, conversation flow, plan review, code execution, verification). Diagrams audited against actual system behavior via `/serious-research`.
+
+- **guide.html updated** — New "What's New" section with Superpowers credit, new Handoff Verification section documenting v1.1.0's verification system, updated agent cards with anti-rationalization and two-stage review details, updated Nano Banana 2 utility card, fixed feature counts (38 → 39).
+
+- **Competitive analysis documented** — Full analysis of obra/superpowers at `Research/exploratory/superpowers-analysis/raw_findings.md`. 14 skills compared across 20+ feature dimensions. B+ tier backlog tracked for future iterations.
+
+---
+
 ## [1.1.0] — 2026-03-20
 
 ### The pipeline now catches its own mistakes
@@ -94,5 +120,6 @@ A sequence of skills that take you from "I have an idea" to "it's built and veri
 
 ---
 
+[1.2.0]: https://github.com/AntoineDubuc/serious-sidekick/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/AntoineDubuc/serious-sidekick/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/AntoineDubuc/serious-sidekick/releases/tag/v1.0.0

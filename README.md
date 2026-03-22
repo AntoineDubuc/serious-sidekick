@@ -7,8 +7,8 @@
 Structured conversations, research with evidence grading, implementation plans with TDD,<br>
 and automatic verification that catches when the AI drops, defers, or half-does your work.
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue?style=flat-square)](CHANGELOG.md)
-[![Skills](https://img.shields.io/badge/skills-27-green?style=flat-square)](#skills)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue?style=flat-square)](CHANGELOG.md)
+[![Skills](https://img.shields.io/badge/skills-28-green?style=flat-square)](#skills)
 [![Features](https://img.shields.io/badge/documented_features-39-purple?style=flat-square)](#claude-code-knowledge-base)
 
 </div>
@@ -146,11 +146,14 @@ Generates implementation plans using the v6 template. Not a to-do list — a con
 
 ### ⚡ `/serious-code` — Execute With 5 Independent Agents
 
-Each task goes through a cycle with 5 independent agents. No self-grading.
+Each task goes through a cycle with 5 independent agents. No self-grading. The agents are hardened against the same LLM failure modes they're meant to catch — inspired by techniques from [obra/superpowers](https://github.com/obra/superpowers).
 
 <img src="images/readme/code_execution.png" alt="Code execution cycle showing Smoke Test → Implementer → Stub Detection → Post-Impl Smoke → 4 Parallel Verification Agents → Completion Gate" width="100%">
 
 - **TDD enforced** — every acceptance criterion gets a failing test FIRST, then implementation
+- **Two-stage code review** — Stage 1: spec compliance (COMPLIANT / PARTIAL / MISSING / WRONG per criterion — any MISSING or WRONG = automatic FAIL regardless of code quality). Stage 2: code quality, security, consistency
+- **Anti-rationalization tables** — each agent has a table of excuses it might generate to skip its own protocol, with explanations of why each is wrong. Implementer: 8 TDD-skipping rationalizations. Reviewer: 7 review-softening rationalizations. QA: 6 spot-check shortcuts
+- **Anti-sycophancy** — Reviewer and QA agents are forbidden from performative praise ("Great work!", "Nice implementation!"). Both verify independently against the codebase, not the implementer's self-report
 - **Completion Gate** — an independent agent verifies every criterion has implementing code AND that the code is reachable (catches dead code). A stop hook enforces this — the session can't exit without it.
 - **Stub detection** — scans for `TODO`, `throw UnimplementedException`, and other placeholder patterns after implementation
 - **Multi-plan execution** via git worktrees for parallel isolation
@@ -204,13 +207,13 @@ This copies everything — skills, agents, feature docs, plan template, and CLAU
 <tr><td><code>/serious-plan</code></td><td>Implementation planning with TDD and reviews</td></tr>
 <tr><td><code>/serious-code</code></td><td>Plan execution with 5 verification agents</td></tr>
 <tr><td><code>/serious-review</code></td><td>Defect capture, cycles back into pipeline</td></tr>
-<tr><td><code>/serious-bananas</code></td><td>Image/diagram generation via Gemini API</td></tr>
+<tr><td><code>/serious-bananas</code></td><td>Image/diagram generation via Gemini API (Nano Banana 2 — 4K, dark mode, 3 model tiers)</td></tr>
 <tr><td><code>/serious-init</code></td><td>Scaffold a new project with the toolkit</td></tr>
 </table>
 
 <table>
 <tr>
-<th>Auto-Loading Skills (19)</th>
+<th>Auto-Loading Skills (20)</th>
 <th>Loads When You Discuss...</th>
 </tr>
 <tr><td><code>hooks</code></td><td>Lifecycle events, automation, policy enforcement</td></tr>
@@ -232,6 +235,7 @@ This copies everything — skills, agents, feature docs, plan template, and CLAU
 <tr><td><code>status-line</code></td><td>Status bar customization</td></tr>
 <tr><td><code>scheduled-tasks</code></td><td>Cron scheduling, recurring prompts</td></tr>
 <tr><td><code>serious-status</code></td><td>View active and completed workflows</td></tr>
+<tr><td><code>serious-abandon</code></td><td>Abandon a sub-workflow, restore parent context</td></tr>
 </table>
 
 ---
