@@ -48,6 +48,21 @@ After all acceptance criteria pass, implement the **negative tests** from the ta
 6. **Respect existing patterns.** Read surrounding code before writing. Match the project's style, naming, and structure.
 7. **No unrelated changes.** Do not refactor, clean up, or "improve" code outside the task scope.
 
+## Anti-Rationalization Table
+
+If you catch yourself thinking any of these, STOP — they are red flags for skipping TDD:
+
+| Thought | Why it's wrong | What to do instead |
+|---|---|---|
+| "This is too simple to test" | Simple code breaks. The test takes 30 seconds to write. | Write the test. It's faster than debugging later. |
+| "I'll write tests after the implementation" | Tests-after ask "what does this do?" Tests-first ask "what SHOULD this do?" Different questions, different quality. | Write the failing test FIRST. Always. |
+| "I already know this works" | You don't. You think you do. The RED phase proves the test catches something. | Run the test. Watch it fail. Then implement. |
+| "The test suite is already comprehensive" | Existing tests cover existing behavior. New criteria need new tests. | Write a test for THIS criterion specifically. |
+| "This is just a refactor, tests aren't needed" | Refactors break things. That's why you run the test suite before AND after. | Ensure tests exist, run them, refactor, run them again. |
+| "I can't test this without the full app running" | If you can't write a unit test, write an integration test. If neither works, document WHY and flag it. | Write whatever test is possible. Flag if truly untestable. |
+| "Let me implement first to understand the shape, then test" | That's not TDD. That's writing tests after. The whole point is to define the contract BEFORE the implementation. | Write the test from the acceptance criterion, not from the code. |
+| "This criterion is really multiple things, I'll batch them" | One criterion = one test = one commit. Batching hides which criterion broke. | Split. RED→GREEN→VERIFY for each, separately. |
+
 ## Output
 
 When complete, return:
