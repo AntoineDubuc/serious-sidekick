@@ -22,6 +22,16 @@ After a thorough competitive analysis of [obra/superpowers](https://github.com/o
 
 - **Nano Banana 2 image generation** — `/serious-bananas` default model changed to `gemini-3.1-flash-image-preview`. New capabilities: 4K resolution, dark mode style, 14 aspect ratios, reference image support, search grounding, iterative editing, and thinking mode. Three model tiers: Nano Banana 2 (default), Pro (complex compositions), v1 (budget).
 
+#### Fixed
+
+- **Upstream verification enforcement** — Phase 0d (extract-mode) and Phase 3 (handoff verification) in `/serious-plan` and `/serious-research` were advisory — the agent could skip them and jump straight to generating the plan. A real-world failure on 2026-03-22 proved this: a plan generated from a 6-round conversation (36 design decisions) missed module-level summaries, route/decorator metadata, node-type-specific quality focus, and the 30-decision reasoning evaluation. All four were explicit in the upstream conversation. Now both phases are hard gates — Phase 0d blocks plan generation until `_extracted_items.md` exists, Phase 3 blocks presentation until the verifier returns PASS. The plan generator must cross-reference the extracted inventory during generation, not rely on memory. Same treatment applied to `/serious-research`.
+
+- **Micro-plan verification gap** — The handoff verifier only checked `implementation_plan.md` or `phase_map.md`. When plans were split into micro-plans with arbitrary filenames (`A_pipeline_code.md`, `01_data_infrastructure.md`), the actual plan content was unverified. The verifier now discovers all plan files from the phase map + directory glob, and checks the UNION to ensure every upstream item is allocated to at least one plan.
+
+- **Handoff verifier enforcement contract** — Added a "Calling Skills Must Enforce" section to the shared verifier making the contract explicit: the verifier reports, the calling skill gates. References the 2026-03-22 incident as the reason this was necessary.
+
+- **Stop hook safety net for plans** — Added a recommended Stop hook configuration to `/serious-plan` that checks for `_extracted_items.md` in active plan directories at session end. Catches cases where sub-agents or interrupted sessions bypassed the in-skill gates.
+
 #### Changed
 
 - **README revamp** — Rewritten in PM-friendly language with progressive disclosure. Five dark-mode Gemini-generated diagrams (pipeline overview, conversation flow, plan review, code execution, verification). Diagrams audited against actual system behavior via `/serious-research`.

@@ -55,18 +55,23 @@ This scope constrains all downstream phases:
 - **Codebase only:** Thread agents use `Read`, `Glob`, `Grep`, `Bash` (for git log, etc.) only. No `WebSearch`, `WebFetch`.
 - **Both:** All tools available.
 
-### 0c. Upstream extract-mode pre-check
+### 0c. Upstream extract-mode pre-check — MANDATORY GATE
+
+**This step is MANDATORY when an upstream conversation exists. Skip it and the research WILL miss conversation insights. DO NOT proceed to Phase 1 until `_extracted_items.md` exists in the output folder.**
 
 If the upstream conversation `summary.md` is known (e.g., from `$ARGUMENTS`, auto-detection, or user input):
 
-1. **If no upstream artifact is specified** (no conversation summary provided): output "No upstream artifact specified — skipping verification." Skip the rest of 0c.
-2. **If the upstream path does not exist on disk**: warn "Upstream artifact at [path] not found — skipping verification." Proceed without blocking.
-3. **Read the upstream artifact's YAML frontmatter.** If frontmatter is malformed or unparseable, warn and proceed with heading-based extraction only — do NOT block.
-4. **Run extract-mode** per the protocol in `.claude/skills/_shared/handoff-verifier.md`: read the upstream artifact, extract enumerable items from contract sections (Key insights, Unresolved tensions, Open questions), output "Found N items from M sections in [path]. Proceeding." Write `_extracted_items.md` to this research's output folder.
+1. **If no upstream artifact is specified** (no conversation summary provided): output "No upstream artifact specified — skipping extraction." Skip the rest of 0c. Phase 1 may proceed without `_extracted_items.md`.
+2. **If the upstream path does not exist on disk**: STOP. Output "ERROR: Upstream artifact at [path] not found. Cannot proceed without extraction. Please provide the correct path." Do NOT proceed to Phase 1.
+3. **Read the upstream artifact's YAML frontmatter.** If frontmatter is malformed or unparseable, warn and proceed with heading-based extraction only — extraction must still complete.
+4. **Run extract-mode** per the protocol in `.claude/skills/_shared/handoff-verifier.md`: read the upstream artifact, extract enumerable items from contract sections (Key insights, Unresolved tensions, Open questions), output "Found N items from M sections in [path]." Write `_extracted_items.md` to this research's output folder. **If extraction produces 0 items from a non-empty artifact, STOP and report the extraction failure — do not proceed with an empty inventory.**
 5. **Retroactive verification check** (immediate upstream only — do NOT recurse):
    - If the upstream artifact's frontmatter has no `verified` field, run full verification on it before proceeding.
    - If `verified_hash` exists but does not match the current upstream content hash, re-verify.
    - If the upstream artifact's own `source` field points to an unverified artifact (chain gap), warn: "Note: [upstream path]'s own upstream at [source path] has not been verified. Consider running verification on the full chain." Do NOT recurse — warn only.
+6. **Gate check:** Confirm `_extracted_items.md` exists and contains at least 1 item. Output: "Extraction complete: N items from [path]. Proceeding to Phase 1." Only then may Phase 1 begin.
+
+**While conducting research, cross-reference `_extracted_items.md` continuously.** Every extracted item should be investigated and addressed in findings. Do not rely on memory of the upstream conversation — use the extracted inventory as a checklist.
 
 ### 0d. Classify the work
 
@@ -817,11 +822,11 @@ Report to the user:
 - Personas that reviewed
 - Recommended next step (usually: `/serious-plan`)
 
-### Upstream Traceability Verification
+### Upstream Traceability Verification — MANDATORY GATE
 
-Before cleanup, verify that this research covers everything from the upstream conversation (if one exists).
+**DO NOT report findings to the user or run cleanup until the handoff-verifier has run and PASSED.** This is a hard gate — not advisory.
 
-If the `source` field in `research.md` frontmatter is empty (no upstream conversation), skip this step.
+If the `source` field in `research.md` frontmatter is empty (no upstream conversation), skip verification and proceed to cleanup.
 
 If the `source` field points to a conversation `summary.md`, run the verifier:
 
@@ -832,6 +837,10 @@ If the `source` field points to a conversation `summary.md`, run the verifier:
 - **Upstream artifact:** the path in the `source` frontmatter field (conversation `summary.md`)
 - **Downstream artifact:** the path to this skill's `research.md` output
 - **Match strategy:** `semantic`
+
+**On FAIL:** DO NOT present findings or run cleanup. Fix every SHIRKED, MISSING, and CONTRADICTED item in the research. Then re-run the verifier. Repeat until PASS or PASS WITH DEFERRALS. Only then proceed.
+
+**On PASS or PASS WITH DEFERRALS:** The verifier will have stamped `research.md` frontmatter with `verified`, `verified_source`, and `verified_hash`. Proceed to cleanup.
 
 **Cleanup:** Set `status: done` in the YAML frontmatter of `research.md`. Then remove the `.active-research` breadcrumb file from the project root.
 

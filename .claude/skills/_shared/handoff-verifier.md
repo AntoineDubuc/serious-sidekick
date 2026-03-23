@@ -12,6 +12,18 @@ This file is the **single source of truth** for all handoff verification in the 
 
 ---
 
+## Calling Skills Must Enforce
+
+This verifier **reports** — it does not enforce. The calling skill is responsible for gating on the result. Every skill that invokes this verifier MUST:
+
+1. **Extract-mode (Phase 0):** Block Phase 1 until `_extracted_items.md` exists in the output folder. If an upstream artifact is specified and extraction fails or produces 0 items from a non-empty source, STOP — do not proceed.
+2. **Verify-mode (Completion):** Block presentation/handoff until verification returns PASS or PASS WITH DEFERRALS. On FAIL: fix gaps, re-run verifier, repeat. Do NOT present, set `status: done`, or remove breadcrumbs until PASS.
+3. **Use the inventory during generation.** Cross-reference `_extracted_items.md` while producing the downstream artifact. Every extracted item must appear as a task, finding, acceptance criterion, or explicit `[DEFERRED: reason]`. Do not rely on memory of the upstream — use the file.
+
+Skills that treat these steps as advisory will produce drift. The 2026-03-22 "summary enrichment" incident (4 design decisions dropped from a 6-round, 36-item conversation) was caused by Phase 0d extraction being skipped entirely.
+
+---
+
 ## Parameters
 
 The calling skill passes three parameters when invoking this verifier:
@@ -422,13 +434,18 @@ This preserves the full verification history for audit and feedback purposes.
 
 ## Multi-Plan Verification Protocol
 
-When the downstream artifact is a `phase_map.md` with multiple plans (e.g., `plans/01_*.md`, `plans/02_*.md`):
+When the downstream artifact is a `phase_map.md` with multiple plans:
 
-1. **Extract items from upstream** — same as single-plan extraction.
-2. **Read the phase map** to determine item-to-plan allocation. The phase map's executive summary and task allocation tables specify which upstream items each plan is responsible for.
-3. **Verify each plan independently** against its assigned subset of items. An item assigned to Plan 01 is only checked in Plan 01's artifact — it is not expected to appear in Plan 02.
-4. **Each plan gets its own `verified` stamp** — `verified`, `verified_source`, and `verified_hash` are written to each plan's individual frontmatter on PASS.
-5. **If an upstream item is split across multiple plans**, each plan must cover its assigned portion. The verifier checks the phase map's allocation to determine which items belong to which plan.
+1. **Discover all plan files.** Do NOT rely solely on filenames matching `plans/01_*.md` or `plans/02_*.md`. Plans may use any naming convention (e.g., `A_pipeline_code.md`, `01_data_infrastructure.md`, `auth_backend.md`). To find all plans:
+   - Read the `phase_map.md` — it lists every plan file by path.
+   - Glob the plan output directory for all `.md` files that are NOT `phase_map.md`, `_extracted_items.md`, or `_traceability_check*.md`.
+   - Verify that every file referenced in the phase map exists. If a referenced plan is missing, report it as an error.
+2. **Extract items from upstream** — same as single-plan extraction.
+3. **Read the phase map** to determine item-to-plan allocation. The phase map's executive summary and task allocation tables specify which upstream items each plan is responsible for.
+4. **Verify each plan independently** against its assigned subset of items. An item assigned to Plan 01 is only checked in Plan 01's artifact — it is not expected to appear in Plan 02.
+5. **Verify the UNION.** After checking individual plans, verify that every upstream item is assigned to at least one plan. If an item appears in `_extracted_items.md` but is not allocated in the phase map, it is MISSING regardless of individual plan results.
+6. **Each plan gets its own `verified` stamp** — `verified`, `verified_source`, and `verified_hash` are written to each plan's individual frontmatter on PASS.
+7. **If an upstream item is split across multiple plans**, each plan must cover its assigned portion. The verifier checks the phase map's allocation to determine which items belong to which plan.
 
 **Multi-plan output format:**
 

@@ -91,18 +91,21 @@ Whatever the source, assess whether there's enough to generate a quality plan:
 **If input is a brief description (option 4), add a disclaimer to the plan:**
 > "This plan was generated from a brief description, not structured research. Consider running `/serious-research` if you need higher confidence before implementation."
 
-### 0d. Upstream extract-mode pre-check
+### 0d. Upstream extract-mode pre-check — MANDATORY GATE
+
+**This step is MANDATORY when an upstream artifact exists. Skip it and the plan WILL have gaps. DO NOT proceed to Phase 1 until `_extracted_items.md` exists in the output folder.**
 
 Once the upstream research artifact is identified (from 0a/0b/0c):
 
-1. **If no upstream artifact is specified** (plan generated from description, `source` will be empty): output "No upstream artifact specified — skipping verification." Skip the rest of 0d.
-2. **If the upstream path does not exist on disk**: warn "Upstream artifact at [path] not found — skipping verification." Proceed without blocking.
-3. **Read the upstream artifact's YAML frontmatter.** If frontmatter is malformed or unparseable, warn and proceed with heading-based extraction only — do NOT block.
-4. **Run extract-mode** per the protocol in `.claude/skills/_shared/handoff-verifier.md`: read the upstream artifact, extract enumerable items from contract sections (Findings, Recommendations), output "Found N items from M sections in [path]. Proceeding." Write `_extracted_items.md` to this plan's output folder.
+1. **If no upstream artifact is specified** (plan generated from description, `source` will be empty): output "No upstream artifact specified — skipping extraction." Skip the rest of 0d. Phase 1 may proceed without `_extracted_items.md`.
+2. **If the upstream path does not exist on disk**: STOP. Output "ERROR: Upstream artifact at [path] not found. Cannot proceed without extraction. Please provide the correct path." Do NOT proceed to Phase 1.
+3. **Read the upstream artifact's YAML frontmatter.** If frontmatter is malformed or unparseable, warn and proceed with heading-based extraction only — extraction must still complete.
+4. **Run extract-mode** per the protocol in `.claude/skills/_shared/handoff-verifier.md`: read the upstream artifact, extract enumerable items from contract sections (Findings, Recommendations), output "Found N items from M sections in [path]." Write `_extracted_items.md` to this plan's output folder. **If extraction produces 0 items from a non-empty artifact, STOP and report the extraction failure — do not proceed with an empty inventory.**
 5. **Retroactive verification check** (immediate upstream only — do NOT recurse):
    - If the upstream artifact's frontmatter has no `verified` field, run full verification on it before proceeding.
    - If `verified_hash` exists but does not match the current upstream content hash, re-verify.
    - If the upstream artifact's own `source` field points to an unverified artifact (chain gap), warn: "Note: [upstream path]'s own upstream at [source path] has not been verified. Consider running verification on the full chain." Do NOT recurse — warn only.
+6. **Gate check:** Confirm `_extracted_items.md` exists and contains at least 1 item. Output: "Extraction complete: N items from [path]. Proceeding to Phase 1." Only then may Phase 1 begin.
 
 ### 0e. Assess scope — single plan or multiple plans?
 
@@ -149,7 +152,11 @@ Research/features/{slug}/
 
 ## Phase 1: Plan Generation
 
+**STOP. If an upstream artifact was specified in Phase 0, does `_extracted_items.md` exist in the output folder? If not, go back to Phase 0d. DO NOT generate a plan without the extraction inventory — this is the #1 cause of drift.**
+
 Read the v6 template file first. If a `mock-ups/mock-up-summary.md` exists alongside the research, read it too — use the component inventory for task breakdown, design decisions for acceptance criteria, screen flow for navigation tasks, and responsive notes for breakpoint tasks.
+
+**While generating the plan, cross-reference `_extracted_items.md` continuously.** Every extracted item must appear as a task, acceptance criterion, or explicit `[DEFERRED: reason]` in the plan. Do not rely on memory of the upstream artifact — use the extracted inventory as a checklist.
 
 The implementation_plan.md (or phase_map.md for multi-plan) MUST start with YAML frontmatter containing all 5 standard fields:
 
@@ -404,13 +411,13 @@ Before presenting to the user, verify each plan:
 
 ---
 
-## Phase 3: Present to User
+## Phase 3: Present to User — VERIFICATION GATE
+
+**DO NOT present the plan to the user until the handoff-verifier has run and PASSED.** This is a hard gate — not advisory.
 
 ### Upstream Traceability Verification
 
-Before presenting results to the user, verify that the plan covers everything from the upstream research (if one exists).
-
-If the `source` field in the plan's frontmatter is empty (plan was generated from a description), skip this step.
+If the `source` field in the plan's frontmatter is empty (plan was generated from a description), skip verification and proceed to presentation.
 
 If the `source` field points to a `research.md`, run the verifier:
 
@@ -421,6 +428,10 @@ If the `source` field points to a `research.md`, run the verifier:
 - **Upstream artifact:** the path in the `source` frontmatter field (`research.md`)
 - **Downstream artifact:** the path to this skill's `implementation_plan.md` (or `phase_map.md` for multi-plan) output
 - **Match strategy:** `structural`
+
+**On FAIL:** DO NOT present the plan. Fix every SHIRKED, MISSING, and CONTRADICTED item in the plan. Then re-run the verifier. Repeat until PASS or PASS WITH DEFERRALS. Only then proceed to presentation.
+
+**On PASS or PASS WITH DEFERRALS:** Proceed to presentation. The verifier will have stamped the plan's frontmatter with `verified`, `verified_source`, and `verified_hash`.
 
 ### Conditional Mock-Ups Verification
 
@@ -436,7 +447,11 @@ If a `mock-up-summary.md` exists alongside the research (in a `mock-ups/` subdir
 
 If no `mock-up-summary.md` exists, skip this second verification.
 
-After the plan is presented and acknowledged, set `status: done` in the YAML frontmatter. Then remove the `.active-plan` breadcrumb file from the project root.
+**Same gate applies:** On FAIL, fix and re-verify before presenting.
+
+### Presentation
+
+Only after all verification passes (or is skipped due to empty `source`), present the plan and set `status: done` in the YAML frontmatter. Then remove the `.active-plan` breadcrumb file from the project root.
 
 **Single plan — report:**
 - The plan file path
@@ -453,6 +468,33 @@ After the plan is presented and acknowledged, set `status: done` in the YAML fro
 - Total task count across all plans
 - The recommended persona review set (may differ per plan)
 - Any cross-plan dependencies or shared-file risks to flag
+
+---
+
+## Recommended Stop Hook (Safety Net)
+
+Add the following to your project's `.claude/settings.json` to catch plans that bypass the in-skill verification gates. This hook fires when the session ends and checks that any active plan directory contains `_extracted_items.md`:
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f .active-plan ]; then plan_dir=$(cat .active-plan); if [ ! -f \"$plan_dir/_extracted_items.md\" ]; then echo 'WARNING: Plan at '$plan_dir' has no _extracted_items.md — upstream verification was skipped. Run Phase 0d before using this plan.' >&2; fi; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+This is a safety net, not the primary enforcement mechanism. The in-skill gates (Phase 0d and Phase 3) are the first line of defense. The hook catches cases where a sub-agent or interrupted session bypassed them.
 
 ---
 
