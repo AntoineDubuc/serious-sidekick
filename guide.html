@@ -478,9 +478,9 @@
     <h1>Serious <span>Sidekick</span></h1>
     <p>Your Claude Code sidekick &mdash; a knowledge base, workflow toolkit, and feature reference you drop into any project.</p>
     <div class="hero-stats">
-      <div class="hero-stat"><div class="num">38</div><div class="label">Feature Docs</div></div>
-      <div class="hero-stat"><div class="num">28</div><div class="label">Skills</div></div>
-      <div class="hero-stat"><div class="num">6</div><div class="label">Workflow Skills</div></div>
+      <div class="hero-stat"><div class="num">39</div><div class="label">Feature Docs</div></div>
+      <div class="hero-stat"><div class="num">29</div><div class="label">Skills</div></div>
+      <div class="hero-stat"><div class="num">7</div><div class="label">Workflow Skills</div></div>
       <div class="hero-stat"><div class="num">9</div><div class="label">Categories</div></div>
     </div>
   </div>
@@ -492,9 +492,9 @@
     <div class="toc reveal">
       <h3>On this page</h3>
       <ol class="toc-list">
-        <li><a href="#whatsnew"><span class="toc-num" style="background:var(--red-bg);color:var(--red);">&#9733;</span> What's New in v1.3</a></li>
         <li><a href="#quickstart"><span class="toc-num" style="background:var(--green-bg);color:var(--green);">&#10003;</span> Quick Start</a></li>
         <li><a href="#pipeline"><span class="toc-num" style="background:var(--accent-bg);color:var(--accent);">&#9654;</span> Pipeline Overview</a></li>
+        <li><a href="#whatsnew"><span class="toc-num" style="background:var(--red-bg);color:var(--red);">&#9733;</span> What's New in v1.3</a></li>
         <li><a href="#verification"><span class="toc-num" style="background:var(--red-bg);color:var(--red);">&#128737;</span> Handoff Verification</a></li>
         <li><a href="#conversation"><span class="toc-num" style="background:var(--amber-bg);color:var(--amber);">1</span> /serious-conversation</a></li>
         <li><a href="#research"><span class="toc-num" style="background:var(--blue-bg);color:var(--blue);">2</span> /serious-research</a></li>
@@ -513,70 +513,6 @@
   </div>
 </section>
 
-
-<!-- ═══════════════════ WHAT'S NEW ═══════════════════ -->
-<section id="whatsnew">
-  <div class="container">
-    <div class="reveal">
-      <div class="section-label">v1.3.0</div>
-      <h2>What's New</h2>
-      <p>Pipeline split: scope before plan, review before code. 7 steps, tighter verification.</p>
-    </div>
-
-    <div class="util-grid reveal delay-1">
-      <div class="util-card">
-        <h3>Breaking: Review Before Code</h3>
-        <p><code>/serious-review</code> now runs <strong>before</strong> <code>/serious-code</code>, not after. The old flow was plan &rarr; code &rarr; review. The new flow is plan &rarr; review &rarr; code. Review is now a mandatory plan quality gate. Post-code defect capture will move to <code>/serious-qa</code> in a future release.</p>
-      </div>
-      <div class="util-card">
-        <h3>New: /serious-scope</h3>
-        <p>Generates a scope manifest from research findings. Defines plan boundaries, dependencies, and shared contracts. Splits complex work into independently-plannable units before <code>/serious-plan</code> runs.</p>
-      </div>
-      <div class="util-card">
-        <h3>7-Step Pipeline</h3>
-        <p>conversation &rarr; research &rarr; mock-ups &rarr; <strong>scope</strong> &rarr; plan &rarr; <strong>review</strong> &rarr; code. Every skill updated with new ordering, breadcrumbs, and verification.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="container">
-    <div class="reveal">
-      <div class="section-label">v1.2.0</div>
-      <h2>Previous: v1.2 Highlights</h2>
-      <p>Agents that police themselves, verification at every handoff, and Nano Banana 2.</p>
-    </div>
-
-    <div class="util-grid reveal delay-1">
-      <div class="util-card">
-        <h3>Anti-Rationalization Tables</h3>
-        <p>Each agent now has a table of excuses it might generate to skip its own protocol, with explanations of why each is wrong. Implementer: 8 TDD-skipping rationalizations. Reviewer: 7 review-softening rationalizations. QA: 6 spot-check shortcuts.</p>
-      </div>
-      <div class="util-card">
-        <h3>Two-Stage Code Review</h3>
-        <p>The Reviewer runs two separate passes. Stage 1: spec compliance &mdash; every criterion gets COMPLIANT / PARTIAL / MISSING / WRONG. Any MISSING or WRONG = automatic FAIL. Stage 2: code quality. Prevents "works great, wrong thing" from slipping through.</p>
-      </div>
-      <div class="util-card">
-        <h3>Anti-Sycophancy</h3>
-        <p>Reviewer and QA agents are forbidden from performative praise. Both verify independently against the codebase, not the implementer's self-report. QA's rule: "If you find no problems, be suspicious of yourself."</p>
-      </div>
-      <div class="util-card">
-        <h3>Nano Banana 2</h3>
-        <p><code>/serious-bananas</code> upgraded to <code>gemini-3.1-flash-image-preview</code>. 4K resolution, dark mode style, 14 aspect ratios, reference images, search grounding, and iterative editing. Three model tiers.</p>
-      </div>
-      <div class="util-card">
-        <h3>Verification Enforcement</h3>
-        <p>Upstream extraction (Phase 0d) and handoff verification (Phase 3) are now hard gates in <code>/serious-plan</code> and <code>/serious-research</code>. Previously advisory &mdash; a real plan missed 4 design decisions from a 36-item conversation because extraction was skipped entirely. Now: no <code>_extracted_items.md</code> = no plan generation. FAIL = fix and re-verify before presenting.</p>
-      </div>
-    </div>
-
-    <div class="tip reveal delay-2">
-      <div class="tip-icon">&#128161;</div>
-      <div><strong>Credit where it's due.</strong> Anti-rationalization tables, two-stage review, and anti-sycophancy guidance were inspired by <a href="https://github.com/obra/superpowers" style="color:var(--accent);">obra/superpowers</a>. We studied their approach to keeping AI agents honest and adapted it for Serious Sidekick's pipeline.</div>
-    </div>
-  </div>
-</section>
 
 <hr class="divider">
 
@@ -669,6 +605,73 @@
 <hr class="divider">
 
 
+<!-- ═══════════════════ WHAT'S NEW ═══════════════════ -->
+<section id="whatsnew">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">v1.3.0</div>
+      <h2>What's New</h2>
+      <p>Pipeline split: scope before plan, review before code. 7 steps, tighter verification.</p>
+    </div>
+
+    <div class="util-grid reveal delay-1">
+      <div class="util-card">
+        <h3>Breaking: Review Before Code</h3>
+        <p><code>/serious-review</code> now runs <strong>before</strong> <code>/serious-code</code>, not after. The old flow was plan &rarr; code &rarr; review. The new flow is plan &rarr; review &rarr; code. Review is now a mandatory plan quality gate. Post-code defect capture will move to <code>/serious-qa</code> in a future release.</p>
+      </div>
+      <div class="util-card">
+        <h3>New: /serious-scope</h3>
+        <p>Generates a scope manifest from research findings. Defines plan boundaries, dependencies, and shared contracts. Splits complex work into independently-plannable units before <code>/serious-plan</code> runs.</p>
+      </div>
+      <div class="util-card">
+        <h3>7-Step Pipeline</h3>
+        <p>conversation &rarr; research &rarr; mock-ups &rarr; <strong>scope</strong> &rarr; plan &rarr; <strong>review</strong> &rarr; code. Every skill updated with new ordering, breadcrumbs, and verification.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">v1.2.0</div>
+      <h2>Previous: v1.2 Highlights</h2>
+      <p>Agents that police themselves, verification at every handoff, and Nano Banana 2.</p>
+    </div>
+
+    <div class="util-grid reveal delay-1">
+      <div class="util-card">
+        <h3>Anti-Rationalization Tables</h3>
+        <p>Each agent now has a table of excuses it might generate to skip its own protocol, with explanations of why each is wrong. Implementer: 8 TDD-skipping rationalizations. Reviewer: 7 review-softening rationalizations. QA: 6 spot-check shortcuts.</p>
+      </div>
+      <div class="util-card">
+        <h3>Two-Stage Code Review</h3>
+        <p>The Reviewer runs two separate passes. Stage 1: spec compliance &mdash; every criterion gets COMPLIANT / PARTIAL / MISSING / WRONG. Any MISSING or WRONG = automatic FAIL. Stage 2: code quality. Prevents "works great, wrong thing" from slipping through.</p>
+      </div>
+      <div class="util-card">
+        <h3>Anti-Sycophancy</h3>
+        <p>Reviewer and QA agents are forbidden from performative praise. Both verify independently against the codebase, not the implementer's self-report. QA's rule: "If you find no problems, be suspicious of yourself."</p>
+      </div>
+      <div class="util-card">
+        <h3>Nano Banana 2</h3>
+        <p><code>/serious-bananas</code> upgraded to <code>gemini-3.1-flash-image-preview</code>. 4K resolution, dark mode style, 14 aspect ratios, reference images, search grounding, and iterative editing. Three model tiers.</p>
+      </div>
+      <div class="util-card">
+        <h3>Verification Enforcement</h3>
+        <p>Upstream extraction (Phase 0d) and handoff verification (Phase 3) are now hard gates in <code>/serious-plan</code> and <code>/serious-research</code>. Previously advisory &mdash; a real plan missed 4 design decisions from a 36-item conversation because extraction was skipped entirely. Now: no <code>_extracted_items.md</code> = no plan generation. FAIL = fix and re-verify before presenting.</p>
+      </div>
+    </div>
+
+    <div class="tip reveal delay-2">
+      <div class="tip-icon">&#128161;</div>
+      <div><strong>Credit where it's due.</strong> Anti-rationalization tables, two-stage review, and anti-sycophancy guidance were inspired by <a href="https://github.com/obra/superpowers" style="color:var(--accent);">obra/superpowers</a>. We studied their approach to keeping AI agents honest and adapted it for Serious Sidekick's pipeline.</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+
 <!-- ═══════════════════ HANDOFF VERIFICATION ═══════════════════ -->
 <div class="skill-section" id="verification">
   <div class="container">
@@ -732,7 +735,7 @@
 <div class="skill-section" id="conversation">
   <div class="container">
     <div class="reveal">
-      <div class="skill-number" style="color:var(--amber);">Skill 1 of 6</div>
+      <div class="skill-number" style="color:var(--amber);">Skill 1 of 7</div>
       <div class="skill-header">
         <div class="skill-icon" style="background:var(--amber-bg);color:var(--amber);">&#128172;</div>
         <div>
@@ -818,7 +821,7 @@
 <div class="skill-section" id="research">
   <div class="container">
     <div class="reveal">
-      <div class="skill-number" style="color:var(--blue);">Skill 2 of 6</div>
+      <div class="skill-number" style="color:var(--blue);">Skill 2 of 7</div>
       <div class="skill-header">
         <div class="skill-icon" style="background:var(--blue-bg);color:var(--blue);">&#128269;</div>
         <div>
@@ -919,7 +922,7 @@
 <div class="skill-section" id="mockups">
   <div class="container">
     <div class="reveal">
-      <div class="skill-number" style="color:var(--pink);">Skill 3 of 6</div>
+      <div class="skill-number" style="color:var(--pink);">Skill 3 of 7</div>
       <div class="skill-header">
         <div class="skill-icon" style="background:var(--pink-bg);color:var(--pink);">&#127912;</div>
         <div>
@@ -983,11 +986,86 @@
 </div>
 
 
-<!-- ═══════════════════ 4. PLAN ═══════════════════ -->
+<!-- ═══════════════════ 4. SCOPE ═══════════════════ -->
+<div class="skill-section" id="scope">
+  <div class="container">
+    <div class="reveal">
+      <div class="skill-number" style="color:var(--accent);">Skill 4 of 7</div>
+      <div class="skill-header">
+        <div class="skill-icon" style="background:var(--accent-bg);color:var(--accent);">&#127919;</div>
+        <div>
+          <h2>Define Plan Boundaries</h2>
+          <div class="skill-cmd">/serious-scope</div>
+        </div>
+      </div>
+      <p class="skill-intro">Before writing a detailed plan, define how the work splits up. This skill reads your research, identifies natural boundaries, and proposes how many plans you need &mdash; each with its own scope, dependencies, and tags.</p>
+    </div>
+
+    <div class="when-what reveal delay-1">
+      <div class="ww-box ww-when">
+        <h4>When to use it</h4>
+        <ul>
+          <li>Complex features that touch multiple systems</li>
+          <li>Multi-component work with unclear boundaries</li>
+          <li>You're not sure if this is one plan or three</li>
+        </ul>
+      </div>
+      <div class="ww-box ww-what">
+        <h4>What you get</h4>
+        <ul>
+          <li>A scope manifest with plan boundaries</li>
+          <li>Rationale for each split</li>
+          <li>Dependency map between plans</li>
+          <li>Tags for each plan (auth, infra, UI, etc.)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sub-heading reveal">How it works</div>
+    <div class="steps reveal delay-1">
+      <div class="step">
+        <div class="step-num" style="background:var(--accent-bg);color:var(--accent);border-color:var(--accent);">1</div>
+        <div class="step-content">
+          <h4>Claude reads your research</h4>
+          <p>Auto-detects completed research, or you point it to a specific <code>research.md</code>.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--accent-bg);color:var(--accent);border-color:var(--accent);">2</div>
+        <div class="step-content">
+          <h4>Proposes a split with rationale</h4>
+          <p>Groups by concern, checks coupling, and explains why each plan is separate. Tightly coupled items stay together; independent items split.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--accent-bg);color:var(--accent);border-color:var(--accent);">3</div>
+        <div class="step-content">
+          <h4>You approve or adjust</h4>
+          <p>Merge plans, split further, edit rationale or tags. Nothing is written until you say go.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--accent-bg);color:var(--accent);border-color:var(--accent);">4</div>
+        <div class="step-content">
+          <h4>Manifest feeds into /serious-plan</h4>
+          <p>Each plan entry in the manifest becomes a separate <code>/serious-plan</code> invocation with pre-defined boundaries.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip reveal delay-2">
+      <div class="tip-icon">&#128161;</div>
+      <div><strong>Under 100 lines.</strong> It's a lens, not an engine. Scope reads research and proposes structure &mdash; no persona pipeline, no quality validation. That's what <code>/serious-plan</code> and <code>/serious-review</code> are for.</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 5. PLAN ═══════════════════ -->
 <div class="skill-section" id="plan">
   <div class="container">
     <div class="reveal">
-      <div class="skill-number" style="color:var(--orange);">Skill 4 of 6</div>
+      <div class="skill-number" style="color:var(--orange);">Skill 5 of 7</div>
       <div class="skill-header">
         <div class="skill-icon" style="background:var(--orange-bg);color:var(--orange);">&#128203;</div>
         <div>
@@ -995,7 +1073,7 @@
           <div class="skill-cmd">/serious-plan</div>
         </div>
       </div>
-      <p class="skill-intro">Your idea becomes a step-by-step action plan. Claude takes your research (or description) and generates tasks with acceptance criteria, tests to write, and verification steps. AI personas review the plan before you see it.</p>
+      <p class="skill-intro">Your idea becomes a step-by-step action plan. Claude takes your research (or description) and generates tasks with acceptance criteria, tests to write, and verification steps. Handoff verification ensures the plan covers every research finding.</p>
     </div>
 
     <div class="steps reveal delay-1">
@@ -1016,15 +1094,15 @@
       <div class="step">
         <div class="step-num" style="background:var(--orange-bg);color:var(--orange);border-color:var(--orange);">3</div>
         <div class="step-content">
-          <h4>AI personas review the plan</h4>
-          <p>Senior Engineer + Integration Architect check for gaps. Severity-weighted: any critical &rarr; mandatory re-review. Issues are fixed, not appended.</p>
+          <h4>Claude verifies coverage against research</h4>
+          <p>The handoff verifier checks that every finding and recommendation from research appears in the plan. Any gaps are fixed before you see it.</p>
         </div>
       </div>
       <div class="step">
         <div class="step-num" style="background:var(--orange-bg);color:var(--orange);border-color:var(--orange);">4</div>
         <div class="step-content">
-          <h4>You approve the plan</h4>
-          <p>Review it, ask questions, request changes. Once approved, it's ready for <code>/serious-code</code>.</p>
+          <h4>You approve the plan, then run /serious-review</h4>
+          <p>Review it, ask questions, request changes. Once approved, run <code>/serious-review</code> for adversarial quality checks before <code>/serious-code</code>.</p>
         </div>
       </div>
     </div>
@@ -1039,17 +1117,85 @@
 
     <div class="warning reveal">
       <div class="warn-icon">&#9888;&#65039;</div>
-      <div><strong>Big projects get split.</strong> 8+ tasks or multiple areas &rarr; Claude proposes splitting into multiple plans with a <code>phase_map.md</code> for parallel execution.</div>
+      <div><strong>Big projects get split.</strong> Use <code>/serious-scope</code> first to split big projects into multiple plans. Each plan gets its own boundaries, dependencies, and tags.</div>
     </div>
   </div>
 </div>
 
 
-<!-- ═══════════════════ 5. CODE ═══════════════════ -->
+<!-- ═══════════════════ 6. REVIEW ═══════════════════ -->
+<div class="skill-section" id="review">
+  <div class="container">
+    <div class="reveal">
+      <div class="skill-number" style="color:var(--purple);">Skill 6 of 7</div>
+      <div class="skill-header">
+        <div class="skill-icon" style="background:var(--purple-bg);color:var(--purple);">&#128270;</div>
+        <div>
+          <h2>Adversarial Plan Review</h2>
+          <div class="skill-cmd">/serious-review</div>
+        </div>
+      </div>
+      <p class="skill-intro">Before code gets written, the plan passes through an adversarial review gate. Three mandatory AI agents read your plan cold &mdash; no research context, no author notes &mdash; and surface structural defects, security gaps, and vagueness.</p>
+    </div>
+
+    <div class="sub-heading reveal">3 mandatory review agents</div>
+    <div class="persona-grid reveal delay-1">
+      <div class="persona-card"><h4>Anti-Slop Auditor</h4><p>10 checks: vague language, copy-paste echo, phantom architecture, hollow tasks, missing error paths, and more</p></div>
+      <div class="persona-card"><h4>Structural Reviewer</h4><p>Task dependencies, acceptance criteria quality, scope coverage, missing rollback plans, circular references</p></div>
+      <div class="persona-card"><h4>Security Mind</h4><p>Auth flows, data exposure, injection surfaces, secret handling, privilege escalation, supply chain risks</p></div>
+    </div>
+
+    <div class="sub-heading reveal">Conditional agents</div>
+    <div class="persona-grid reveal delay-1">
+      <div class="persona-card"><h4>Data Privacy</h4><p>Triggered by <code>user-data</code>, <code>pii</code>, or <code>gdpr</code> tags. Checks data classification, retention, and consent.</p></div>
+      <div class="persona-card"><h4>Infrastructure</h4><p>Triggered by <code>infrastructure</code> or <code>infra</code> tags. Checks resource limits, deployment config, scaling, and rollback.</p></div>
+    </div>
+
+    <div class="sub-heading reveal">How it works</div>
+    <div class="steps reveal delay-2">
+      <div class="step">
+        <div class="step-num" style="background:var(--purple-bg);color:var(--purple);border-color:var(--purple);">1</div>
+        <div class="step-content">
+          <h4>Cold read</h4>
+          <p>Agents read only the plan &mdash; no research, no conversation history, no author notes. If the plan can't stand on its own, that's a finding.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--purple-bg);color:var(--purple);border-color:var(--purple);">2</div>
+        <div class="step-content">
+          <h4>Independent agent reports</h4>
+          <p>All 3 mandatory agents run in parallel. Each produces a structured report with per-check verdicts and an overall assessment.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--purple-bg);color:var(--purple);border-color:var(--purple);">3</div>
+        <div class="step-content">
+          <h4>Verdict synthesis</h4>
+          <p><strong>PASS</strong>, <strong>PASS-WITH-CONDITIONS</strong>, or <strong>FAIL</strong>. Any Critical finding = automatic FAIL. 3+ Major findings across agents = FAIL. Circuit breaker: max 2 rounds.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--purple-bg);color:var(--purple);border-color:var(--purple);">4</div>
+        <div class="step-content">
+          <h4>You decide on FAIL</h4>
+          <p>Options: fix the issues and re-run review, override with a documented reason, or re-scope with <code>/serious-plan</code>. The review gate does not auto-fix.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip reveal">
+      <div class="tip-icon">&#128161;</div>
+      <div><strong>Structural separation.</strong> The reviewing agent has no memory of the planning conversation. <code>/serious-review</code> must be a separate invocation from <code>/serious-plan</code> &mdash; this is by design, not a limitation.</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 7. CODE ═══════════════════ -->
 <div class="skill-section" id="code">
   <div class="container">
     <div class="reveal">
-      <div class="skill-number" style="color:var(--green);">Skill 5 of 6</div>
+      <div class="skill-number" style="color:var(--green);">Skill 7 of 7</div>
       <div class="skill-header">
         <div class="skill-icon" style="background:var(--green-bg);color:var(--green);">&#9889;</div>
         <div>
@@ -1130,72 +1276,6 @@
     <div class="tip reveal">
       <div class="tip-icon">&#128161;</div>
       <div><strong>You can walk away.</strong> Once you say "Go", Claude works through tasks on its own. Use <code>/serious-code --resume</code> to pick up where it left off in a new session.</div>
-    </div>
-  </div>
-</div>
-
-
-<!-- ═══════════════════ 6. REVIEW ═══════════════════ -->
-<div class="skill-section" id="review">
-  <div class="container">
-    <div class="reveal">
-      <div class="skill-number" style="color:var(--purple);">Skill 6 of 6</div>
-      <div class="skill-header">
-        <div class="skill-icon" style="background:var(--purple-bg);color:var(--purple);">&#128270;</div>
-        <div>
-          <h2>Review What Was Built</h2>
-          <div class="skill-cmd">/serious-review</div>
-        </div>
-      </div>
-      <p class="skill-intro">Structured review that captures defects and cycles them back through the pipeline. Each issue gets an ID, a type, and a severity. Findings are formatted as research input so <code>/serious-research</code> &rarr; <code>/serious-plan</code> &rarr; <code>/serious-code</code> can fix them.</p>
-    </div>
-
-    <div class="mode-cards reveal delay-1">
-      <div class="mode-card">
-        <div class="mode-label">Issue Types</div>
-        <h4>What gets captured</h4>
-        <ul>
-          <li>Bug &mdash; broken behavior</li>
-          <li>Missed requirement</li>
-          <li>Improvement suggestion</li>
-          <li>Security concern</li>
-          <li>UX/UI issue</li>
-        </ul>
-      </div>
-      <div class="mode-card">
-        <div class="mode-label">Severities</div>
-        <h4>Priority levels</h4>
-        <ul>
-          <li>Critical &mdash; blocks usage, data loss</li>
-          <li>High &mdash; major feature broken</li>
-          <li>Medium &mdash; works but wrong</li>
-          <li>Low &mdash; minor polish</li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="steps reveal delay-2">
-      <div class="step">
-        <div class="step-num" style="background:var(--purple-bg);color:var(--purple);border-color:var(--purple);">1</div>
-        <div class="step-content">
-          <h4>Mandatory build gate</h4>
-          <p>The project must build cleanly before any review. If it fails, that's REVIEW-001 Critical.</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num" style="background:var(--purple-bg);color:var(--purple);border-color:var(--purple);">2</div>
-        <div class="step-content">
-          <h4>Live capture + QA plan</h4>
-          <p>Each issue gets an ID (REVIEW-001, REVIEW-002...), classified, and written to disk immediately.</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num" style="background:var(--purple-bg);color:var(--purple);border-color:var(--purple);">3</div>
-        <div class="step-content">
-          <h4>Synthesize and hand off</h4>
-          <p>Findings become <code>review-summary.md</code> formatted as research input. Claude offers to kick off the pipeline again to fix what was found.</p>
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -1322,7 +1402,7 @@
       </div>
       <div class="layer">
         <div class="layer-head">
-          <span class="layer-name">28 Skills</span>
+          <span class="layer-name">29 Skills</span>
           <span class="layer-pill">On demand</span>
         </div>
         <div class="layer-desc">Correct syntax, config, and patterns. Auto-loads when the topic comes up. Prevents hallucinated details.</div>
@@ -1365,7 +1445,7 @@
       <div class="cat-card"><h4>Infrastructure</h4><p>Cloud, Multi-Model, Cost Mgmt</p></div>
     </div>
 
-    <div class="sub-heading reveal">All 28 Skills</div>
+    <div class="sub-heading reveal">All 29 Skills</div>
 
     <table class="skills-table reveal delay-1">
       <thead><tr><th>Skill</th><th>Type</th><th>Triggers when you discuss...</th></tr></thead>
@@ -1374,9 +1454,10 @@
         <tr><td><code>serious-conversation</code></td><td><span class="tag tag-w">workflow</span></td><td>brainstorm, ideation</td></tr>
         <tr><td><code>serious-research</code></td><td><span class="tag tag-w">workflow</span></td><td>research, investigation</td></tr>
         <tr><td><code>serious-mock-ups</code></td><td><span class="tag tag-w">workflow</span></td><td>wireframe, show me the UI</td></tr>
+        <tr><td><code>serious-scope</code></td><td><span class="tag tag-w">workflow</span></td><td>scope this, split this, how many plans</td></tr>
         <tr><td><code>serious-plan</code></td><td><span class="tag tag-w">workflow</span></td><td>implementation plan</td></tr>
+        <tr><td><code>serious-review</code></td><td><span class="tag tag-w">workflow</span></td><td>review this plan, plan quality gate</td></tr>
         <tr><td><code>serious-code</code></td><td><span class="tag tag-w">workflow</span></td><td>execute plan, implement</td></tr>
-        <tr><td><code>serious-review</code></td><td><span class="tag tag-w">workflow</span></td><td>review, QA, defects</td></tr>
         <tr><td><code>serious-bananas</code></td><td><span class="tag tag-w">workflow</span></td><td>generate image, diagram</td></tr>
         <tr><td><code>serious-status</code></td><td><span class="tag tag-w">workflow</span></td><td>workflow status</td></tr>
         <tr><td><code>serious-abandon</code></td><td><span class="tag tag-w">workflow</span></td><td>abandon, bail out</td></tr>
