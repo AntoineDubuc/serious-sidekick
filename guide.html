@@ -496,6 +496,7 @@
         <li><a href="#quickstart"><span class="toc-num" style="background:var(--green-bg);color:var(--green);">&#10003;</span> Quick Start</a></li>
         <li><a href="#pipeline"><span class="toc-num" style="background:var(--accent-bg);color:var(--accent);">&#9654;</span> Pipeline Overview</a></li>
         <li><a href="#verification"><span class="toc-num" style="background:var(--red-bg);color:var(--red);">&#128737;</span> Handoff Verification</a></li>
+        <li><a href="#hooks-enforcement"><span class="toc-num" style="background:var(--green-bg);color:var(--green);">&#128274;</span> Stop Hooks</a></li>
         <li><a href="#conversation"><span class="toc-num" style="background:var(--amber-bg);color:var(--amber);">1</span> /serious-conversation</a></li>
         <li><a href="#research"><span class="toc-num" style="background:var(--blue-bg);color:var(--blue);">2</span> /serious-research</a></li>
         <li><a href="#mockups"><span class="toc-num" style="background:var(--pink-bg);color:var(--pink);">3</span> /serious-mock-ups</a></li>
@@ -657,6 +658,40 @@
     <div class="tip reveal">
       <div class="tip-icon">&#128161;</div>
       <div><strong>Retroactive verification.</strong> Artifacts created before the verifier existed get caught the moment someone tries to use them. The system checks for a verification stamp in the frontmatter &mdash; if it's missing, verification runs before proceeding.</div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+
+<!-- ═══════════════════ HOOKS ═══════════════════ -->
+<div class="skill-section" id="hooks-enforcement">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">Enforcement</div>
+      <h2>Stop Hooks — The System Checks Itself</h2>
+      <p>Three shell scripts fire every time a Claude session ends. They catch incomplete work before it's forgotten. You don't run them &mdash; they run automatically.</p>
+    </div>
+
+    <div class="util-grid reveal delay-1">
+      <div class="util-card">
+        <h3>Completion Gate</h3>
+        <p>If you're mid-<code>/serious-code</code> and try to exit, the hook checks every task's evidence directory for <code>gate_passed.md</code>. Missing one? Session blocked. You must run the Completion Gate verification before leaving.</p>
+      </div>
+      <div class="util-card">
+        <h3>Conversation Capture</h3>
+        <p>If you're in a <code>/serious-conversation</code> and try to exit without wrapping up, the hook warns that no <code>summary.md</code> exists. Your conversation insights won't survive to the next session without it.</p>
+      </div>
+      <div class="util-card">
+        <h3>Research Capture</h3>
+        <p>If you're in a <code>/serious-research</code> and try to exit before it's finalized, the hook checks the frontmatter status. Still "active"? You'll be warned that findings are incomplete.</p>
+      </div>
+    </div>
+
+    <div class="tip reveal delay-2">
+      <div class="tip-icon">&#128161;</div>
+      <div><strong>How it works:</strong> These hooks are registered in <code>.claude/settings.json</code> and installed automatically by <code>/serious-init</code>. They run outside Claude's control &mdash; the AI cannot skip or override them. If a hook blocks exit, the only way out is to complete the work or abandon the workflow.</div>
     </div>
   </div>
 </div>

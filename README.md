@@ -4,7 +4,7 @@
 
 **A workflow toolkit for Claude Code that thinks before it builds.**
 
-Structured conversations, research with evidence grading, implementation plans with TDD,<br>
+Structured conversations, research with evidence grading, implementation plans with TDD,`<br>`
 and automatic verification that catches when the AI drops, defers, or half-does your work.
 
 [![Version](https://img.shields.io/badge/version-1.3.0-blue?style=flat-square)](CHANGELOG.md)
@@ -37,42 +37,6 @@ The toolkit is a pipeline. Each stage produces artifacts that feed the next, and
 <tr>
 <td width="50%" valign="top">
 
-### 🛡️ What Happens at Each Handoff
-
-Before a skill marks itself done, an independent sub-agent:
-
-1. **Extracts** every item from the upstream artifact
-2. **Checks** whether the current skill's output addresses each one
-3. **Classifies** each as covered, missing, shirked, contradicted, deferred, or overridden
-4. **Blocks** if anything was dropped — the skill loops and fixes before proceeding
-
-No drift accumulates. No defects pile up for a review phase to catch. Each step is clean before the next one starts.
-
-</td>
-<td width="50%" valign="top">
-
-### 📊 Verification Output
-
-```
-Source: research.md (8 findings)
-
-1. Token rotation    → ✅ Covered
-2. Session mgmt      → ✅ Covered
-3. Refresh tokens    → ⚠️ Deferred
-4. Rate limiting     → 🚫 Shirked
-5. Key storage       → ✅ Covered
-6. Audit logging     → ❌ Missing
-7. Token lifetime    → ✅ Covered
-8. Revocation        → ✅ Override
-
-Verdict: FAIL — 1 shirked, 1 missing
-→ Skill loops to fix before finishing
-```
-
-</td>
-</tr>
-</table>
-
 ---
 
 ## The Pipeline
@@ -98,29 +62,6 @@ Two modes. Quick mode for focused questions. Deep mode for multi-dimensional ana
 <tr>
 <td width="50%">
 
-**Quick Mode**
-- Single-threaded investigation
-- Persona reviews (Senior Engineer, Security, etc.)
-- Markdown deliverable
-
-*Best for: bug diagnosis, focused questions, single-angle investigations*
-
-</td>
-<td width="50%">
-
-**Deep Mode**
-- Parallel research agents
-- Evidence grading (A through F)
-- Adversarial verification (tries to disprove your findings)
-- QA citation checking
-- Self-contained HTML report
-
-*Best for: architecture decisions, competitive analysis, high-stakes choices*
-
-</td>
-</tr>
-</table>
-
 Before any research begins, mandatory pre-steps capture a smoke test baseline, trace the execution path, identify caching layers, and map downstream consumers.
 
 <br>
@@ -135,7 +76,7 @@ Three fidelity levels — wireframe (ASCII), visual (Gemini-generated), and inte
 
 Generates implementation plans using the v6 template. Not a to-do list — a contract with testable acceptance criteria, TDD protocol, and independent review.
 
-<img src="images/readme/plan_review.png" alt="Plan review diagram showing 3 mandatory agents (Anti-Slop Auditor, Structural Reviewer, Security Mind) reading plan cold, producing a verdict with circuit breaker" width="100%">
+`<img src="images/readme/plan_review.png" alt="Plan review diagram showing 3 mandatory agents (Anti-Slop Auditor, Structural Reviewer, Security Mind) reading plan cold, producing a verdict with circuit breaker" width="100%">`
 
 - **3 mandatory review agents** — Anti-Slop Auditor (10 checks), Structural Reviewer, Security Mind. All read the plan cold — no research context, no author notes
 - **10 anti-slop checks** — weasel words, missing outputs, test gaps, copy-paste echo, scope creep, phantom architecture, unspecified error contracts, magic numbers, implicit ordering, dead-end tasks
@@ -180,6 +121,7 @@ Open Claude Code in your project and run:
 This copies everything — skills, agents, feature docs, plan template, and CLAUDE.md config.
 
 **Variants:**
+
 ```
 /serious-init --skills-only     # Just skills, no docs
 /serious-init --docs-only       # Just docs + CLAUDE.md
@@ -204,9 +146,10 @@ This copies everything — skills, agents, feature docs, plan template, and CLAU
 <tr><td><code>/serious-conversation</code></td><td>Persona panel for ideation and exploration</td></tr>
 <tr><td><code>/serious-research</code></td><td>Structured investigation with evidence</td></tr>
 <tr><td><code>/serious-mock-ups</code></td><td>UI wireframes and visuals before planning</td></tr>
-<tr><td><code>/serious-plan</code></td><td>Implementation planning with TDD and reviews</td></tr>
+<tr><td><code>/serious-scope</code></td><td>Scope manifest — splits research into plan boundaries</td></tr>
+<tr><td><code>/serious-plan</code></td><td>Single-plan generation with TDD protocol</td></tr>
+<tr><td><code>/serious-review</code></td><td>Plan quality gate — 3 mandatory agents, cold-read, 10 anti-slop checks</td></tr>
 <tr><td><code>/serious-code</code></td><td>Plan execution with 5 verification agents</td></tr>
-<tr><td><code>/serious-review</code></td><td>Defect capture, cycles back into pipeline</td></tr>
 <tr><td><code>/serious-bananas</code></td><td>Image/diagram generation via Gemini API (Nano Banana 2 — 4K, dark mode, 3 model tiers)</td></tr>
 <tr><td><code>/serious-init</code></td><td>Scaffold a new project with the toolkit</td></tr>
 </table>
@@ -259,11 +202,11 @@ pie title Features by Category
 
 The knowledge loads in three layers, each serving a different purpose:
 
-| Layer | What | When | Context Cost |
-|:------|:-----|:-----|:-------------|
-| **CLAUDE.md** | Feature index + rules | Every session | Minimal — always present |
-| **Skills** | How-to cheat sheets | When the topic comes up | Only when relevant |
-| **Research docs** | Deep reference with citations | When explicitly needed | Only when read |
+| Layer                   | What                          | When                    | Context Cost              |
+| :---------------------- | :---------------------------- | :---------------------- | :------------------------ |
+| **CLAUDE.md**     | Feature index + rules         | Every session           | Minimal — always present |
+| **Skills**        | How-to cheat sheets           | When the topic comes up | Only when relevant        |
+| **Research docs** | Deep reference with citations | When explicitly needed  | Only when read            |
 
 This means Claude always *knows* what it can do (CLAUDE.md), gets the right syntax when it needs it (skills), and can go deep on edge cases (research docs) — without bloating every session with documentation it doesn't need.
 
@@ -277,14 +220,28 @@ The handoff verifier is the system's immune system. It runs automatically — no
 
 **Six dispositions** — each item gets classified:
 
-| | Disposition | What It Means |
-|:--|:-----------|:--------------|
-| ✅ | **Covered** | Substantive treatment — own section, acceptance criteria, design decisions |
-| ⚠️ | **Deferred** | Explicitly marked `[DEFERRED: reason]` — passes with warning |
-| 🚫 | **Shirked** | Mentioned but waved away — "future enhancement," hollow sections, LLM dodges |
-| ❌ | **Missing** | Not mentioned at all |
-| 🔀 | **Contradicted** | Downstream says the opposite of upstream |
-| ✅ | **Override** | User asserts it's handled with `[VERIFIED: override — reason]` |
+|      | Disposition            | What It Means                                                                 |
+| :--- | :--------------------- | :---------------------------------------------------------------------------- |
+| ✅   | **Covered**      | Substantive treatment — own section, acceptance criteria, design decisions   |
+| ⚠️ | **Deferred**     | Explicitly marked `[DEFERRED: reason]` — passes with warning               |
+| 🚫   | **Shirked**      | Mentioned but waved away — "future enhancement," hollow sections, LLM dodges |
+| ❌   | **Missing**      | Not mentioned at all                                                          |
+| 🔀   | **Contradicted** | Downstream says the opposite of upstream                                      |
+| ✅   | **Override**     | User asserts it's handled with `[VERIFIED: override — reason]`             |
+
+---
+
+## How the System Checks Itself
+
+Three shell scripts fire automatically when a Claude session ends. They catch incomplete work before it's forgotten.
+
+| Hook | Fires when | What it catches |
+|:-----|:-----------|:----------------|
+| **Completion Gate** | `/serious-code` is active | Blocks exit if any task evidence directory is missing `gate_passed.md`. The AI cannot skip verification — this runs outside its control. |
+| **Conversation Capture** | `/serious-conversation` is active | Warns if the conversation has no `summary.md`. Insights won't survive to the next session without it. |
+| **Research Capture** | `/serious-research` is active | Warns if research is still `status: active` (not finalized). Incomplete findings won't be picked up by `/serious-plan`. |
+
+These are registered in `.claude/settings.json` and installed by `/serious-init`. The AI cannot bypass them — they're enforced by the Claude Code runtime, not by prompts.
 
 ---
 
