@@ -71,6 +71,15 @@ Before anything else, check for active workflow breadcrumbs in the project root:
 
 The cold-read principle ensures reviewers judge the plan on its own merits, not by filling in gaps from context.
 
+### 1-err. Input validation
+
+Before reading the plan, handle these error cases:
+
+1. **Plan file does not exist:** Output "ERROR: Plan file at {path} not found." Remove `.active-review` breadcrumb. Stop.
+2. **Plan file has no YAML frontmatter** (no `---` delimiters in first 20 lines): Output "ERROR: Plan file has no YAML frontmatter. Cannot extract metadata for review." Remove breadcrumb. Stop.
+3. **Frontmatter is malformed** (YAML parse error): Output "WARNING: Plan frontmatter is malformed. Proceeding with heading-based extraction. Review may be incomplete."
+4. **`source:` field is present but path does not exist on disk:** Output "WARNING: Plan's source path {path} does not exist. Copy-Paste Echo check (Check 4) will be skipped — cannot compare against upstream." Proceed with remaining checks.
+
 ### 1a. Read the plan
 
 Read the entire plan file. Extract:
@@ -100,6 +109,14 @@ Spawn all 3 agents using the Agent tool, passing them the plan file path:
 3. **`serious-review-security`** — Pass: plan path
 
 Each agent runs independently and produces a structured report with a per-agent verdict.
+
+### 2a-err. Agent dispatch failure handling
+
+If any agent fails to spawn, returns empty output, or times out:
+
+1. **Log the failure:** Record which agent failed and how (spawn error, empty output, timeout) in the verdict file.
+2. **Retry once:** Re-spawn the failed agent. If it fails again, treat it as a Critical finding: "Agent {name} failed to produce a report after 2 attempts. Reason: {error}. This plan cannot be fully reviewed."
+3. **Do NOT proceed with a partial review.** All 3 mandatory agents must produce reports. A missing report means the plan has an unreviewed surface — treat it as FAIL with the specific gap identified.
 
 ### 2b. Conditional agents
 
