@@ -81,20 +81,20 @@ cp -r "/Users/cg-adubuc/Desktop/Antoine/_claude_code_template_/.claude/skills/"*
 cp -r "/Users/cg-adubuc/Desktop/Antoine/_claude_code_template_/.claude/agents/"* .claude/agents/
 ```
 
-**Important:** The `serious-code/hooks/` subfolder must be included — it contains `verify-completion-gate.sh` which is referenced by the Stop hook.
+**Important:** Each skill's `hooks/` subfolder must be included — they contain the Stop hook scripts that enforce quality gates.
 
-### Step 3: Register hooks in settings.json
+### Step 3: Register ALL 6 hooks in settings.json
 
-The Completion Gate stop hook must be registered in `.claude/settings.json`. This is what makes the hook actually fire — the script alone does nothing without registration.
+Six Stop hooks must be registered in `.claude/settings.json`. These fire on session exit and catch incomplete work. The scripts alone do nothing without registration.
 
 **If `.claude/settings.json` does not exist:** Copy the template's settings.json:
 ```bash
 cp "/Users/cg-adubuc/Desktop/Antoine/_claude_code_template_/.claude/settings.json" .claude/settings.json
 ```
 
-**If `.claude/settings.json` already exists:** Merge the hooks. Read the existing file, check if `hooks.Stop` already has the `verify-completion-gate.sh` entry. If not, add it. If yes, update the command path. Do NOT overwrite the entire file — preserve the user's other settings.
+**If `.claude/settings.json` already exists:** Merge the hooks. Read the existing file, ensure ALL 6 hook entries exist in `hooks.Stop[0].hooks[]`. Do NOT overwrite the entire file — preserve the user's other settings.
 
-The hook entry to ensure exists:
+The 6 hooks to ensure exist:
 ```json
 {
   "hooks": {
@@ -106,6 +106,31 @@ The hook entry to ensure exists:
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/verify-completion-gate.sh\"",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-conversation/hooks/capture-conversation.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-research/hooks/capture-research.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-plan/hooks/check-extraction.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-scope/hooks/check-manifest.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-review/hooks/check-verdict.sh\"",
+            "timeout": 10
           }
         ]
       }
@@ -114,7 +139,16 @@ The hook entry to ensure exists:
 }
 ```
 
-**Key:** Use `$CLAUDE_PROJECT_DIR` in the command — Claude Code provides this environment variable at runtime, making the path portable across machines.
+| Hook | Skill | What it catches |
+|------|-------|-----------------|
+| verify-completion-gate.sh | /serious-code | Blocks exit without gate_passed.md evidence |
+| capture-conversation.sh | /serious-conversation | Warns if done without summary.md |
+| capture-research.sh | /serious-research | Warns if research still active |
+| check-extraction.sh | /serious-plan | Warns if plan has upstream but no _extracted_items.md |
+| check-manifest.sh | /serious-scope | Warns if scope started but no manifest.md |
+| check-verdict.sh | /serious-review | Warns if review started but no verdict |
+
+**Key:** Use `$CLAUDE_PROJECT_DIR` in commands — Claude Code provides this at runtime, making paths portable.
 
 ### Step 4: Copy documentation and template
 
@@ -138,10 +172,10 @@ cp "/Users/cg-adubuc/Desktop/Antoine/_claude_code_template_/_implementation_plan
 Check that everything was installed correctly:
 
 ```
-✓ Skills: 28 installed (.claude/skills/)
+✓ Skills: 29 installed (.claude/skills/)
 ✓ Agents: 8 installed (.claude/agents/)
-✓ Hooks: Stop hook registered in .claude/settings.json
-✓ Docs: 38 feature folders (Claude Code Features/)
+✓ Hooks: 6 Stop hooks registered in .claude/settings.json
+✓ Docs: 39 feature folders (Claude Code Features/)
 ✓ Template: _implementation_plan_template_v6.md
 ✓ CLAUDE.md: installed / skipped
 ```
