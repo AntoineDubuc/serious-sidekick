@@ -50,6 +50,7 @@ Before anything else, check for active workflow breadcrumbs in the project root:
 
 Before asking anything, scan the project:
 
+- Check if `$ARGUMENTS` specifies a manifest entry path (e.g., `Research/features/{slug}/manifest.md#Plan-1`). If so, read the manifest, extract the specified plan entry, and skip to Phase 0c for validation. The manifest entry provides: title, boundary, rationale, dependencies, shared contracts, and tags.
 - Check `Research/bugs/*/research.md`, `Research/features/*/research.md`, `Research/exploratory/*/research.md` for files with `status: done` in YAML frontmatter (primary), with fallback to `**Status: Complete**` bold headers for legacy files
 - Check sub-workflow paths: `Research/**/sub/*/research.md` (same dual-check)
 - Check legacy paths: `Bugs/*/research.md`, `New Features/*/research.md`
@@ -60,6 +61,9 @@ Before asking anything, scan the project:
 
 ### 0b. Present what you found
 
+**If a manifest entry was specified:**
+> "Using manifest entry: Plan {N} — {title}. Boundary: {boundary}. Proceeding to generate."
+
 **If exactly one completed research found:**
 > "I found completed research at `Research/features/notifications/research.md`. Use this as the basis for the plan?"
 
@@ -68,16 +72,18 @@ Before asking anything, scan the project:
 
 **If nothing found**, present the options:
 
-1. **"Point me to your `/serious-research` output"** — if they ran it but the folder is somewhere unexpected, they give you the path.
-2. **"I have a PRD, spec, or requirements doc"** — they provide a file path or paste content. This could be a formal PRD, a Jira ticket, a design doc, meeting notes — anything with requirements.
-3. **"Run `/serious-research` first"** — if they realize they need deeper investigation before planning. Hand off to `/serious-research` and stop.
-4. **"I'll describe what I want"** — lightest path. They describe the feature/fix in conversation and you work from that.
+1. **"I have a scope manifest from `/serious-scope`"** — they provide the manifest path and plan number. This is the standard pipeline path.
+2. **"Point me to your `/serious-research` output"** — if they ran it but the folder is somewhere unexpected, they give you the path.
+3. **"I have a PRD, spec, or requirements doc"** — they provide a file path or paste content. This could be a formal PRD, a Jira ticket, a design doc, meeting notes — anything with requirements.
+4. **"Run `/serious-research` first"** — if they realize they need deeper investigation before planning. Hand off to `/serious-research` and stop.
+5. **"I'll describe what I want"** — lightest path. They describe the feature/fix in conversation and you work from that.
 
 ### 0c. Validate the input
 
 Whatever the source, assess whether there's enough to generate a quality plan:
 
 **Sufficient for planning:**
+- Manifest entry with boundary, rationale, and at least one tag
 - Clear description of what to build or fix
 - Enough context to identify affected files/components
 - Enough detail to write testable acceptance criteria
@@ -107,46 +113,15 @@ Once the upstream research artifact is identified (from 0a/0b/0c):
    - If the upstream artifact's own `source` field points to an unverified artifact (chain gap), warn: "Note: [upstream path]'s own upstream at [source path] has not been verified. Consider running verification on the full chain." Do NOT recurse — warn only.
 6. **Gate check:** Confirm `_extracted_items.md` exists and contains at least 1 item. Output: "Extraction complete: N items from [path]. Proceeding to Phase 1." Only then may Phase 1 begin.
 
-### 0e. Assess scope — single plan or multiple plans?
-
-Before creating any files, assess whether the work should be one plan or many:
-
-**Single plan** when:
-- The work is focused on one concern (e.g., "fix the auth token expiry bug")
-- Tasks are tightly coupled — most depend on each other
-- 3-7 tasks total
-
-**Multiple plans** when:
-- The work spans multiple independent concerns (e.g., "add user auth" touches backend, frontend, and integration)
-- Groups of tasks can be worked on in parallel by separate agents
-- More than 7 tasks, or tasks that naturally cluster by component/layer/concern
-
-If multiple plans: identify the clusters and propose them to the user. Each cluster becomes its own focused plan. The user approves the split before you generate.
-
 ### 0f. Determine the plan location
 
 **Write `.active-plan`** to the project root FIRST (before creating the plan file). Content is the relative path from project root to the plan folder.
 
-**Single plan:**
-- **If input came from `/serious-research`:** Create `implementation_plan.md` in the same folder as the research.
-- **If input came from a PRD or description:** Create a folder under `Research/features/{slug}/` (or `bugs/` or `exploratory/` as appropriate), put the plan there, and save the input material alongside it for traceability.
+**If a manifest entry was provided (from `/serious-scope`):** The manifest specifies the plan's output path. Use it directly.
 
-**Multiple plans:**
-- Create the folder under `Research/features/{slug}/` (or `bugs/` / `exploratory/`)
-- Create a `plans/` subdirectory for the individual plans
-- Create `phase_map.md` at the root of the folder
+**If input came from `/serious-research` (no manifest):** Create `implementation_plan.md` in the same folder as the research.
 
-```
-Research/features/{slug}/
-├── phase_map.md                         # Execution order — which plans run when
-├── plans/
-│   ├── 01_{concern_a}.md                # Focused plan (follows v6 template)
-│   ├── 02_{concern_b}.md                # Focused plan
-│   ├── 03_{concern_c}.md                # Focused plan
-│   └── 04_{integration}.md              # Often depends on earlier plans
-├── research.md                          # If from /serious-research
-└── evidence/                            # Shared evidence root
-```
+**If input came from a PRD or description (no manifest):** Create a folder under `Research/features/{slug}/` (or `bugs/` or `exploratory/` as appropriate), put the plan there, and save the input material alongside it for traceability.
 
 ---
 
@@ -158,7 +133,7 @@ Read the v6 template file first. If a `mock-ups/mock-up-summary.md` exists along
 
 **While generating the plan, cross-reference `_extracted_items.md` continuously.** Every extracted item must appear as a task, acceptance criterion, or explicit `[DEFERRED: reason]` in the plan. Do not rely on memory of the upstream artifact — use the extracted inventory as a checklist.
 
-The implementation_plan.md (or phase_map.md for multi-plan) MUST start with YAML frontmatter containing all 5 standard fields:
+The implementation_plan.md MUST start with YAML frontmatter containing all 5 standard fields:
 
 ```yaml
 ---
@@ -172,8 +147,6 @@ source: # Set to the path of the research.md consumed, or leave empty if plan wa
 ```
 
 Then work through each section in order, filling it in based on the input material.
-
-**If generating multiple plans:** Generate each plan independently using the full v6 template structure below. Each plan must be self-contained — an agent should be able to execute it without reading the other plans. Then generate the phase map (see Phase 1b).
 
 ### Executive Summary
 - One paragraph: what, why, who, why it matters
@@ -200,73 +173,6 @@ Then work through each section in order, filling it in based on the input materi
 ### Test-Driven Development Protocol
 - Copy the v6 TDD Protocol section verbatim — it is non-negotiable
 - This section defines the RED→GREEN→REFACTOR→VERIFY cycle that applies to every task
-
-### Plan Review — Adaptive Persona Pipeline with Convergence
-
-Persona reviews are iterative — they run in rounds until the plan converges.
-
-#### Severity Classification
-
-Every issue found by a persona must be tagged with a severity:
-
-| Severity | Definition | Examples |
-|----------|-----------|---------|
-| **Critical** | Architectural flaw, security vulnerability, incorrect requirements, broken dependency chain | Wrong auth model, missing data validation, circular task dependency |
-| **Major** | Significant gap, missing acceptance criteria, wrong component, incomplete rollback plan | Missing error handling for a key flow, task missing a dependency |
-| **Minor** | Formatting, wording, minor optimization, style preference | Rename a variable, reword a criterion, add a note |
-
-#### Convergence Rules
-
-After each review round, the orchestrator tallies severities and decides:
-
-- **Any critical found** → fix and re-review (mandatory)
-- **3+ majors found** → fix and re-review
-- **Majors < 3, no criticals** → fix and done
-- **Minors only** → fix and done
-- **Max 3 rounds** regardless (safety cap — escalate to user if still not clean)
-
-#### Individual Plan Review (per plan)
-
-1. **Select appropriate personas** based on what the plan touches:
-   - Use the persona catalog from the v6 template as your starting point
-   - Not every plan needs every persona — a backend-only fix doesn't need an End User review
-   - Follow the scaling guidance table in the template
-2. **Phase A** (Persona Reviews): Run selected personas. Each tags findings with severity.
-3. **Phase B** (Mechanical Reviews): Senior Engineer + Integration Architect — always required.
-4. **Rewrite** — issues get fixed in the plan, not appended as notes.
-5. **Convergence check** — apply the rules above. If another round is needed, re-run with the same personas reviewing the updated plan.
-6. Document: which personas reviewed, how many rounds, what was found and fixed per round.
-
-#### Cross-Plan Integration Review (multiple plans only)
-
-Runs AFTER all individual plan reviews have converged.
-
-**Integration personas (always selected for multi-plan):**
-
-| Persona | Focus |
-|---------|-------|
-| **Integration Architect** | Do plans compose correctly? Shared interfaces, data contracts, API boundaries, schema consistency |
-| **Merge Strategist** | Will branches merge cleanly? File conflicts, migration ordering, shared config changes |
-
-**Optional (selected based on what plans touch):**
-
-| Persona | When to include |
-|---------|----------------|
-| **Concurrency Engineer** | Plans touch shared state, caches, async operations, or event ordering |
-
-**Integration review flow:**
-1. Integration personas read ALL plans + the phase map
-2. Issues are tagged with severity and routed to the specific plan(s) they affect
-3. Affected plans are fixed
-4. **Convergence check** — same severity rules. If another integration round is needed, re-run.
-5. If fixes significantly changed a plan → that plan gets one more individual review round to verify internal consistency
-6. Max 3 integration rounds (safety cap)
-
-**The full review sequence:**
-1. Individual plan reviews converge (up to 3 rounds each)
-2. Integration review converges (up to 3 rounds)
-3. If integration fixes changed plans → one more individual round for affected plans
-4. All plans are now reviewed and stable
 
 ### Inline QA Protocol v6
 - Copy the v6 Inline QA Protocol section verbatim — it is non-negotiable
@@ -337,48 +243,6 @@ For each task, fill in:
 - Changelog (track plan revisions)
 - Input source (link to research.md, PRD, or note that it was generated from a description)
 
-### Phase 1b: Phase Map (multiple plans only)
-
-After all plans are generated, create `phase_map.md`:
-
-```markdown
-# Phase Map: {Project Title}
-
-## Overview
-{One paragraph — what's being built and how it's been decomposed}
-
-## Plans
-| # | Plan | Concern | Tasks | Risk |
-|---|------|---------|-------|------|
-| 01 | 01_backend_auth.md | Backend auth service | 4 | M |
-| 02 | 02_frontend_login.md | Login UI + form validation | 3 | L |
-| 03 | 03_api_endpoints.md | REST API endpoints | 5 | M |
-| 04 | 04_integration_tests.md | End-to-end integration | 3 | H |
-
-## Execution Phases
-
-### Phase 1 — parallel
-Plans: 01, 02, 03
-Rationale: These three plans are independent — backend, frontend, and API can be built concurrently with no shared state.
-
-### Phase 2 — sequential
-Plans: 04
-Rationale: Integration tests depend on all three components being complete.
-Depends on: Phase 1
-
-## Dependency Graph
-01 ──┐
-02 ──┤──→ 04
-03 ──┘
-```
-
-**Rules for phase assignment:**
-- Plans with NO dependencies on other plans go in the earliest phase
-- Plans that depend on others go in the phase after their dependencies complete
-- Within a phase, all plans run in parallel (separate agents)
-- If two plans modify the same files, they CANNOT be in the same phase — flag this to the user
-- Each phase must complete fully before the next phase starts
-
 ---
 
 ## Phase 2: Self-Review
@@ -402,13 +266,6 @@ Before presenting to the user, verify each plan:
 - [ ] Input source is documented in the Appendix
 - [ ] If research identified sync pairs, every task that modifies one side of a pair has a Reference Implementation field pointing to the other side
 
-**Additional checks for multiple plans:**
-- [ ] No two plans in the same phase modify the same files
-- [ ] Each plan is truly self-contained — no implicit dependencies on another plan's work
-- [ ] The phase map's dependency graph has no circular dependencies
-- [ ] Phase ordering is correct — no plan runs before its dependencies complete
-- [ ] Shared evidence root is consistent across all plans
-
 ---
 
 ## Phase 3: Present to User — VERIFICATION GATE
@@ -426,7 +283,7 @@ If the `source` field points to a `research.md`, run the verifier:
 ```
 **Spawn a verification sub-agent using the Agent tool with the protocol described in this file. Pass these parameters:**
 - **Upstream artifact:** the path in the `source` frontmatter field (`research.md`)
-- **Downstream artifact:** the path to this skill's `implementation_plan.md` (or `phase_map.md` for multi-plan) output
+- **Downstream artifact:** the path to this skill's `implementation_plan.md` output
 - **Match strategy:** `structural`
 
 **On FAIL:** DO NOT present the plan. Fix every SHIRKED, MISSING, and CONTRADICTED item in the plan. Then re-run the verifier. Repeat until PASS or PASS WITH DEFERRALS. Only then proceed to presentation.
@@ -442,7 +299,7 @@ If a `mock-up-summary.md` exists alongside the research (in a `mock-ups/` subdir
 ```
 **Spawn a verification sub-agent using the Agent tool with the protocol described in this file. Pass these parameters:**
 - **Upstream artifact:** the path to the `mock-up-summary.md` (Component Inventory + Design Decisions table rows)
-- **Downstream artifact:** the path to this skill's `implementation_plan.md` (or `phase_map.md` for multi-plan) output
+- **Downstream artifact:** the path to this skill's `implementation_plan.md` output
 - **Match strategy:** `structural`
 
 If no `mock-up-summary.md` exists, skip this second verification.
@@ -453,21 +310,12 @@ If no `mock-up-summary.md` exists, skip this second verification.
 
 Only after all verification passes (or is skipped due to empty `source`), present the plan and set `status: done` in the YAML frontmatter. Then remove the `.active-plan` breadcrumb file from the project root.
 
-**Single plan — report:**
+**Report:**
 - The plan file path
-- The input source used (research, PRD, or description — with disclaimer if applicable)
+- The input source used (research, PRD, manifest entry, or description — with disclaimer if applicable)
 - Summary of what's planned (task count, estimated complexity)
-- The recommended persona review set
+- Remind the user: "Run `/serious-review` to review the plan before `/serious-code`."
 - Any questions or decisions that need user input before implementation can begin
-
-**Multiple plans — report:**
-- The phase map file path
-- How many plans were generated and why the work was split this way
-- The phase structure: which plans run in parallel, which are sequential
-- Per-plan summary (concern, task count, risk level)
-- Total task count across all plans
-- The recommended persona review set (may differ per plan)
-- Any cross-plan dependencies or shared-file risks to flag
 
 ---
 
@@ -509,20 +357,9 @@ This is a safety net, not the primary enforcement mechanism. The in-skill gates 
 
 ## What Comes After
 
-Once the user approves the plan(s):
+Once the user approves the plan:
 
-**Single plan:**
-1. The plan goes through the **Adaptive Persona Pipeline** review (Phase A + Phase B)
+1. Run `/serious-review` to review the plan before `/serious-code`
 2. Fixes from review are rewritten into the plan
 3. Run `/serious-code` to begin implementation
 4. `/serious-code` follows the Master Checklist with TDD, QA, and verification
-
-**Multiple plans:**
-1. Each plan goes through persona review independently
-2. Fixes are rewritten into each plan
-3. Run `/serious-code` — it reads `phase_map.md` and orchestrates execution
-4. Phase 1 plans are dispatched to parallel agents (one agent per plan)
-5. When Phase 1 completes, Phase 2 begins, and so on
-6. Each plan's agent follows TDD, QA, and verification independently
-7. Evidence reports are generated per task, per plan
-8. Summary report is generated across all plans at the end

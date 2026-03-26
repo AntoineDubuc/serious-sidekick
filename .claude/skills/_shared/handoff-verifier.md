@@ -41,7 +41,7 @@ The `match_strategy` determines how upstream items are matched to downstream cov
 | Strategy | When used | Matching behavior |
 |----------|-----------|-------------------|
 | `semantic` | conversation → research | Match by meaning, not by title. An upstream insight "Users distrust silent token rotation" matches a downstream finding titled "Token Transparency Requirements" if the finding discusses the same concept. Requires semantic judgment — titles, synonyms, and rephrased concepts all count. |
-| `structural` | research → scope, research → plan, research → mock-ups, mock-ups → plan | Match by explicit section reference or named task. An upstream finding "Rate limiting required at API gateway" must appear as a dedicated task, section, or table row in the downstream artifact — not buried in prose or parenthetical mentions. |
+| `structural` | research → scope, research → plan, scope → plan, research → mock-ups, mock-ups → plan | Match by explicit section reference or named task. An upstream finding "Rate limiting required at API gateway" must appear as a dedicated task, section, or table row in the downstream artifact — not buried in prose or parenthetical mentions. |
 | `exact` | plan → code | Match by literal criterion text. An upstream acceptance criterion `- [ ] 100 req/min per API key` must have a corresponding test, implementation, or explicit code artifact. Paraphrasing alone is insufficient — the specific requirement must be traceable. |
 
 ---
@@ -56,6 +56,7 @@ The verifier extracts items only from designated contract sections, not the full
 | research → mock-ups | `research.md` | Findings (subsections), Recommendations | Numbered subsections + bulleted list |
 | research → scope | `research.md` | Findings (subsections), Recommendations | Numbered subsections + bulleted list |
 | research → plan | `research.md` | Findings (subsections), Recommendations | Numbered subsections + bulleted list |
+| scope → plan | `manifest.md` | Plans (the specific `### Plan N:` subsection) | Bulleted list fields (Boundary, Dependencies, Shared contracts, Tags) |
 | mock-ups → plan | `mock-up-summary.md` | Component Inventory, Design Decisions | Tables (each row = one item) |
 | plan → code | `implementation_plan.md` | Master Checklist, Acceptance criteria per task | Table rows + `- [ ]` checkbox lists |
 
