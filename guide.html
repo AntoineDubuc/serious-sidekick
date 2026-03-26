@@ -495,7 +495,6 @@
       <ol class="toc-list">
         <li><a href="#quickstart"><span class="toc-num" style="background:var(--green-bg);color:var(--green);">&#10003;</span> Quick Start</a></li>
         <li><a href="#pipeline"><span class="toc-num" style="background:var(--accent-bg);color:var(--accent);">&#9654;</span> Pipeline Overview</a></li>
-        <li><a href="#whatsnew"><span class="toc-num" style="background:var(--red-bg);color:var(--red);">&#9733;</span> What's New in v1.3</a></li>
         <li><a href="#verification"><span class="toc-num" style="background:var(--red-bg);color:var(--red);">&#128737;</span> Handoff Verification</a></li>
         <li><a href="#conversation"><span class="toc-num" style="background:var(--amber-bg);color:var(--amber);">1</span> /serious-conversation</a></li>
         <li><a href="#research"><span class="toc-num" style="background:var(--blue-bg);color:var(--blue);">2</span> /serious-research</a></li>
@@ -599,73 +598,6 @@
     <div class="tip reveal delay-2">
       <div class="tip-icon">&#128161;</div>
       <div><strong>You don't have to use them all.</strong> Have a bug? Jump straight to <code>/serious-research</code>. Know exactly what to build? Start at <code>/serious-plan</code>. Each skill works on its own.</div>
-    </div>
-  </div>
-</section>
-
-<hr class="divider">
-
-
-<!-- ═══════════════════ WHAT'S NEW ═══════════════════ -->
-<section id="whatsnew">
-  <div class="container">
-    <div class="reveal">
-      <div class="section-label">v1.3.0</div>
-      <h2>What's New</h2>
-      <p>Pipeline split: scope before plan, review before code. 7 steps, tighter verification.</p>
-    </div>
-
-    <div class="util-grid reveal delay-1">
-      <div class="util-card">
-        <h3>Breaking: Review Before Code</h3>
-        <p><code>/serious-review</code> now runs <strong>before</strong> <code>/serious-code</code>, not after. The old flow was plan &rarr; code &rarr; review. The new flow is plan &rarr; review &rarr; code. Review is now a mandatory plan quality gate. Post-code defect capture will move to <code>/serious-qa</code> in a future release.</p>
-      </div>
-      <div class="util-card">
-        <h3>New: /serious-scope</h3>
-        <p>Generates a scope manifest from research findings. Defines plan boundaries, dependencies, and shared contracts. Splits complex work into independently-plannable units before <code>/serious-plan</code> runs.</p>
-      </div>
-      <div class="util-card">
-        <h3>7-Step Pipeline</h3>
-        <p>conversation &rarr; research &rarr; mock-ups &rarr; <strong>scope</strong> &rarr; plan &rarr; <strong>review</strong> &rarr; code. Every skill updated with new ordering, breadcrumbs, and verification.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="container">
-    <div class="reveal">
-      <div class="section-label">v1.2.0</div>
-      <h2>Previous: v1.2 Highlights</h2>
-      <p>Agents that police themselves, verification at every handoff, and Nano Banana 2.</p>
-    </div>
-
-    <div class="util-grid reveal delay-1">
-      <div class="util-card">
-        <h3>Anti-Rationalization Tables</h3>
-        <p>Each agent now has a table of excuses it might generate to skip its own protocol, with explanations of why each is wrong. Implementer: 8 TDD-skipping rationalizations. Reviewer: 7 review-softening rationalizations. QA: 6 spot-check shortcuts.</p>
-      </div>
-      <div class="util-card">
-        <h3>Two-Stage Code Review</h3>
-        <p>The Reviewer runs two separate passes. Stage 1: spec compliance &mdash; every criterion gets COMPLIANT / PARTIAL / MISSING / WRONG. Any MISSING or WRONG = automatic FAIL. Stage 2: code quality. Prevents "works great, wrong thing" from slipping through.</p>
-      </div>
-      <div class="util-card">
-        <h3>Anti-Sycophancy</h3>
-        <p>Reviewer and QA agents are forbidden from performative praise. Both verify independently against the codebase, not the implementer's self-report. QA's rule: "If you find no problems, be suspicious of yourself."</p>
-      </div>
-      <div class="util-card">
-        <h3>Nano Banana 2</h3>
-        <p><code>/serious-bananas</code> upgraded to <code>gemini-3.1-flash-image-preview</code>. 4K resolution, dark mode style, 14 aspect ratios, reference images, search grounding, and iterative editing. Three model tiers.</p>
-      </div>
-      <div class="util-card">
-        <h3>Verification Enforcement</h3>
-        <p>Upstream extraction (Phase 0d) and handoff verification (Phase 3) are now hard gates in <code>/serious-plan</code> and <code>/serious-research</code>. Previously advisory &mdash; a real plan missed 4 design decisions from a 36-item conversation because extraction was skipped entirely. Now: no <code>_extracted_items.md</code> = no plan generation. FAIL = fix and re-verify before presenting.</p>
-      </div>
-    </div>
-
-    <div class="tip reveal delay-2">
-      <div class="tip-icon">&#128161;</div>
-      <div><strong>Credit where it's due.</strong> Anti-rationalization tables, two-stage review, and anti-sycophancy guidance were inspired by <a href="https://github.com/obra/superpowers" style="color:var(--accent);">obra/superpowers</a>. We studied their approach to keeping AI agents honest and adapted it for Serious Sidekick's pipeline.</div>
     </div>
   </div>
 </section>
