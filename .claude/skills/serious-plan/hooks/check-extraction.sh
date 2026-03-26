@@ -44,4 +44,23 @@ if [ ! -f "${PLAN_DIR}/_extracted_items.md" ]; then
   fi
 fi
 
+# --- Anti-rationalization strengthening (Layer 2) ---
+# Check the plan file for hedge language in task descriptions
+if [ -n "$HAS_PLAN" ] && [ -f "$HAS_PLAN" ]; then
+  TASK_SECTION=$(sed -n '/^## Task Descriptions/,$ p' "$HAS_PLAN" 2>/dev/null)
+  if [ -n "$TASK_SECTION" ]; then
+    HEDGE=$(echo "$TASK_SECTION" | grep -inE 'consider whether|you might want to|think about|it may be worth' | head -5)
+    if [ -n "$HEDGE" ]; then
+      echo "HEDGE LANGUAGE WARNING" >&2
+      echo "" >&2
+      echo "Plan at ${HAS_PLAN} contains hedge language in task descriptions:" >&2
+      echo "$HEDGE" | while IFS= read -r line; do echo "  $line" >&2; done
+      echo "" >&2
+      echo "Plans must use specific, imperative language. See Guardrail Block entry #3." >&2
+      echo "Resolve every 'consider' into a decision with file:line reference." >&2
+      exit 2
+    fi
+  fi
+fi
+
 exit 0

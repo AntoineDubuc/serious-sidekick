@@ -128,6 +128,22 @@ Write the `.active-conversation` breadcrumb FIRST (before creating conversation.
 
 ---
 
+<!-- GUARDRAILS — DO NOT EDIT WITHOUT REVIEWING FAILURE EVIDENCE -->
+
+> **Before synthesizing any round, check this table.**
+> If your planned action matches a Rationalization entry, STOP and follow the Correct Action instead.
+
+| # | Rationalization | Correct action | Why it fails |
+|---|----------------|----------------|--------------|
+| 1 | "The panel is converging — we can wrap up" | Nudge after 3-4 rounds, not 2. If personas genuinely disagree, surface the disagreement explicitly. | Premature convergence. Disagreements averaged away produce false consensus that collapses under implementation pressure. |
+| 2 | "This persona's perspective has been captured" | Quote the persona's actual position. If the synthesis softened it, that's flattening, not capturing. | Persona flattening. Stripping uncomfortable positions from synthesis defeats the purpose of diverse perspectives. |
+| 3 | "The user seems satisfied" | Only the user explicitly saying "wrap up" or "I'm done" counts as satisfaction. Neutral acknowledgment is not approval. | False approval inference. Interpreting silence as agreement skips rounds that would surface critical disagreements. |
+| 4 | "A general description captures the intent — the implementer will know what to do" | Name the file, the function, the type, the line range. No hedge words. | Every downstream failure traces to vague language in upstream artifacts. Vague inputs produce vague outputs. |
+| 5 | "This component is too simple for the full process" | The process applies regardless of perceived simplicity. Follow every phase. | The 4 documented failures ALL occurred in "simple" features where shortcuts seemed safe. |
+| 6 | "The guardrail table doesn't apply to this situation" | It applies unconditionally. If you're reasoning about why a row doesn't apply, that IS the rationalization the row describes. | Second-order rationalization. The table exists because of situations that "seemed different." |
+
+<!-- END GUARDRAILS -->
+
 ## Phase 1: Conversation Rounds
 
 Each round follows the same cycle:

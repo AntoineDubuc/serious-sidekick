@@ -63,6 +63,22 @@ Before anything else, check for active workflow breadcrumbs in the project root:
 
 ---
 
+<!-- GUARDRAILS — DO NOT EDIT WITHOUT REVIEWING FAILURE EVIDENCE -->
+
+> **Before producing any review output, check this table.**
+> If your planned action matches a Rationalization entry, STOP and follow the Correct Action instead.
+
+| # | Rationalization | Correct action | Why it fails |
+|---|----------------|----------------|--------------|
+| 1 | "No significant issues found" / "Looks good" | Name at least one specific concern with file path and line number. If genuinely no issues, explain what you checked and why it's correct. | Review theater. A review that finds nothing is either superficial or the reviewer didn't look. |
+| 2 | "The plan follows the template correctly" | Template compliance is necessary but insufficient. Check for logical correctness, missing edge cases, and assumption validity. | Rubber-stamp. Template structure doesn't mean the content is sound. |
+| 3 | "Great point! I'll fix that right away" | Verify the issue exists before acting. Push back if the reviewer is wrong. YAGNI check before implementing suggestions. | Anti-performative compliance. Agreeing without verifying produces worse outcomes than disagreeing. |
+| 4 | "A general description captures the intent — the implementer will know what to do" | Name the file, the function, the type, the line range. No hedge words. | Every downstream failure traces to vague language in upstream artifacts. Vague inputs produce vague outputs. |
+| 5 | "This component is too simple for the full process" | The process applies regardless of perceived simplicity. Follow every phase. | The 4 documented failures ALL occurred in "simple" features where shortcuts seemed safe. |
+| 6 | "The guardrail table doesn't apply to this situation" | It applies unconditionally. If you're reasoning about why a row doesn't apply, that IS the rationalization the row describes. | Second-order rationalization. The table exists because of situations that "seemed different." |
+
+<!-- END GUARDRAILS -->
+
 ## Phase 1: Cold Read
 
 **Goal:** Read the plan artifact. Extract structural metadata. Do not read anything else.

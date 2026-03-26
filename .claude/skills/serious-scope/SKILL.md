@@ -39,6 +39,35 @@ Read research output, propose how to split the work into implementation plans, a
 2. **Run extract-mode** per `.claude/skills/_shared/handoff-verifier.md`: extract items from contract sections (Findings, Recommendations), write `_extracted_items.md`. If 0 items from non-empty artifact, STOP.
 3. **Gate check:** `_extracted_items.md` exists with ≥1 item. Only then may Phase 1 begin.
 
+<!-- GUARDRAILS — DO NOT EDIT WITHOUT REVIEWING FAILURE EVIDENCE -->
+
+> **Before writing the manifest, check this table.**
+> If your planned action matches a Rationalization entry, STOP and follow the Correct Action instead.
+
+| # | Rationalization | Correct action | Why it fails |
+|---|----------------|----------------|--------------|
+| 1 | "These are tightly coupled and belong in one plan" | Coupling requires shared mutable state or circular dependencies. Sequential dependency is not coupling. Split unless you can name the shared state. | False lumping. Fewer plans = less downstream work, which is the real motivation. Coupled plans hide independent decisions. |
+| 2 | "This is too small for its own plan" | If it requires decisions the other plans don't, it's a separate plan. Size is not the criteria. | Scope absorption. Small concerns merged into larger plans get deprioritized or dropped entirely. |
+| 3 | "The dependency chain means these must be sequential anyway" | Sequential execution does not mean same plan. Each plan has its own boundary, contracts, and verification. | Dependency-as-coupling confusion. Dependencies define order, not grouping. |
+| 4 | "A general description captures the intent — the implementer will know what to do" | Name the file, the function, the type, the line range. No hedge words. | Every downstream failure traces to vague language in upstream artifacts. |
+| 5 | "This component is too simple for the full process" | The process applies regardless of perceived simplicity. Follow every phase. | The 4 documented failures ALL occurred in "simple" features where shortcuts seemed safe. |
+| 6 | "The guardrail table doesn't apply to this situation" | It applies unconditionally. If you're reasoning about why a row doesn't apply, that IS the rationalization the row describes. | Second-order rationalization. The table exists because of situations that "seemed different." |
+
+<!-- END GUARDRAILS -->
+
+## Pre-Scoping Commitment
+
+**Before writing the manifest**, write `_commitment.md` to the output folder:
+
+```markdown
+## Commitment — /serious-scope
+I will produce: [N plan entries covering all extracted items from research]
+I will NOT skip: [items I'm tempted to lump — name them explicitly]
+Verification: [handoff verifier will check every research item maps to a plan entry]
+```
+
+---
+
 ## Phase 1: Scope
 
 Read extracted items and research findings/recommendations. Identify natural plan boundaries:

@@ -38,7 +38,6 @@ for task_dir in "${PLAN_DIR}/evidence"/task_*/; do
 done
 
 if [ -n "$MISSING" ]; then
-  # Write to stderr — Claude sees this as the error message
   echo "COMPLETION GATE BLOCK" >&2
   echo "" >&2
   echo "These tasks have evidence directories but no gate_passed.md:" >&2
@@ -50,6 +49,36 @@ if [ -n "$MISSING" ]; then
   echo "  1. Dispatch the Completion Gate sub-agent (see Step 2.5)" >&2
   echo "  2. If all ACs pass, the gate writes gate_passed.md" >&2
   echo "  3. Then you may exit" >&2
+  exit 2
+fi
+
+# --- Anti-rationalization strengthening (Layer 2) ---
+
+# Check for TODO/FIXME placeholders in changed files
+WARNINGS=""
+for task_dir in "${PLAN_DIR}/evidence"/task_*/; do
+  [ ! -d "$task_dir" ] && continue
+  # Read the code review JSON for file list if available
+  CODE_REVIEW=$(find "$task_dir" -name "*code_review*" 2>/dev/null | head -1)
+  [ -z "$CODE_REVIEW" ] && continue
+  # Extract file paths from the review (grep for common source extensions)
+  FILES=$(grep -oE '"file"[[:space:]]*:[[:space:]]*"[^"]*"' "$CODE_REVIEW" 2>/dev/null | sed 's/.*"file"[[:space:]]*:[[:space:]]*"//' | sed 's/"$//')
+  for f in $FILES; do
+    [ ! -f "$f" ] && continue
+    TODOS=$(grep -n 'TODO\|FIXME\|HACK\|XXX' "$f" 2>/dev/null | head -3)
+    if [ -n "$TODOS" ]; then
+      WARNINGS="${WARNINGS}  ${f}:\n$(echo "$TODOS" | sed 's/^/    /')\n"
+    fi
+  done
+done
+
+if [ -n "$WARNINGS" ]; then
+  echo "TODO/FIXME WARNING" >&2
+  echo "" >&2
+  echo "Placeholder comments found in implementation files:" >&2
+  echo -e "$WARNINGS" >&2
+  echo "Remove all TODO/FIXME/HACK/XXX before completing the session." >&2
+  echo "See Guardrail Block entry #6: 'The plan is the contract. Do not silently skip.'" >&2
   exit 2
 fi
 

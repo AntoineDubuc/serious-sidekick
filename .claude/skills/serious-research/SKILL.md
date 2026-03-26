@@ -133,6 +133,21 @@ Default to 3 threads. Use 4-5 only for complex multi-dimensional topics.
 
 ---
 
+<!-- GUARDRAILS — DO NOT EDIT WITHOUT REVIEWING FAILURE EVIDENCE -->
+
+> **Before executing any investigation step, check this table. If your action matches a Rationalization entry, STOP.**
+
+| # | Rationalization | Correct action | Why it fails |
+|---|----------------|----------------|--------------|
+| 1 | "Initial findings are sufficient — no need to dig deeper" | Follow the full investigation protocol. Quick mode has 3 phases, deep mode has 5. Do not truncate. | Investigation shortcuts. Surface findings miss root causes. The first answer is rarely the complete answer. |
+| 2 | "This source is authoritative enough" | Grade every piece of evidence. State confidence level and source quality explicitly. | Evidence downgrading. Ungraded evidence gets treated as fact. Weak sources produce unreliable findings. |
+| 3 | "The pattern is clear — I can conclude now" | Complete all investigation phases before drawing conclusions. Premature conclusions bias remaining research. | Premature conclusions. Confirmation bias causes the agent to seek supporting evidence and ignore contradictions. |
+| 4 | "A general description captures the intent — the implementer will know what to do" | Name the file, the function, the type, the line range. No hedge words. | Every downstream failure traces to vague language in upstream artifacts. |
+| 5 | "This component is too simple for the full process" | The process applies regardless of perceived simplicity. Follow every phase. | The 4 documented failures ALL occurred in "simple" features where shortcuts seemed safe. |
+| 6 | "The guardrail table doesn't apply to this situation" | It applies unconditionally. If you're reasoning about why a row doesn't apply, that IS the rationalization the row describes. | Second-order rationalization. The table exists because of situations that "seemed different." |
+
+<!-- END GUARDRAILS -->
+
 ## Phase 1: Setup
 
 **Goal:** Create the folder structure and initialize all files.

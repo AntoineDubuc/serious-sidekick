@@ -125,6 +125,38 @@ Once the upstream research artifact is identified (from 0a/0b/0c):
 
 ---
 
+<!-- GUARDRAILS — DO NOT EDIT WITHOUT REVIEWING FAILURE EVIDENCE -->
+
+> **Before acting on any phase below, check this table.**
+> If your planned action matches a Rationalization entry, STOP and follow the Correct Action instead.
+
+| # | Rationalization | Correct action | Why it fails |
+|---|----------------|----------------|--------------|
+| 1 | "This feature is straightforward — tests aren't needed for every task" | Write a failing test for every acceptance criterion. Zero exceptions. | 4/4 plan bugs traced to missing test specifications. Implementer skips what the plan doesn't require. |
+| 2 | "I'll specify tests in a later pass / cleanup phase" | Each task description includes its test file and assertion. Now, not later. | Post-hoc test specs verify the plan, not the feature. They get written to match what was built, not what was needed. |
+| 3 | "A general description captures the intent — the implementer will know what to do" | Name the file, the function, the type, the line range. No hedge words. | Every downstream failure in the evidence log traces to vague language ("consider", "as needed") in upstream artifacts. Vague inputs produce vague outputs. |
+| 4 | "Seed data setup is obvious — no need to spell out commands" | Write the exact SQL, fixture script, or API call. Copy-paste-runnable. | Generic "data is in place" checkboxes cause Task 0 smoke tests to fail, blocking all downstream tasks. |
+| 5 | "This component is too simple for the full process" | The process applies regardless of perceived simplicity. Follow every phase. | The 4 documented /serious-plan failures ALL occurred in "simple" features where shortcuts seemed safe. Complexity is not the threshold. |
+| 6 | "The guardrail table doesn't apply to this situation" | It applies unconditionally. If you're reasoning about why a row doesn't apply, that IS the rationalization the row describes. | This is second-order rationalization. The table exists because of situations that "seemed different." |
+| 7 | "I'll resolve this ambiguity during implementation — no need to decide now" | Resolve it now. If you lack information, ask the user. Do not ship an unresolved decision to the implementer. | Deferred decisions become deferred failures. The implementer guesses wrong, builds the wrong thing, rework follows. |
+
+<!-- END GUARDRAILS -->
+
+## Pre-Generation Commitment
+
+**Before generating the plan**, write `_commitment.md` to the plan's output folder:
+
+```markdown
+## Commitment — /serious-plan
+I will produce: [list deliverables: task count, test specs per task, seed data commands, specific file references]
+I will NOT skip: [list top 3 from guardrail table: test specs, specific names, seed data commands]
+Verification: [grep for hedge language, count test file references, verify seed data commands are copy-pasteable]
+```
+
+The Stop hook checks the plan against this commitment on exit.
+
+---
+
 ## Phase 1: Plan Generation
 
 **STOP. If an upstream artifact was specified in Phase 0, does `_extracted_items.md` exist in the output folder? If not, go back to Phase 0d. DO NOT generate a plan without the extraction inventory — this is the #1 cause of drift.**
@@ -169,6 +201,7 @@ Then work through each section in order, filling it in based on the input materi
 ### Pre-Flight Readiness
 - Adapt the checklist to this specific project
 - Verify each item is actually checkable (commands exist, paths are real)
+- For the "Mock/seed data ready" item, write the **specific commands** needed to set up test data — SQL statements, API calls, fixture scripts, or seed commands. Never leave this as a generic "data is in place" checkbox. The implementing agent must be able to copy-paste and run the setup.
 
 ### Test-Driven Development Protocol
 - Copy the v6 TDD Protocol section verbatim — it is non-negotiable
@@ -214,13 +247,14 @@ For each task, fill in:
   - If a task only covers the data layer, say so, and ensure a later task covers the user-visible layer.
 - **Context** — why it exists, dependencies, what it enables
 - **Expected behavior** — the user-visible outcome
-- **Key components** — specific files and functions
+- **Key components** — specific files and functions. **Include test files** that reference or assert against modified code. Grep for imports/assertions on changed files to discover affected test files. Every source file in the list should have its corresponding test file(s) listed too.
 - **Impact analysis** — what other components consume the output of the changed code? Follow the chain:
   - What calls the changed function?
   - What renders data from the changed data source?
   - What caches/indexes recompute when this data changes?
   - List each downstream consumer and whether it handles the new behavior correctly.
 - **Reference implementation** *(when applicable)* — if the research identified sync pairs (functions that must produce equivalent output), specify the counterpart function that this task's code must match. Format: `Match [function name] at [file:line] — case-for-case, field-for-field.` This tells the implementer exactly what to stay in sync with, preventing drift between parallel code paths.
+- **Source traceability** — for each acceptance criterion, cite the upstream source: `[Source: research.md#Finding-3]` or `[Source: manifest.md#Plan-1]`. Criteria without a source citation are either invented (remove them) or represent a research gap (flag for user review with `[NO SOURCE: reason]`).
 - **Acceptance criteria** — concrete, testable `- [ ]` items (see quality bar below)
 - **Negative tests** — what should NOT happen
 - **Evidence requirements** — specific proof items
@@ -235,6 +269,8 @@ For each task, fill in:
 - Every criterion must be encodable as a test (TDD requirement)
 - **Every task with a user-facing outcome must include at least one "visible to user" criterion** — phrased as: "A user performing [action] sees [result]." These criteria cannot be verified by unit tests alone — they require a running application check.
 - Structural criteria (function accepts X, API returns Y) are necessary but **insufficient** for UI/UX tasks. Always pair them with a user-visible criterion.
+- **Every criterion must cite its upstream source** using `[Source: path#section]`. Criteria that can't cite a source are not derived from research — they're invented. Either trace them to a finding or annotate with `[NO SOURCE: reason]` so the reviewer knows it's a deliberate addition, not drift.
+- **Irreversible actions require a safety pattern.** Any task involving a destructive or irreversible operation (merge, delete, finalize, publish, drop, archive) must include an acceptance criterion specifying the confirmation UX: type-to-confirm (user types the entity name), two-step confirm, undo window, or equivalent. The criterion must name the specific pattern — e.g., "Dialog includes a text input requiring the user to type the change name before the confirm button enables."
 
 ### Appendix
 - Technical decisions (from research or inferred from requirements)
@@ -265,6 +301,8 @@ Before presenting to the user, verify each plan:
 - [ ] Inline QA Protocol v6 section is present and unmodified
 - [ ] Input source is documented in the Appendix
 - [ ] If research identified sync pairs, every task that modifies one side of a pair has a Reference Implementation field pointing to the other side
+- [ ] **No hedge language in task descriptions.** No "consider whether", "you might want to", "think about", "it may be worth". Every Note must state a decision with a file:line reference, not present options for the implementing agent to choose from. If a decision hasn't been made, it's a planning gap — resolve it now, don't defer it to the implementer.
+- [ ] **Every acceptance criterion has a `[Source: ...]` citation** or an explicit `[NO SOURCE: reason]` annotation. Criteria without either are unsigned — they may be invented by the agent rather than derived from research.
 
 ---
 

@@ -137,6 +137,22 @@ source: # Set to the path of the research.md consumed
 
 ---
 
+<!-- GUARDRAILS — DO NOT EDIT WITHOUT REVIEWING FAILURE EVIDENCE -->
+
+> **Before generating any mock-up, check this table.**
+> If your planned action matches a Rationalization entry, STOP and follow the Correct Action instead.
+
+| # | Rationalization | Correct action | Why it fails |
+|---|----------------|----------------|--------------|
+| 1 | "The wireframe captures the intent, visual isn't needed" | If the user selected visual or interactive fidelity, deliver that fidelity. Do not downgrade. | Fidelity downgrade. Declaring "wireframe is enough" when higher fidelity was requested skips design decisions that surface during visual work. |
+| 2 | "This screen is similar to the previous one" | Generate a separate mock-up for every screen. Shared layouts still have screen-specific components. | Surface skipping. The component inventory misses screen-specific elements when screens are declared "similar." |
+| 3 | "Empty/error states aren't needed for this screen" | Generate state variations for every screen: empty, loading, error, populated. The flow requires all states. | State variation avoidance. Missing states cause implementation gaps — the developer guesses wrong on error handling. |
+| 4 | "A general description captures the intent — the implementer will know what to do" | Name the file, the function, the type, the line range. No hedge words. | Every downstream failure traces to vague language in upstream artifacts. |
+| 5 | "This component is too simple for the full process" | The process applies regardless of perceived simplicity. Follow every phase. | The 4 documented failures ALL occurred in "simple" features where shortcuts seemed safe. |
+| 6 | "The guardrail table doesn't apply to this situation" | It applies unconditionally. If you're reasoning about why a row doesn't apply, that IS the rationalization the row describes. | Second-order rationalization. The table exists because of situations that "seemed different." |
+
+<!-- END GUARDRAILS -->
+
 ## Phase 1: Wireframes
 
 For each selected UI surface, generate an ASCII wireframe.

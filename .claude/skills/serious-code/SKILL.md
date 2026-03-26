@@ -179,6 +179,37 @@ source: # Set to the path of the implementation_plan.md consumed
 
 ---
 
+<!-- GUARDRAILS — DO NOT EDIT WITHOUT REVIEWING FAILURE EVIDENCE -->
+
+> **Before executing any task, check this table. If your planned action matches a Rationalization entry, STOP.**
+
+| # | Rationalization | Correct action | Why it fails |
+|---|----------------|----------------|--------------|
+| 1 | "I'll add tests after implementation" | Write the failing test FIRST. Red-green-refactor order is mandatory. | Post-hoc tests are written to pass, not to catch. They verify what was built, not what was needed. |
+| 2 | "This is a small change, tests aren't needed" | Every acceptance criterion gets a test. Size is not the criteria. | Small changes have root causes and edge cases too. Untested small changes compound into untested large systems. |
+| 3 | "This component is too simple for the full process" | The process applies regardless of perceived simplicity. Follow every phase. | The 4 documented /serious-plan failures ALL occurred in "simple" features where shortcuts seemed safe. Complexity is not the threshold. |
+| 4 | "I'm confident this works, no need to verify" | Run the actual command. Read the actual output. Confidence is not evidence. | Agents report "verified" without running commands. The QA sub-agent exists to catch this. |
+| 5 | "The guardrail table doesn't apply to this situation" | It applies unconditionally. If you're reasoning about why a row doesn't apply, that IS the rationalization the row describes. | Second-order rationalization. The table exists because of situations that "seemed different." |
+| 6 | "The plan says X but that's not actually needed" | The plan is the contract. If it's wrong, flag it as BLOCKED. Do not silently skip. | Silent scope reduction is the #1 cause of downstream plan failures. Every skipped item cascades. |
+| 7 | "A general description captures the intent — the implementer will know what to do" | Name the file, the function, the type, the line range. No hedge words. | Every downstream failure in the evidence log traces to vague language ("consider", "as needed") in upstream artifacts. Vague inputs produce vague outputs. |
+
+<!-- END GUARDRAILS -->
+
+## Pre-Execution Commitment
+
+**Before starting any task**, write `_commitment.md` to the plan's output folder:
+
+```markdown
+## Commitment — /serious-code
+I will produce: [list every deliverable from the plan's acceptance criteria]
+I will NOT skip: [list the top 3 rationalizations from the guardrail table above]
+Verification: [how to check — test commands, grep patterns, file existence checks]
+```
+
+The Stop hook diffs this commitment against actual output on exit. Discrepancies block.
+
+---
+
 ## Phase 1: Execution
 
 ### Single Plan Execution
