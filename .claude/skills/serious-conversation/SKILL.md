@@ -33,12 +33,12 @@ Use this BEFORE research — for ideation, understanding, brainstorming, or expl
 
 Before anything else, check for active workflow breadcrumbs in the project root:
 
-1. **Scan for breadcrumbs:** Check for `.active-conversation`, `.active-research`, `.active-mock-ups`, `.active-plan`, `.active-code`, `.active-review`
+1. **Scan for breadcrumbs:** Check for `.active-conversation`, `.active-research`, `.active-mock-ups`, `.active-scope`, `.active-plan`, `.active-code`, `.active-review`
 2. **Validate each:** For each breadcrumb found, verify the target folder exists and contains a valid output file with parseable YAML frontmatter. If not, delete the stale breadcrumb with a warning: "Removed stale .active-{skill} breadcrumb (target folder missing)."
 3. **If no valid breadcrumbs exist:** Skip the rest of 0-pre. Proceed to Phase 0a as normal (top-level workflow).
 4. **Determine the deepest active workflow:** If multiple valid breadcrumbs exist, follow `parent:` chains in each breadcrumb's target frontmatter. The workflow with the longest parent chain is the deepest. If multiple independent top-level breadcrumbs exist (none with parent fields), use the most recently modified breadcrumb as the comparison target.
 5. **Compare pipeline order:** This skill is `conversation` (order 1). The deepest active skill is order {M}.
-   - **Pipeline order:** conversation(1) → research(2) → mock-ups(3) → plan(4) → code(5) → review(6)
+   - **Pipeline order:** conversation(1) → research(2) → mock-ups(3) → scope(4) → plan(5) → review(6) → code(7)
    - If 1 > {M}: this is **advancing**. Skip the rest of 0-pre, proceed to Phase 0a as normal. Both breadcrumbs will coexist.
    - If 1 ≤ {M}: this is **branching**. Continue to step 6.
    - **Note:** Since conversation is order 1 (the lowest), it can never be greater than any active skill's order. Advancing never applies to conversation — it will always branch when another workflow is active. The only branching case is same-skill (conversation → conversation).

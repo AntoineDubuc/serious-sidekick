@@ -20,7 +20,7 @@ All template files live at:
 ## What Gets Installed
 
 1. **CLAUDE.md** — Mandatory rules + feature index, loaded every session
-2. **.claude/skills/** — All skills (10 workflow + 17 feature auto-loaders + hooks subfolder + 5 Agent Teams agents)
+2. **.claude/skills/** — All skills (11 workflow + 17 feature auto-loaders + hooks subfolder + 8 Agent Teams agents)
 3. **.claude/settings.json** — Stop hook registration for the Completion Gate
 4. **Claude Code Features/** — 38 folders with detailed research.md files + README index
 5. **_implementation_plan_template_v6.md** — The v6 implementation plan template (required by `/serious-plan`)
@@ -33,9 +33,10 @@ All template files live at:
 | `serious-conversation` | Persona panel for ideation |
 | `serious-research` | Structured investigation |
 | `serious-mock-ups` | UI wireframes before planning |
+| `serious-scope` | Scope manifest from research findings |
 | `serious-plan` | Implementation planning (v6 template) |
+| `serious-review` | Plan quality gate with mandatory review personas |
 | `serious-code` | Plan execution with TDD + Agent Teams |
-| `serious-review` | Structured review + defect capture |
 | `serious-status` | Workflow tree + status dashboard |
 | `serious-abandon` | Bail out of sub-workflows |
 | `serious-bananas` | Image generation via Gemini |
@@ -138,7 +139,7 @@ Check that everything was installed correctly:
 
 ```
 ✓ Skills: 28 installed (.claude/skills/)
-✓ Agents: 5 installed (.claude/agents/)
+✓ Agents: 8 installed (.claude/agents/)
 ✓ Hooks: Stop hook registered in .claude/settings.json
 ✓ Docs: 38 feature folders (Claude Code Features/)
 ✓ Template: _implementation_plan_template_v6.md
@@ -154,9 +155,10 @@ Remind the user of the workflow:
 /serious-conversation  →  brainstorm with AI personas
 /serious-research      →  investigate a bug, feature, or question
 /serious-mock-ups      →  wireframes and visual mock-ups
+/serious-scope         →  scope manifest from research findings
 /serious-plan          →  generate an implementation plan
+/serious-review        →  plan quality gate (runs before code)
 /serious-code          →  execute the plan with TDD and verification
-/serious-review        →  capture defects and cycle back
 /serious-status        →  see all active workflows
 /serious-abandon       →  bail out of a sub-workflow
 ```

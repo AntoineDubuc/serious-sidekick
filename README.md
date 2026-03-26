@@ -7,7 +7,7 @@
 Structured conversations, research with evidence grading, implementation plans with TDD,<br>
 and automatic verification that catches when the AI drops, defers, or half-does your work.
 
-[![Version](https://img.shields.io/badge/version-1.2.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue?style=flat-square)](CHANGELOG.md)
 [![Skills](https://img.shields.io/badge/skills-28-green?style=flat-square)](#skills)
 [![Features](https://img.shields.io/badge/documented_features-39-purple?style=flat-square)](#claude-code-knowledge-base)
 
@@ -27,7 +27,7 @@ You tell an AI to build something. It says "done." You check — half the requir
 
 The toolkit is a pipeline. Each stage produces artifacts that feed the next, and **automatic verification at every handoff ensures nothing gets lost.**
 
-<img src="images/readme/pipeline_flow.png" alt="Pipeline flow diagram showing Conversation → Research → Mock-ups → Plan → Code → Review with verification shields at every handoff" width="100%">
+<img src="images/readme/pipeline_flow.png" alt="Pipeline flow diagram showing Conversation → Research → Mock-ups → Scope → Plan → Review → Code with verification shields at every handoff" width="100%">
 
 **Drift is caught where it happens, not at the end.** Every 🛡️ is an independent verifier that fires before the downstream skill finishes. If research drops a conversation insight, it gets caught before the plan ever starts — not after code is written.
 

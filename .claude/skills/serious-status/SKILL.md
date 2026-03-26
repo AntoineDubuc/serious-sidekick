@@ -30,6 +30,10 @@ Scan these paths for workflow output files:
 - `Research/**/mock-ups/mock-up-summary.md`
 - `Research/**/sub/*/mock-ups/mock-up-summary.md`
 
+**Scope workflows:**
+- `Research/**/manifest.md`
+- `Research/**/sub/*/manifest.md`
+
 **Plan workflows:**
 - `Research/**/implementation_plan.md`
 - `Research/**/phase_map.md`
@@ -42,8 +46,10 @@ Scan these paths for workflow output files:
 
 **Review workflows:**
 - `Research/**/findings.md`
+- `Research/**/verdict.md`
 - `QA/*/findings.md`
 - `Research/**/sub/*/findings.md`
+- `Research/**/sub/*/verdict.md`
 
 ### 1b. Check breadcrumbs
 
@@ -51,6 +57,7 @@ Also read all `.active-*` breadcrumb files in the project root:
 - `.active-conversation`
 - `.active-research`
 - `.active-mock-ups`
+- `.active-scope`
 - `.active-plan`
 - `.active-code`
 - `.active-review`
@@ -64,7 +71,7 @@ For each breadcrumb found, validate the target folder exists. If it does, includ
 For each output file found, read the first 20 lines and attempt to parse YAML frontmatter (between `---` delimiters).
 
 **Expected fields:**
-- `skill:` — which skill produced this (conversation, research, mock-ups, plan, code, review)
+- `skill:` — which skill produced this (conversation, research, mock-ups, scope, plan, review, code)
 - `slug:` — the workflow's identifier
 - `status:` — active, done, abandoned
 - `parent:` — relative path to parent workflow folder (empty if top-level)
@@ -82,9 +89,10 @@ For each output file found, read the first 20 lines and attempt to parse YAML fr
 - If YAML is present but malformed (unparseable), skip the file and add to warnings: `⚠ Malformed frontmatter: {path}`
 - Use `skill:` field as primary source for determining the workflow stage
 - Fall back to file existence priority only when no frontmatter exists:
-  - `findings.md` → review
+  - `findings.md` or `verdict.md` → review
   - `execution_log.md` → code
   - `implementation_plan.md` or `phase_map.md` → plan
+  - `manifest.md` → scope
   - `mock-up-summary.md` → mock-ups
   - `research.md` → research
   - `conversation.md` → conversation

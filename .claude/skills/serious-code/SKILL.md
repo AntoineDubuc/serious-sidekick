@@ -10,7 +10,7 @@ Execute implementation plans produced by `/serious-plan`. Orchestrates parallel 
 
 **Position in the workflow:**
 ```
-/serious-conversation → /serious-research → /serious-plan → /serious-code → /serious-review → done
+/serious-conversation → /serious-research → /serious-scope → /serious-plan → /serious-review → /serious-code → done
 ```
 
 ---
@@ -21,14 +21,14 @@ Execute implementation plans produced by `/serious-plan`. Orchestrates parallel 
 
 Before anything else, check for active workflow breadcrumbs in the project root:
 
-1. **Scan for breadcrumbs:** Check for `.active-conversation`, `.active-research`, `.active-mock-ups`, `.active-plan`, `.active-code`, `.active-review`
+1. **Scan for breadcrumbs:** Check for `.active-conversation`, `.active-research`, `.active-mock-ups`, `.active-scope`, `.active-plan`, `.active-code`, `.active-review`
 2. **Validate each:** For each breadcrumb found, verify the target folder exists and contains a valid output file with parseable YAML frontmatter. If not, delete the stale breadcrumb with a warning: "Removed stale .active-{skill} breadcrumb (target folder missing)."
 3. **If no valid breadcrumbs exist:** Skip the rest of 0-pre. Proceed to Phase 0a as normal (top-level workflow).
 4. **Determine the deepest active workflow:** If multiple valid breadcrumbs exist, follow `parent:` chains in each breadcrumb's target frontmatter. The workflow with the longest parent chain is the deepest. If multiple independent top-level breadcrumbs exist (none with parent fields), use the most recently modified breadcrumb as the comparison target.
-5. **Compare pipeline order:** This skill is `code` (order 5). The deepest active skill is order {M}.
-   - **Pipeline order:** conversation(1) → research(2) → mock-ups(3) → plan(4) → code(5) → review(6)
-   - If 5 > {M}: this is **advancing**. Skip the rest of 0-pre, proceed to Phase 0a as normal. Both breadcrumbs will coexist. Advancing means normal behavior — no new logic needed. The skill uses its existing folder rules. No parent field is set. No prompt is shown. No sub/ folder is created. Both the new skill's breadcrumb AND the existing skill's breadcrumb coexist.
-   - If 5 ≤ {M}: this is **branching**. Continue to step 6.
+5. **Compare pipeline order:** This skill is `code` (order 7). The deepest active skill is order {M}.
+   - **Pipeline order:** conversation(1) → research(2) → mock-ups(3) → scope(4) → plan(5) → review(6) → code(7)
+   - If 7 > {M}: this is **advancing**. Skip the rest of 0-pre, proceed to Phase 0a as normal. Both breadcrumbs will coexist. Advancing means normal behavior — no new logic needed. The skill uses its existing folder rules. No parent field is set. No prompt is shown. No sub/ folder is created. Both the new skill's breadcrumb AND the existing skill's breadcrumb coexist.
+   - If 7 ≤ {M}: this is **branching**. Continue to step 6.
 6. **Branching prompt:**
    - **Cross-skill:** "I see you're in /serious-{active_skill} for {slug}. This looks like it needs its own workflow. Link as a sub-workflow? (Y/N)"
    - **Same-skill (code → code):** "I see you're already in /serious-code for {slug}. Start a nested /serious-code within it? (Y/N)" Note: the existing `.active-code` breadcrumb will be overwritten with the new sub-workflow's path.
@@ -84,6 +84,16 @@ Once the upstream plan artifact is identified and validated (from 0a/0b/0c):
    - If the upstream artifact's frontmatter has no `verified` field, run full verification on it before proceeding.
    - If `verified_hash` exists but does not match the current upstream content hash, re-verify.
    - If the upstream artifact's own `source` field points to an unverified artifact (chain gap), warn: "Note: [upstream path]'s own upstream at [source path] has not been verified. Consider running verification on the full chain." Do NOT recurse — warn only.
+
+### 0d-review. Review verdict check
+
+After the plan is validated, check its YAML frontmatter for `review_status`:
+
+- **If `review_status` is missing:** Display warning: "No review verdict found for this plan. Run `/serious-review` first? (Y/n)." If Y: stop and tell the user to run `/serious-review`. If N: proceed, log "Proceeding without review verdict."
+- **If `review_status: failed`:** Display warning: "This plan FAILED review. Proceeding without fixes is not recommended. Continue anyway? (Y/n)." If Y: proceed with warning logged. If N: stop.
+- **If `review_status: passed`, `passed-with-conditions`, or `override`:** Proceed silently.
+
+This check is advisory — it never hard-blocks execution.
 
 ### 0e. Set up tracking
 

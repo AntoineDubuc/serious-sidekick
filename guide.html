@@ -492,16 +492,17 @@
     <div class="toc reveal">
       <h3>On this page</h3>
       <ol class="toc-list">
-        <li><a href="#whatsnew"><span class="toc-num" style="background:var(--red-bg);color:var(--red);">&#9733;</span> What's New in v1.2</a></li>
+        <li><a href="#whatsnew"><span class="toc-num" style="background:var(--red-bg);color:var(--red);">&#9733;</span> What's New in v1.3</a></li>
         <li><a href="#quickstart"><span class="toc-num" style="background:var(--green-bg);color:var(--green);">&#10003;</span> Quick Start</a></li>
         <li><a href="#pipeline"><span class="toc-num" style="background:var(--accent-bg);color:var(--accent);">&#9654;</span> Pipeline Overview</a></li>
         <li><a href="#verification"><span class="toc-num" style="background:var(--red-bg);color:var(--red);">&#128737;</span> Handoff Verification</a></li>
         <li><a href="#conversation"><span class="toc-num" style="background:var(--amber-bg);color:var(--amber);">1</span> /serious-conversation</a></li>
         <li><a href="#research"><span class="toc-num" style="background:var(--blue-bg);color:var(--blue);">2</span> /serious-research</a></li>
         <li><a href="#mockups"><span class="toc-num" style="background:var(--pink-bg);color:var(--pink);">3</span> /serious-mock-ups</a></li>
-        <li><a href="#plan"><span class="toc-num" style="background:var(--orange-bg);color:var(--orange);">4</span> /serious-plan</a></li>
-        <li><a href="#code"><span class="toc-num" style="background:var(--green-bg);color:var(--green);">5</span> /serious-code</a></li>
+        <li><a href="#scope"><span class="toc-num" style="background:var(--accent-bg);color:var(--accent);">4</span> /serious-scope</a></li>
+        <li><a href="#plan"><span class="toc-num" style="background:var(--orange-bg);color:var(--orange);">5</span> /serious-plan</a></li>
         <li><a href="#review"><span class="toc-num" style="background:var(--purple-bg);color:var(--purple);">6</span> /serious-review</a></li>
+        <li><a href="#code"><span class="toc-num" style="background:var(--green-bg);color:var(--green);">7</span> /serious-code</a></li>
         <li><a href="#utilities"><span class="toc-num" style="background:var(--bg3);color:var(--text3);">+</span> Utility Skills</a></li>
         <li><a href="#recursive"><span class="toc-num" style="background:var(--accent-bg);color:var(--accent);">&#9733;</span> Recursive Workflows</a></li>
         <li><a href="#layers"><span class="toc-num" style="background:var(--bg3);color:var(--text3);">&#9776;</span> Knowledge Layers</a></li>
@@ -517,8 +518,33 @@
 <section id="whatsnew">
   <div class="container">
     <div class="reveal">
-      <div class="section-label">v1.2.0</div>
+      <div class="section-label">v1.3.0</div>
       <h2>What's New</h2>
+      <p>Pipeline split: scope before plan, review before code. 7 steps, tighter verification.</p>
+    </div>
+
+    <div class="util-grid reveal delay-1">
+      <div class="util-card">
+        <h3>Breaking: Review Before Code</h3>
+        <p><code>/serious-review</code> now runs <strong>before</strong> <code>/serious-code</code>, not after. The old flow was plan &rarr; code &rarr; review. The new flow is plan &rarr; review &rarr; code. Review is now a mandatory plan quality gate. Post-code defect capture will move to <code>/serious-qa</code> in a future release.</p>
+      </div>
+      <div class="util-card">
+        <h3>New: /serious-scope</h3>
+        <p>Generates a scope manifest from research findings. Defines plan boundaries, dependencies, and shared contracts. Splits complex work into independently-plannable units before <code>/serious-plan</code> runs.</p>
+      </div>
+      <div class="util-card">
+        <h3>7-Step Pipeline</h3>
+        <p>conversation &rarr; research &rarr; mock-ups &rarr; <strong>scope</strong> &rarr; plan &rarr; <strong>review</strong> &rarr; code. Every skill updated with new ordering, breadcrumbs, and verification.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">v1.2.0</div>
+      <h2>Previous: v1.2 Highlights</h2>
       <p>Agents that police themselves, verification at every handoff, and Nano Banana 2.</p>
     </div>
 
@@ -613,7 +639,7 @@
   <div class="container">
     <div class="reveal">
       <div class="section-label">The Big Picture</div>
-      <h2>Six skills, one pipeline</h2>
+      <h2>Seven skills, one pipeline</h2>
       <p>Use any skill on its own, or chain them together. Each step feeds into the next.</p>
     </div>
 
@@ -624,11 +650,13 @@
       <div class="pipe-arrow">&rarr;</div>
       <div class="pipe-box c-pink">/serious-mock-ups</div>
       <div class="pipe-arrow">&rarr;</div>
+      <div class="pipe-box c-accent">/serious-scope</div>
+      <div class="pipe-arrow">&rarr;</div>
       <div class="pipe-box c-orange">/serious-plan</div>
       <div class="pipe-arrow">&rarr;</div>
-      <div class="pipe-box c-green">/serious-code</div>
-      <div class="pipe-arrow">&rarr;</div>
       <div class="pipe-box c-purple">/serious-review</div>
+      <div class="pipe-arrow">&rarr;</div>
+      <div class="pipe-box c-green">/serious-code</div>
     </div>
 
     <div class="tip reveal delay-2">

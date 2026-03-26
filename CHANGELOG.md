@@ -6,6 +6,32 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ---
 
+## [1.3.0] — 2026-03-25
+
+### Pipeline split: scope, review-before-code
+
+The pipeline grew from 6 steps to 7. Two new skills change how work flows through the system.
+
+#### Breaking Changes
+
+- **`/serious-review` now runs before `/serious-code` (plan quality gate), not after.** The old workflow was `plan → code → review → done`. The new workflow is `scope → plan → review → code → done`. If you were using `/serious-review` after code to capture bugs, that workflow no longer exists. Review is now a mandatory quality gate between planning and coding. Post-code defect capture will move to `/serious-qa` in a future release.
+
+#### Added
+
+- **`/serious-scope`** — New skill at pipeline position 4. Generates a scope manifest from research findings. Defines plan boundaries, dependencies, shared contracts, and tags. Splits complex implementations into discrete, independently-plannable units. The manifest is consumed by `/serious-plan`.
+
+- **Pipeline expanded to 7 steps** — `conversation(1) → research(2) → mock-ups(3) → scope(4) → plan(5) → review(6) → code(7)`. All breadcrumb scan lists, pipeline ordering strings, and self-order numbers updated across all skills.
+
+- **Handoff verifier: `research → scope` transition** — The handoff verifier now validates that scope manifests align with research findings using structural matching.
+
+#### Changed
+
+- **`/serious-plan` narrowed to single-plan generation** — No longer supports multiple plans or phase maps directly. Scope splitting is now handled by `/serious-scope` upstream.
+
+- **`/serious-review` repurposed as plan quality gate** — Uses adaptive persona pipeline with anti-slop auditor and structural reviewer agents. Runs before code, not after.
+
+---
+
 ## [1.2.0] — 2026-03-22
 
 ### Harder to fool, harder to game

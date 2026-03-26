@@ -18,6 +18,7 @@ Read all `.active-*` breadcrumb files in the project root:
 - `.active-conversation`
 - `.active-research`
 - `.active-mock-ups`
+- `.active-scope`
 - `.active-plan`
 - `.active-code`
 - `.active-review`
