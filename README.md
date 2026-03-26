@@ -135,12 +135,12 @@ Three fidelity levels — wireframe (ASCII), visual (Gemini-generated), and inte
 
 Generates implementation plans using the v6 template. Not a to-do list — a contract with testable acceptance criteria, TDD protocol, and independent review.
 
-<img src="images/readme/plan_review.png" alt="Plan review diagram showing Phase A persona reviews, Phase B mechanical reviews, severity-based convergence, and multi-plan integration review" width="100%">
+<img src="images/readme/plan_review.png" alt="Plan review diagram showing 3 mandatory agents (Anti-Slop Auditor, Structural Reviewer, Security Mind) reading plan cold, producing a verdict with circuit breaker" width="100%">
 
-- **Adaptive persona pipeline** — selects reviewers based on what the plan touches (UI → End User, auth → Security Reviewer, async → Concurrency Engineer)
-- **Severity-weighted convergence** — any Critical finding forces re-review, max 3 rounds
+- **3 mandatory review agents** — Anti-Slop Auditor (10 checks), Structural Reviewer, Security Mind. All read the plan cold — no research context, no author notes
+- **10 anti-slop checks** — weasel words, missing outputs, test gaps, copy-paste echo, scope creep, phantom architecture, unspecified error contracts, magic numbers, implicit ordering, dead-end tasks
+- **Circuit breaker** — 2 rounds max. FAIL = fix and re-review. After 2 failures, escalate to user
 - **Every acceptance criterion** must be testable and encodable as a test (TDD)
-- **Single or multiple plans** with a phase map for parallel execution
 
 <br>
 
