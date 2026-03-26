@@ -671,21 +671,33 @@
     <div class="reveal">
       <div class="section-label">Enforcement</div>
       <h2>Stop Hooks — The System Checks Itself</h2>
-      <p>Three shell scripts fire every time a Claude session ends. They catch incomplete work before it's forgotten. You don't run them &mdash; they run automatically.</p>
+      <p>Six shell scripts fire every time a Claude session ends. One for each workflow skill. They catch incomplete work before it's forgotten. You don't run them &mdash; they run automatically.</p>
     </div>
 
     <div class="util-grid reveal delay-1">
       <div class="util-card">
         <h3>Completion Gate</h3>
-        <p>If you're mid-<code>/serious-code</code> and try to exit, the hook checks every task's evidence directory for <code>gate_passed.md</code>. Missing one? Session blocked. You must run the Completion Gate verification before leaving.</p>
+        <p><code>/serious-code</code> &mdash; Blocks exit if any task evidence directory is missing <code>gate_passed.md</code>. The AI cannot skip verification.</p>
+      </div>
+      <div class="util-card">
+        <h3>Extraction Check</h3>
+        <p><code>/serious-plan</code> &mdash; Warns if a plan was generated from upstream research but has no <code>_extracted_items.md</code>. The extraction gate was skipped.</p>
+      </div>
+      <div class="util-card">
+        <h3>Manifest Check</h3>
+        <p><code>/serious-scope</code> &mdash; Warns if scoping started but no <code>manifest.md</code> was produced. The split was never defined.</p>
+      </div>
+      <div class="util-card">
+        <h3>Verdict Check</h3>
+        <p><code>/serious-review</code> &mdash; Warns if plan review started but no <code>review_verdict.md</code> was written. The quality gate never reached a decision.</p>
       </div>
       <div class="util-card">
         <h3>Conversation Capture</h3>
-        <p>If you're in a <code>/serious-conversation</code> and try to exit without wrapping up, the hook warns that no <code>summary.md</code> exists. Your conversation insights won't survive to the next session without it.</p>
+        <p><code>/serious-conversation</code> &mdash; Warns if the conversation has no <code>summary.md</code>. Insights won't survive to the next session.</p>
       </div>
       <div class="util-card">
         <h3>Research Capture</h3>
-        <p>If you're in a <code>/serious-research</code> and try to exit before it's finalized, the hook checks the frontmatter status. Still "active"? You'll be warned that findings are incomplete.</p>
+        <p><code>/serious-research</code> &mdash; Warns if research is still <code>status: active</code>. Incomplete findings won't be picked up by planning.</p>
       </div>
     </div>
 

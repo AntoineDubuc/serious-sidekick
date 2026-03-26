@@ -9,7 +9,7 @@ and shell hooks that physically block the AI from exiting until verification pas
 
 [![Version](https://img.shields.io/badge/version-1.3.0-blue?style=flat-square)](CHANGELOG.md)
 [![Pipeline](https://img.shields.io/badge/pipeline-7_steps-green?style=flat-square)](#the-pipeline)
-[![Hooks](https://img.shields.io/badge/enforcement-3_stop_hooks-purple?style=flat-square)](#how-the-system-checks-itself)
+[![Hooks](https://img.shields.io/badge/enforcement-6_stop_hooks-purple?style=flat-square)](#how-the-system-checks-itself)
 
 </div>
 
@@ -233,13 +233,16 @@ The handoff verifier is the system's immune system. It runs automatically — no
 
 ## How the System Checks Itself
 
-Three shell scripts fire automatically when a Claude session ends. They catch incomplete work before it's forgotten.
+Six shell scripts fire automatically when a Claude session ends — one for each workflow skill. They catch incomplete work before it's forgotten.
 
-| Hook | Fires when | What it catches |
-|:-----|:-----------|:----------------|
-| **Completion Gate** | `/serious-code` is active | Blocks exit if any task evidence directory is missing `gate_passed.md`. The AI cannot skip verification — this runs outside its control. |
-| **Conversation Capture** | `/serious-conversation` is active | Warns if the conversation has no `summary.md`. Insights won't survive to the next session without it. |
-| **Research Capture** | `/serious-research` is active | Warns if research is still `status: active` (not finalized). Incomplete findings won't be picked up by `/serious-plan`. |
+| Hook | Skill | What it catches |
+|:-----|:------|:----------------|
+| **Completion Gate** | `/serious-code` | Blocks exit if any task evidence directory is missing `gate_passed.md`. The AI cannot skip verification. |
+| **Extraction Check** | `/serious-plan` | Warns if a plan was generated from research but `_extracted_items.md` is missing. The extraction gate was skipped — the plan will have gaps. |
+| **Manifest Check** | `/serious-scope` | Warns if scoping started but no `manifest.md` was produced. |
+| **Verdict Check** | `/serious-review` | Warns if plan review started but no `review_verdict.md` exists. The quality gate never reached a decision. |
+| **Conversation Capture** | `/serious-conversation` | Warns if no `summary.md` exists. Insights won't survive to the next session. |
+| **Research Capture** | `/serious-research` | Warns if research is still `status: active`. Incomplete findings won't be picked up by planning. |
 
 These are registered in `.claude/settings.json` and installed by `/serious-init`. The AI cannot bypass them — they're enforced by the Claude Code runtime, not by prompts.
 
