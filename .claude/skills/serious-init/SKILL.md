@@ -25,7 +25,7 @@ All template files live at:
 4. **Claude Code Features/** — 38 folders with detailed research.md files + README index
 5. **_implementation_plan_template_v6.md** — The v6 implementation plan template (required by `/serious-plan`)
 
-### Workflow Skills (10)
+### Workflow Skills (11)
 
 | Skill | Purpose |
 |-------|---------|
