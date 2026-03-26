@@ -4,12 +4,12 @@
 
 **A workflow toolkit for Claude Code that thinks before it builds.**
 
-Structured conversations, research with evidence grading, implementation plans with TDD,`<br>`
-and automatic verification that catches when the AI drops, defers, or half-does your work.
+Structured conversations, research with evidence grading, implementation plans with TDD,<br>
+and shell hooks that physically block the AI from exiting until verification passes.
 
 [![Version](https://img.shields.io/badge/version-1.3.0-blue?style=flat-square)](CHANGELOG.md)
-[![Skills](https://img.shields.io/badge/skills-28-green?style=flat-square)](#skills)
-[![Features](https://img.shields.io/badge/documented_features-39-purple?style=flat-square)](#claude-code-knowledge-base)
+[![Pipeline](https://img.shields.io/badge/pipeline-7_steps-green?style=flat-square)](#the-pipeline)
+[![Hooks](https://img.shields.io/badge/enforcement-3_stop_hooks-purple?style=flat-square)](#how-the-system-checks-itself)
 
 </div>
 
@@ -19,7 +19,7 @@ and automatic verification that catches when the AI drops, defers, or half-does 
 
 You tell an AI to build something. It says "done." You check — half the requirements are missing, three items are marked "future enhancement," and one is contradicted by the implementation. You loop back. It fixes two, introduces a new gap, and defers another.
 
-**Serious Sidekick makes this loop unnecessary.** It structures the entire journey from idea to implementation, and at every step, an independent verifier checks that nothing was dropped, deferred, or half-done.
+**Serious Sidekick makes this loop unnecessary.** It structures the entire journey from idea to implementation. At every handoff, an independent verifier checks that nothing was dropped. And shell hooks running outside Claude's process **physically block the session from ending** until verification passes — the AI cannot say "done" and walk away.
 
 ---
 
