@@ -671,25 +671,25 @@
     <div class="reveal">
       <div class="section-label">Enforcement</div>
       <h2>Stop Hooks — The System Checks Itself</h2>
-      <p>Six shell scripts fire every time a Claude session ends. One for each workflow skill. They catch incomplete work before it's forgotten. You don't run them &mdash; they run automatically.</p>
+      <p>Nine shell hooks enforce quality at two levels: six fire when sessions end (Stop hooks), three guard file writes in real-time (PreToolUse hooks). All use a <strong>fail-closed pattern</strong> &mdash; unexpected errors block instead of silently passing.</p>
     </div>
 
     <div class="util-grid reveal delay-1">
       <div class="util-card">
         <h3>Completion Gate</h3>
-        <p><code>/serious-code</code> &mdash; Blocks exit if any task evidence directory is missing <code>gate_passed.md</code>. The AI cannot skip verification.</p>
+        <p><code>/serious-code</code> &mdash; Blocks exit if any task evidence directory is missing <code>gate_passed.md</code> (must contain PASS), OR if any of the 5 agent evidence files are missing (<code>implementation.md</code>, <code>review.md</code>, <code>tests.md</code>, <code>runtime.md</code>, <code>qa.md</code>). Catches skipped agents and hollow gate files.</p>
       </div>
       <div class="util-card">
         <h3>Extraction Check</h3>
-        <p><code>/serious-plan</code> &mdash; Warns if a plan was generated from upstream research but has no <code>_extracted_items.md</code>. The extraction gate was skipped.</p>
+        <p><code>/serious-plan</code> &mdash; Blocks if a plan has upstream research but no <code>_extracted_items.md</code>, if items exist but zero <code>[Source:]</code> citations are in the plan (items not cross-referenced), or if the <code>verified:</code> handoff stamp is missing. Also catches hedge language.</p>
       </div>
       <div class="util-card">
         <h3>Manifest Check</h3>
-        <p><code>/serious-scope</code> &mdash; Warns if scoping started but no <code>manifest.md</code> was produced. The split was never defined.</p>
+        <p><code>/serious-scope</code> &mdash; Blocks if scoping started but no <code>manifest.md</code> was produced. When upstream <code>source:</code> exists, also checks for <code>_extracted_items.md</code> and <code>verified:</code> stamp.</p>
       </div>
       <div class="util-card">
         <h3>Verdict Check</h3>
-        <p><code>/serious-review</code> &mdash; Warns if plan review started but no <code>review_verdict.md</code> was written. The quality gate never reached a decision.</p>
+        <p><code>/serious-review</code> &mdash; Blocks if plan review started but no <code>review_verdict.md</code> exists, if a PASS verdict has zero file:line references (review theater), or if any of the 3 mandatory agent section headers are missing.</p>
       </div>
       <div class="util-card">
         <h3>Conversation Capture</h3>
@@ -697,13 +697,18 @@
       </div>
       <div class="util-card">
         <h3>Research Capture</h3>
-        <p><code>/serious-research</code> &mdash; Warns if research is still <code>status: active</code>. Incomplete findings won't be picked up by planning.</p>
+        <p><code>/serious-research</code> &mdash; Blocks if research is still <code>status: active</code>. When upstream <code>source:</code> exists, also checks for <code>_extracted_items.md</code> and <code>verified:</code> stamp.</p>
       </div>
     </div>
 
     <div class="tip reveal delay-2">
       <div class="tip-icon">&#128161;</div>
       <div><strong>How it works:</strong> These hooks are registered in <code>.claude/settings.json</code> and installed automatically by <code>/serious-init</code>. They run outside Claude's control &mdash; the AI cannot skip or override them. If a hook blocks exit, the only way out is to complete the work or abandon the workflow.</div>
+    </div>
+
+    <div class="warning reveal">
+      <div class="warn-icon">&#9888;&#65039;</div>
+      <div><strong>Fail-closed by design.</strong> Every hook has an explicit success marker. If a hook hits an unexpected error (bad path, permission denied, malformed data), it blocks the session instead of silently passing. This was added in v1.4.0 after discovering all 9 hooks defaulted to fail-open.</div>
     </div>
   </div>
 </div>
@@ -1286,6 +1291,10 @@
       <div class="util-card">
         <h3>/serious-bananas</h3>
         <p>Nano Banana 2 image generation via Gemini (<code>gemini-3.1-flash-image-preview</code>). 4K resolution, dark mode, 14 aspect ratios, reference images, iterative editing. Three model tiers: NB2 (default), Pro (complex), v1 (budget). Requires <code>GEMINI_API_KEY</code> in <code>.env</code>.</p>
+      </div>
+      <div class="util-card">
+        <h3>/serious-debug</h3>
+        <p>Systematic debugging with 3 modes (auto-fix, quick, deep). Reproducer-driven feedback loop and compounding debug corpus.</p>
       </div>
     </div>
   </div>

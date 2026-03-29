@@ -7,7 +7,7 @@
 Structured conversations, research with evidence grading, implementation plans with TDD,<br>
 and shell hooks that physically block the AI from exiting until verification passes.
 
-[![Version](https://img.shields.io/badge/version-1.3.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue?style=flat-square)](CHANGELOG.md)
 [![Pipeline](https://img.shields.io/badge/pipeline-7_steps-green?style=flat-square)](#the-pipeline)
 [![Hooks](https://img.shields.io/badge/enforcement-6_stop_hooks-purple?style=flat-square)](#how-the-system-checks-itself)
 
@@ -76,7 +76,7 @@ Three fidelity levels — wireframe (ASCII), visual (Gemini-generated), and inte
 
 Generates implementation plans using the v6 template. Not a to-do list — a contract with testable acceptance criteria, TDD protocol, and independent review.
 
-`<img src="images/readme/plan_review.png" alt="Plan review diagram showing 3 mandatory agents (Anti-Slop Auditor, Structural Reviewer, Security Mind) reading plan cold, producing a verdict with circuit breaker" width="100%">`
+<img src="images/readme/plan_review.png" alt="Plan review diagram showing 3 mandatory agents (Anti-Slop Auditor, Structural Reviewer, Security Mind) reading plan cold, producing a verdict with circuit breaker" width="100%">
 
 - **3 mandatory review agents** — Anti-Slop Auditor (10 checks), Structural Reviewer, Security Mind. All read the plan cold — no research context, no author notes
 - **10 anti-slop checks** — weasel words, missing outputs, test gaps, copy-paste echo, scope creep, phantom architecture, unspecified error contracts, magic numbers, implicit ordering, dead-end tasks
@@ -102,9 +102,9 @@ Each task goes through a cycle with 5 independent agents. No self-grading. The a
 
 <br>
 
-### ✅ `/serious-review` — Close the Loop
+### ✅ `/serious-review` — Quality Gate Before Code
 
-Structured defect capture that funnels findings back into the pipeline. Issues get IDs, classifications, and severity ratings, then cycle back through research → plan → code.
+Adversarial plan review with 3 mandatory agents (Anti-Slop Auditor, Structural Reviewer, Security Mind). Each reads the plan cold — no research context. 10 anti-slop checks catch vagueness, phantom architecture, and scope creep. Plans must PASS before `/serious-code` can run.
 
 ---
 
@@ -140,7 +140,7 @@ This copies everything — skills, agents, feature docs, plan template, and CLAU
 
 <table>
 <tr>
-<th>Workflow Skills (8)</th>
+<th>Workflow Skills (11)</th>
 <th>What They Do</th>
 </tr>
 <tr><td><code>/serious-conversation</code></td><td>Persona panel for ideation and exploration</td></tr>
@@ -152,11 +152,14 @@ This copies everything — skills, agents, feature docs, plan template, and CLAU
 <tr><td><code>/serious-code</code></td><td>Plan execution with 5 verification agents</td></tr>
 <tr><td><code>/serious-bananas</code></td><td>Image/diagram generation via Gemini API (Nano Banana 2 — 4K, dark mode, 3 model tiers)</td></tr>
 <tr><td><code>/serious-init</code></td><td>Scaffold a new project with the toolkit</td></tr>
+<tr><td><code>/serious-debug</code></td><td>Systematic debugging — 3 modes (auto-fix, quick, deep), reproducer-driven feedback, compounding debug corpus</td></tr>
+<tr><td><code>/serious-status</code></td><td>View active and completed workflows with tree structure</td></tr>
+<tr><td><code>/serious-abandon</code></td><td>Abandon a sub-workflow and restore parent context</td></tr>
 </table>
 
 <table>
 <tr>
-<th>Auto-Loading Skills (20)</th>
+<th>Auto-Loading Skills (18)</th>
 <th>Loads When You Discuss...</th>
 </tr>
 <tr><td><code>hooks</code></td><td>Lifecycle events, automation, policy enforcement</td></tr>
@@ -177,8 +180,6 @@ This copies everything — skills, agents, feature docs, plan template, and CLAU
 <tr><td><code>output-styles</code></td><td>Response format, learning mode</td></tr>
 <tr><td><code>status-line</code></td><td>Status bar customization</td></tr>
 <tr><td><code>scheduled-tasks</code></td><td>Cron scheduling, recurring prompts</td></tr>
-<tr><td><code>serious-status</code></td><td>View active and completed workflows</td></tr>
-<tr><td><code>serious-abandon</code></td><td>Abandon a sub-workflow, restore parent context</td></tr>
 </table>
 
 ---
@@ -233,16 +234,20 @@ The handoff verifier is the system's immune system. It runs automatically — no
 
 ## How the System Checks Itself
 
-Six shell scripts fire automatically when a Claude session ends — one for each workflow skill. They catch incomplete work before it's forgotten.
+<img src="images/readme/hook_enforcement.png" alt="Hook enforcement dashboard showing 6 Stop hooks with content-aware checks, fail-closed pattern" width="100%">
+
+Nine shell hooks enforce quality at two levels: six fire when sessions end (Stop hooks), three guard file writes in real-time (PreToolUse hooks). All use a **fail-closed pattern** — unexpected errors block instead of silently passing.
 
 | Hook | Skill | What it catches |
 |:-----|:------|:----------------|
-| **Completion Gate** | `/serious-code` | Blocks exit if any task evidence directory is missing `gate_passed.md`. The AI cannot skip verification. |
-| **Extraction Check** | `/serious-plan` | Warns if a plan was generated from research but `_extracted_items.md` is missing. The extraction gate was skipped — the plan will have gaps. |
-| **Manifest Check** | `/serious-scope` | Warns if scoping started but no `manifest.md` was produced. |
-| **Verdict Check** | `/serious-review` | Warns if plan review started but no `review_verdict.md` exists. The quality gate never reached a decision. |
-| **Conversation Capture** | `/serious-conversation` | Warns if no `summary.md` exists. Insights won't survive to the next session. |
-| **Research Capture** | `/serious-research` | Warns if research is still `status: active`. Incomplete findings won't be picked up by planning. |
+| **Completion Gate** | `/serious-code` | Blocks exit if any task is missing `gate_passed.md` (must contain PASS, must not contain FAIL), OR if any of the 5 agent evidence files are missing (`implementation.md`, `review.md`, `tests.md`, `runtime.md`, `qa.md`). Catches skipped agents and hollow gate files. |
+| **Extraction Check** | `/serious-plan` | Blocks if `_extracted_items.md` is missing (extraction skipped), if items exist but the plan has zero `[Source:]` citations (items not cross-referenced), or if the `verified:` handoff stamp is missing. Also scans for hedge language in task descriptions. |
+| **Manifest Check** | `/serious-scope` | Blocks if `manifest.md` is missing. When upstream `source:` exists, also checks for `_extracted_items.md` and `verified:` stamp. |
+| **Verdict Check** | `/serious-review` | Blocks if `review_verdict.md` is missing, if a PASS verdict has zero file:line references (review theater), or if any of the 3 mandatory agent section headers are missing (`## Anti-Slop Audit Report`, `## Structural Review Report`, `## Security Review Report`). |
+| **Conversation Capture** | `/serious-conversation` | Blocks if status is `done` but no `summary.md` exists. Non-blocking during active conversations. |
+| **Research Capture** | `/serious-research` | Blocks if status is still `active`. When upstream `source:` exists, also checks for `_extracted_items.md` and `verified:` stamp. |
+
+All 9 hooks (6 Stop + 3 PreToolUse) use a **fail-closed pattern** — if any hook encounters an unexpected error (bad path, permission denied, malformed data), it blocks instead of silently passing. Every hook script has an explicit success marker; the session cannot exit unless all checks complete cleanly.
 
 These are registered in `.claude/settings.json` and installed by `/serious-init`. The AI cannot bypass them — they're enforced by the Claude Code runtime, not by prompts.
 

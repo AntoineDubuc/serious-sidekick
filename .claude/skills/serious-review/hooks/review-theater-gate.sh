@@ -12,6 +12,10 @@
 # No active review session? Allow.
 [ ! -f ".active-review" ] && exit 0
 
+# --- CHECKS_PASSED fail-closed pattern ---
+# All grep -c invocations MUST use || true (returns exit 1 on zero matches)
+CHECKS_PASSED=false
+
 # Parse file path from tool input
 FILE_PATH=$(echo "$CLAUDE_TOOL_INPUT" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"file_path"[[:space:]]*:[[:space:]]*"//' | sed 's/"$//')
 
@@ -44,4 +48,11 @@ if [ -n "$THEATER" ]; then
   fi
 fi
 
+CHECKS_PASSED=true
+
+# Final guard — if we never reached the pass marker, something failed silently
+if [ "$CHECKS_PASSED" != "true" ]; then
+  echo "ENFORCEMENT ERROR: review-theater-gate.sh did not complete all checks" >&2
+  exit 2
+fi
 exit 0

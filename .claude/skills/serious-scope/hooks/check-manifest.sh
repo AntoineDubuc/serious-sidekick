@@ -15,6 +15,10 @@ SCOPE_DIR=$(cat .active-scope | tr -d '[:space:]')
 # No scope directory? Allow exit.
 [ ! -d "$SCOPE_DIR" ] && exit 0
 
+# --- CHECKS_PASSED fail-closed pattern ---
+# All grep -c invocations MUST use || true (returns exit 1 on zero matches)
+CHECKS_PASSED=false
+
 # Check for manifest.md
 if [ ! -f "${SCOPE_DIR}/manifest.md" ]; then
   echo "SCOPE MANIFEST WARNING" >&2
@@ -27,4 +31,26 @@ if [ ! -f "${SCOPE_DIR}/manifest.md" ]; then
   exit 2
 fi
 
+# --- Extraction gate + verifier stamp (only when upstream source exists) ---
+# Only require extraction and verification when the manifest has an upstream source.
+# Scopes created from scratch (no source:) don't need extraction.
+SOURCE=$(head -20 "${SCOPE_DIR}/manifest.md" | grep "^source:" | sed 's/source: *//' | tr -d '[:space:]')
+if [ -n "$SOURCE" ] && [ "$SOURCE" != "" ]; then
+  VERIFIED=$(head -20 "${SCOPE_DIR}/manifest.md" | grep "^verified:" | head -1)
+  if [ -z "$VERIFIED" ]; then
+    echo "TRACEABILITY VERIFICATION WARNING" >&2
+    echo "" >&2
+    echo "Manifest at ${SCOPE_DIR}/manifest.md has a source but no verified: stamp." >&2
+    echo "The handoff-verifier has not run." >&2
+    exit 2
+  fi
+fi
+
+CHECKS_PASSED=true
+
+# Final guard — if we never reached the pass marker, something failed silently
+if [ "$CHECKS_PASSED" != "true" ]; then
+  echo "ENFORCEMENT ERROR: check-manifest.sh did not complete all checks" >&2
+  exit 2
+fi
 exit 0

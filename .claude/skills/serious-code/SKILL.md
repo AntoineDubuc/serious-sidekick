@@ -206,7 +206,6 @@ I will NOT skip: [list the top 3 rationalizations from the guardrail table above
 Verification: [how to check — test commands, grep patterns, file existence checks]
 ```
 
-The Stop hook diffs this commitment against actual output on exit. Discrepancies block.
 
 ---
 

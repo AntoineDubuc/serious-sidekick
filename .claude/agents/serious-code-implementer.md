@@ -97,3 +97,9 @@ When complete, return:
 ```
 
 If you **cannot complete** a criterion, stop immediately and return the report with status FAILED, including what went wrong and what you tried.
+
+## Required Output
+
+**Evidence filename:** `implementation.md`
+**Location:** `evidence/task_{NN}/implementation.md`
+**Content:** List of files changed, tests written, commits made, any issues encountered.

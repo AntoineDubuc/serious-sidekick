@@ -88,3 +88,9 @@ For each criterion:
 - **Any criterion FAIL** → FAIL
 - **All criteria PASS or SKIP (at least one SKIP)** → PARTIAL (not a failure, but flagged)
 - **Majority SKIP** → PARTIAL (flag that runtime verification was limited)
+
+## Required Output
+
+**Evidence filename:** `runtime.md`
+**Location:** `evidence/task_{NN}/runtime.md`
+**Content:** Per-criterion runtime verification results (PASS/FAIL/SKIP), environment details.

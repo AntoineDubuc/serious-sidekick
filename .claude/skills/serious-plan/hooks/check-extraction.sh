@@ -19,9 +19,19 @@ PLAN_DIR=$(cat .active-plan | tr -d '[:space:]')
 # No plan directory? Allow exit.
 [ ! -d "$PLAN_DIR" ] && exit 0
 
-# Check if there's an implementation_plan.md or any plan file
+# --- CHECKS_PASSED fail-closed pattern ---
+# All grep -c invocations MUST use || true (returns exit 1 on zero matches)
+CHECKS_PASSED=false
+
+# Check if there's an implementation_plan.md
 # If no plan file exists yet, we're still in Phase 0 — too early to check
-HAS_PLAN=$(find "$PLAN_DIR" -name "implementation_plan.md" -o -name "*.md" -path "*/plans/*" 2>/dev/null | head -1)
+# Prioritize implementation_plan.md directly to avoid picking up other .md files
+# (review_verdict.md, execution_log.md, etc.) in the same directory
+if [ -f "${PLAN_DIR}/implementation_plan.md" ]; then
+  HAS_PLAN="${PLAN_DIR}/implementation_plan.md"
+else
+  HAS_PLAN=$(find "$PLAN_DIR" -name "implementation_plan.md" 2>/dev/null | head -1)
+fi
 [ -z "$HAS_PLAN" ] && exit 0
 
 # Plan exists — check if _extracted_items.md exists
@@ -40,6 +50,24 @@ if [ ! -f "${PLAN_DIR}/_extracted_items.md" ]; then
     echo "were not inventoried before generation." >&2
     echo "" >&2
     echo "To fix: run Phase 0d extraction, then re-verify the plan." >&2
+    exit 2
+  fi
+fi
+
+# --- Citation cross-reference check ---
+# Verify the plan actually USED the extracted items (not just created the file)
+if [ -f "${PLAN_DIR}/_extracted_items.md" ] && [ -n "$HAS_PLAN" ] && [ -f "$HAS_PLAN" ]; then
+  ITEM_COUNT=$(grep -cE '^\s*[0-9]+\.|^\s*- \*\*' "${PLAN_DIR}/_extracted_items.md" || true)
+  SOURCE_CITATIONS=$(grep -ci '\[source:' "$HAS_PLAN" || true)
+
+  if [ "$ITEM_COUNT" -gt 0 ] && [ "$SOURCE_CITATIONS" -eq 0 ]; then
+    echo "EXTRACTION CROSS-REFERENCE WARNING" >&2
+    echo "" >&2
+    echo "Plan at ${HAS_PLAN} has ${ITEM_COUNT} extracted upstream items" >&2
+    echo "but ZERO [Source:] citations in acceptance criteria." >&2
+    echo "" >&2
+    echo "This means the extracted items were not cross-referenced during" >&2
+    echo "plan generation. Every acceptance criterion must cite its source." >&2
     exit 2
   fi
 fi
@@ -63,4 +91,27 @@ if [ -n "$HAS_PLAN" ] && [ -f "$HAS_PLAN" ]; then
   fi
 fi
 
+# --- Handoff verifier stamp check ---
+# Plans with upstream sources must have verified: stamp from handoff-verifier
+if [ -n "$HAS_PLAN" ] && [ -f "$HAS_PLAN" ]; then
+  SOURCE=$(head -20 "$HAS_PLAN" | grep "^source:" | sed 's/source: *//' | tr -d '[:space:]')
+  if [ -n "$SOURCE" ] && [ "$SOURCE" != "" ]; then
+    VERIFIED=$(head -20 "$HAS_PLAN" | grep "^verified:" | head -1)
+    if [ -z "$VERIFIED" ]; then
+      echo "TRACEABILITY VERIFICATION WARNING" >&2
+      echo "" >&2
+      echo "Plan at ${HAS_PLAN} has a source but no verified: stamp." >&2
+      echo "The handoff-verifier has not run. Run Phase 3 verification." >&2
+      exit 2
+    fi
+  fi
+fi
+
+CHECKS_PASSED=true
+
+# Final guard — if we never reached the pass marker, something failed silently
+if [ "$CHECKS_PASSED" != "true" ]; then
+  echo "ENFORCEMENT ERROR: check-extraction.sh did not complete all checks" >&2
+  exit 2
+fi
 exit 0

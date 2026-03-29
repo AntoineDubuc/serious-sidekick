@@ -109,3 +109,9 @@ For each selected criterion, verify it **from scratch**:
 - **All spot-checks PASS** → PASS
 - **Any spot-check FAIL** → FAIL
 - **Any discrepancy with implementer report** → flag it, but doesn't automatically fail unless the discrepancy reveals an actual problem
+
+## Required Output
+
+**Evidence filename:** `qa.md`
+**Location:** `evidence/task_{NN}/qa.md`
+**Content:** 3 randomly selected criteria with independent verification results, comparison with implementer report.

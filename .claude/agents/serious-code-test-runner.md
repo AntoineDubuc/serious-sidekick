@@ -99,3 +99,9 @@ Record:
 - **Any test fails** → FAIL
 - **All tests pass + static analysis passes** → PASS
 - **Pre-existing failures only (no new failures)** → PASS (with note about pre-existing issues)
+
+## Required Output
+
+**Evidence filename:** `tests.md`
+**Location:** `evidence/task_{NN}/tests.md`
+**Content:** Static analysis results, test suite results (passed/failed/skipped), coverage if available.

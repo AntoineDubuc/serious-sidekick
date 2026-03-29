@@ -15,6 +15,10 @@ REVIEW_DIR=$(cat .active-review | tr -d '[:space:]')
 # No review directory? Allow exit.
 [ ! -d "$REVIEW_DIR" ] && exit 0
 
+# --- CHECKS_PASSED fail-closed pattern ---
+# All grep -c invocations MUST use || true (returns exit 1 on zero matches)
+CHECKS_PASSED=false
+
 # Check for review_verdict.md
 if [ ! -f "${REVIEW_DIR}/review_verdict.md" ]; then
   echo "REVIEW VERDICT WARNING" >&2
@@ -48,4 +52,34 @@ if [ -f "${REVIEW_DIR}/review_verdict.md" ]; then
   fi
 fi
 
+# --- Agent dispatch validation (Layer 3) ---
+# Verify all 3 mandatory review agents contributed to the verdict
+# Section headers are a shared contract with the review agent definitions
+if [ -f "${REVIEW_DIR}/review_verdict.md" ]; then
+  MISSING_AGENTS=""
+  ANTI_SLOP=$(grep -c '## Anti-Slop Audit Report' "${REVIEW_DIR}/review_verdict.md" || true)
+  STRUCTURAL=$(grep -c '## Structural Review Report' "${REVIEW_DIR}/review_verdict.md" || true)
+  SECURITY=$(grep -c '## Security Review Report' "${REVIEW_DIR}/review_verdict.md" || true)
+
+  [ "$ANTI_SLOP" -eq 0 ] && MISSING_AGENTS="${MISSING_AGENTS}  - Anti-Slop Auditor\n"
+  [ "$STRUCTURAL" -eq 0 ] && MISSING_AGENTS="${MISSING_AGENTS}  - Structural Reviewer\n"
+  [ "$SECURITY" -eq 0 ] && MISSING_AGENTS="${MISSING_AGENTS}  - Security Mind\n"
+
+  if [ -n "$MISSING_AGENTS" ]; then
+    echo "AGENT DISPATCH WARNING" >&2
+    echo "" >&2
+    echo "Review verdict at ${REVIEW_DIR}/review_verdict.md is missing reports from:" >&2
+    echo -e "$MISSING_AGENTS" >&2
+    echo "All 3 mandatory agents must produce reports before a verdict is accepted." >&2
+    exit 2
+  fi
+fi
+
+CHECKS_PASSED=true
+
+# Final guard — if we never reached the pass marker, something failed silently
+if [ "$CHECKS_PASSED" != "true" ]; then
+  echo "ENFORCEMENT ERROR: check-verdict.sh did not complete all checks" >&2
+  exit 2
+fi
 exit 0

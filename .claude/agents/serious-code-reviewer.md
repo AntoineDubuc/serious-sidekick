@@ -131,3 +131,9 @@ Tag every finding with a severity:
 - **Minors only** → PASS
 
 Do NOT fail a review for minor style preferences. Focus on spec compliance first, then correctness, security, and quality.
+
+## Required Output
+
+**Evidence filename:** `review.md`
+**Location:** `evidence/task_{NN}/review.md`
+**Content:** Two-stage review results (Stage 1: spec compliance, Stage 2: code quality), findings with severity, verdict.

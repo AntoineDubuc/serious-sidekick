@@ -153,7 +153,6 @@ I will NOT skip: [list top 3 from guardrail table: test specs, specific names, s
 Verification: [grep for hedge language, count test file references, verify seed data commands are copy-pasteable]
 ```
 
-The Stop hook checks the plan against this commitment on exit.
 
 ---
 

@@ -34,27 +34,27 @@
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-conversation/hooks/capture-conversation.sh\"",
-            "timeout": 10
+            "timeout": 30
           },
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-research/hooks/capture-research.sh\"",
-            "timeout": 10
+            "timeout": 30
           },
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-plan/hooks/check-extraction.sh\"",
-            "timeout": 10
+            "timeout": 30
           },
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-scope/hooks/check-manifest.sh\"",
-            "timeout": 10
+            "timeout": 30
           },
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-review/hooks/check-verdict.sh\"",
-            "timeout": 10
+            "timeout": 30
           }
         ]
       }
