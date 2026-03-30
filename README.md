@@ -95,6 +95,7 @@ Each task goes through a cycle with 5 independent agents. No self-grading. The a
 - **Two-stage code review** — Stage 1: spec compliance (COMPLIANT / PARTIAL / MISSING / WRONG per criterion — any MISSING or WRONG = automatic FAIL regardless of code quality). Stage 2: code quality, security, consistency
 - **Anti-rationalization tables** — each agent has a table of excuses it might generate to skip its own protocol, with explanations of why each is wrong. Implementer: 8 TDD-skipping rationalizations. Reviewer: 7 review-softening rationalizations. QA: 6 spot-check shortcuts
 - **Anti-sycophancy** — Reviewer and QA agents are forbidden from performative praise ("Great work!", "Nice implementation!"). Both verify independently against the codebase, not the implementer's self-report
+- **Separation of duties** — Non-implementer agents are mechanically blocked from Edit/Write via `disallowedTools` frontmatter. The reviewer literally cannot edit the code it's reviewing. Effort levels are tuned per agent: `high` for reasoning-heavy work, `low` for the test runner (just runs commands).
 - **Completion Gate** — an independent agent verifies every criterion has implementing code AND that the code is reachable (catches dead code). A stop hook enforces this — the session can't exit without it.
 - **Stub detection** — scans for `TODO`, `throw UnimplementedException`, and other placeholder patterns after implementation
 - **Multi-plan execution** via git worktrees for parallel isolation

@@ -93,9 +93,9 @@ Features from v2.1.69–v2.1.86 that give us finer control over subagent behavio
 
 | # | Feature | Version | Details | Potential Use | Status |
 |---|---------|---------|---------|---------------|--------|
-| 4.1 | `effort` frontmatter for agents | v2.1.78 | Set effort level (low/medium/high) per agent in frontmatter | Cheap effort for simple extraction agents, high effort for reviewers | NEW |
-| 4.2 | `maxTurns` frontmatter for agents | v2.1.78 | Cap the number of turns an agent can take | Prevent runaway agents, enforce time-boxing | NEW |
-| 4.3 | `disallowedTools` frontmatter for agents | v2.1.78 | Block specific tools from being used by an agent | Prevent reviewers from editing code, prevent implementers from skipping tests | NEW |
+| 4.1 | `effort` frontmatter for agents | v2.1.78 | Set effort level (low/medium/high) per agent in frontmatter | high (6 agents), medium (runtime-checker), low (test-runner) | DONE |
+| 4.2 | `maxTurns` frontmatter for agents | v2.1.78 | Cap the number of turns an agent can take | Deferred — need turn count data from real workflows first | BACKLOG |
+| 4.3 | `disallowedTools` frontmatter for agents | v2.1.78 | Block specific tools from being used by an agent | 7 of 8 agents blocked from Edit/Write/NotebookEdit. Implementer keeps full access. | DONE |
 | 4.4 | `model` parameter on Agent tool | v2.1.72 | Override model per agent spawn | Cheap model for extraction, capable model for review/QA | NEW |
 | 4.5 | `StopFailure` hook | v2.1.78 | Fires on API errors during agent execution | Detect and handle agent failures gracefully | NEW |
 | 4.6 | `SendMessage` auto-resumes stopped agents | v2.1.77 | No need to manually resume — just send a message | Simplifies retry logic in orchestrators | NEW |

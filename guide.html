@@ -1188,7 +1188,7 @@
           <div class="skill-cmd">/serious-code</div>
         </div>
       </div>
-      <p class="skill-intro">This is where code gets written. Claude reads your plan and works through each task: writes a failing test first, writes the code to make it pass, then 5 separate AI agents verify. The agents are hardened against the same LLM failure modes they're meant to catch &mdash; each has anti-rationalization tables and the Reviewer and QA run with anti-sycophancy rules. Nothing gets marked "done" unless all checks pass.</p>
+      <p class="skill-intro">This is where code gets written. Claude reads your plan and works through each task: writes a failing test first, writes the code to make it pass, then 5 separate AI agents verify. Non-implementer agents are <strong>mechanically blocked from editing code</strong> via <code>disallowedTools</code>, and each agent runs at the right effort level for its job. Nothing gets marked "done" unless all checks pass.</p>
     </div>
 
     <div class="sub-heading reveal">The execution cycle per task</div>
@@ -1208,11 +1208,11 @@
 
     <div class="sub-heading reveal">The 5 verification agents</div>
     <div class="persona-grid reveal delay-1">
-      <div class="persona-card"><h4>Implementer</h4><p>Strict TDD with anti-rationalization table (8 excuses for skipping tests, each debunked)</p></div>
-      <div class="persona-card"><h4>Code Reviewer</h4><p>Two-stage review: spec compliance first (COMPLIANT/PARTIAL/MISSING/WRONG), then code quality. Anti-sycophancy + anti-rationalization (7 excuses)</p></div>
-      <div class="persona-card"><h4>Test Runner</h4><p>Static analysis + full test suite</p></div>
-      <div class="persona-card"><h4>Runtime Checker</h4><p>Does it work in the actual app?</p></div>
-      <div class="persona-card"><h4>QA Spot-Checker</h4><p>Adversarial re-verification of 3+ random criteria. Anti-sycophancy + anti-rationalization (6 excuses). "If you find no problems, be suspicious of yourself."</p></div>
+      <div class="persona-card"><h4>Implementer</h4><p>Strict TDD with anti-rationalization table (8 excuses). Full tool access &mdash; the only agent that can write code. <code>effort: high</code></p></div>
+      <div class="persona-card"><h4>Code Reviewer</h4><p>Two-stage review: spec compliance then code quality. Anti-sycophancy. <strong>Blocked from Edit/Write</strong> &mdash; reports only. <code>effort: high</code></p></div>
+      <div class="persona-card"><h4>Test Runner</h4><p>Static analysis + full test suite. <strong>Blocked from Edit/Write</strong>. <code>effort: low</code> &mdash; runs commands, no reasoning needed</p></div>
+      <div class="persona-card"><h4>Runtime Checker</h4><p>Does it work in the actual app? <strong>Blocked from Edit/Write</strong>. <code>effort: medium</code></p></div>
+      <div class="persona-card"><h4>QA Spot-Checker</h4><p>Adversarial re-verification of 3+ random criteria. Anti-sycophancy + anti-rationalization (6 excuses). <strong>Blocked from Edit/Write</strong>. <code>effort: high</code></p></div>
     </div>
 
     <div class="steps reveal delay-2">
