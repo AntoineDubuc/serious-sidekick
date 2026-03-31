@@ -85,9 +85,9 @@ If a hook hits an unexpected error, it blocks instead of silently passing. No si
 
 Seven steps. Each produces artifacts that feed the next. A verifier checks every handoff — nothing gets dropped between stages.
 
-<p align="center">
-<img src="images/readme/pipeline_flow.png" alt="Pipeline flow: Conversation → Research → Mock-ups → Scope → Plan → Review → Code with verification at every handoff" width="700">
-</p>
+<div align="center">
+  <img src="images/readme/pipeline_flow.png" alt="Pipeline flow: Conversation → Research → Mock-ups → Scope → Plan → Review → Code with verification at every handoff" />
+</div>
 
 | Step | Command | What it does |
 |:-----|:--------|:-------------|
@@ -107,25 +107,25 @@ Seven steps. Each produces artifacts that feed the next. A verifier checks every
 
 ### How conversations drive the pipeline
 
-<p align="center">
-<img src="images/readme/conversation_panel.png" alt="Conversation panel: Orchestrator distributes to personas, synthesizes, and loops with the user" width="700">
-</p>
+<div align="center">
+  <img src="images/readme/conversation_panel.png" alt="Conversation panel: Orchestrator distributes to personas, synthesizes, and loops with the user" />
+</div>
 
 10 built-in personas — Architect, Skeptic, Pragmatist, Product Thinker, Debugger, Security Mind, DX Advocate, Mentor, Optimizer, Historian. Each responds independently, then an Orchestrator synthesizes. You steer.
 
 ### How plans get reviewed
 
-<p align="center">
-<img src="images/readme/plan_review.png" alt="Plan review: 3 mandatory agents (Anti-Slop Auditor, Structural Reviewer, Security Mind) read the plan cold and produce a verdict" width="700">
-</p>
+<div align="center">
+  <img src="images/readme/plan_review.png" alt="Plan review: 3 mandatory agents (Anti-Slop Auditor, Structural Reviewer, Security Mind) read the plan cold and produce a verdict" />
+</div>
 
 3 mandatory agents read the plan cold — no research context, no author notes. 10 anti-slop checks catch vagueness, phantom architecture, and scope creep. Circuit breaker: 2 rounds max, then escalate.
 
 ### How code gets executed
 
-<p align="center">
-<img src="images/readme/code_execution.png" alt="Code execution: Smoke Test → Implementer → Stub Detection → 4 Parallel Verification Agents → Completion Gate" width="700">
-</p>
+<div align="center">
+  <img src="images/readme/code_execution.png" alt="Code execution: Smoke Test → Implementer → Stub Detection → 4 Parallel Verification Agents → Completion Gate" />
+</div>
 
 5 independent agents per task. TDD enforced — failing tests first, then implementation. Anti-rationalization tables prevent shortcuts. Non-implementer agents are mechanically blocked from editing code. The completion gate blocks the session until every evidence file exists.
 
@@ -162,9 +162,9 @@ Seven steps. Each produces artifacts that feed the next. A verifier checks every
 
 All hooks use a **fail-closed pattern** — unexpected errors block instead of silently passing. All are **worktree-safe** — they resolve paths via `$CLAUDE_PROJECT_DIR` and validate against path traversal.
 
-<p align="center">
-<img src="images/readme/hook_enforcement.png" alt="Hook enforcement dashboard: 6 Stop hooks with content-aware checks, fail-closed pattern" width="700">
-</p>
+<div align="center">
+  <img src="images/readme/hook_enforcement.png" alt="Hook enforcement dashboard: 6 Stop hooks with content-aware checks, fail-closed pattern" />
+</div>
 
 ### 3 PreToolUse Gates
 
@@ -190,9 +190,9 @@ Context-aware documentation for hooks, MCP, subagents, worktrees, permissions, p
 
 The handoff verifier runs automatically at every pipeline stage — no commands, no flags, no opt-in.
 
-<p align="center">
-<img src="images/readme/verification_flow.png" alt="Automatic handoff verification: Extract Mode and Completion Verify Mode with 6 disposition types" width="700">
-</p>
+<div align="center">
+  <img src="images/readme/verification_flow.png" alt="Automatic handoff verification: Extract Mode and Completion Verify Mode with 6 disposition types" />
+</div>
 
 Each upstream item gets classified:
 
