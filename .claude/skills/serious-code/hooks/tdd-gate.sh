@@ -11,8 +11,11 @@
 #   0 = allow (no active session, is a test file, or test exists)
 #   2 = block (implementation file written without test)
 
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
+[ ! -d "$PROJECT_ROOT" ] && exit 0
+
 # No active code session? Allow.
-[ ! -f ".active-code" ] && exit 0
+[ ! -f "${PROJECT_ROOT}/.active-code" ] && exit 0
 
 # --- CHECKS_PASSED fail-closed pattern ---
 # All grep -c invocations MUST use || true (returns exit 1 on zero matches)

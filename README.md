@@ -7,7 +7,7 @@
 Structured conversations, research with evidence grading, implementation plans with TDD,<br>
 and shell hooks that physically block the AI from exiting until verification passes.
 
-[![Version](https://img.shields.io/badge/version-1.4.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.5.0-blue?style=flat-square)](CHANGELOG.md)
 [![Pipeline](https://img.shields.io/badge/pipeline-7_steps-green?style=flat-square)](#the-pipeline)
 [![Hooks](https://img.shields.io/badge/enforcement-6_stop_hooks-purple?style=flat-square)](#how-the-system-checks-itself)
 
@@ -237,7 +237,7 @@ The handoff verifier is the system's immune system. It runs automatically — no
 
 <img src="images/readme/hook_enforcement.png" alt="Hook enforcement dashboard showing 6 Stop hooks with content-aware checks, fail-closed pattern" width="100%">
 
-Nine shell hooks enforce quality at two levels: six fire when sessions end (Stop hooks), three guard file writes in real-time (PreToolUse hooks). All use a **fail-closed pattern** — unexpected errors block instead of silently passing.
+Nine shell hooks enforce quality at two levels: six fire when sessions end (Stop hooks), three guard file writes in real-time (PreToolUse hooks). All use a **fail-closed pattern** — unexpected errors block instead of silently passing. **All hooks are worktree-safe** (v1.5.0) — they resolve paths via `$CLAUDE_PROJECT_DIR`, validate breadcrumb content against path traversal, and work correctly when CWD is a git worktree.
 
 | Hook | Skill | What it catches |
 |:-----|:------|:----------------|

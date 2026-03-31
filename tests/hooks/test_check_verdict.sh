@@ -30,9 +30,10 @@ echo ""
 
 # --- Test 1: Verdict with all 3 sections → exit 0 ---
 echo "Test 1: Verdict with all 3 mandatory agent sections"
-TMPDIR=$(mktemp -d)
-mkdir -p "$TMPDIR/review"
-cat > "$TMPDIR/review/review_verdict.md" << 'VERDICT'
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata"
+cat > "$SIM_ROOT/testdata/review_verdict.md" << 'VERDICT'
 ---
 skill: serious-review
 slug: test
@@ -61,20 +62,19 @@ Verified: src/api.ts:55 validates all inputs.
 Reference: implementation_plan.md:30 includes sanitization steps.
 VERDICT
 
-cd "$PROJECT_ROOT"
-echo "$TMPDIR/review" > .active-review
+echo "testdata" > "$SIM_ROOT/.active-review"
 bash "$HOOK" 2>/dev/null
 EXIT_CODE=$?
-rm -f .active-review
-rm -rf "$TMPDIR"
+rm -rf "$SIM_ROOT"
 run_test "All 3 agent sections present → exit 0" 0 "$EXIT_CODE"
 echo ""
 
 # --- Test 2: Verdict with only Anti-Slop → exit 2 (missing structural + security) ---
 echo "Test 2: Verdict with only Anti-Slop section (missing 2 agents)"
-TMPDIR=$(mktemp -d)
-mkdir -p "$TMPDIR/review"
-cat > "$TMPDIR/review/review_verdict.md" << 'VERDICT'
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata"
+cat > "$SIM_ROOT/testdata/review_verdict.md" << 'VERDICT'
 ---
 skill: serious-review
 slug: test
@@ -91,12 +91,10 @@ Found: src/main.ts:42 uses clear language.
 Reference: implementation_plan.md:15 avoids vague terms.
 VERDICT
 
-cd "$PROJECT_ROOT"
-echo "$TMPDIR/review" > .active-review
+echo "testdata" > "$SIM_ROOT/.active-review"
 OUTPUT=$(bash "$HOOK" 2>&1)
 EXIT_CODE=$?
-rm -f .active-review
-rm -rf "$TMPDIR"
+rm -rf "$SIM_ROOT"
 run_test "Only Anti-Slop section → exit 2" 2 "$EXIT_CODE"
 # Verify the error message lists the correct missing agents
 if echo "$OUTPUT" | grep -q "Structural Reviewer" && echo "$OUTPUT" | grep -q "Security Mind"; then
@@ -111,9 +109,10 @@ echo ""
 
 # --- Test 3: Verdict with no agent sections → exit 2 (missing all 3) ---
 echo "Test 3: Verdict with no agent sections (missing all 3)"
-TMPDIR=$(mktemp -d)
-mkdir -p "$TMPDIR/review"
-cat > "$TMPDIR/review/review_verdict.md" << 'VERDICT'
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata"
+cat > "$SIM_ROOT/testdata/review_verdict.md" << 'VERDICT'
 ---
 skill: serious-review
 slug: test
@@ -127,12 +126,10 @@ Everything looks good. The plan is solid.
 Reference: implementation_plan.md:1 is a file reference so Layer 2 won't trigger.
 VERDICT
 
-cd "$PROJECT_ROOT"
-echo "$TMPDIR/review" > .active-review
+echo "testdata" > "$SIM_ROOT/.active-review"
 OUTPUT=$(bash "$HOOK" 2>&1)
 EXIT_CODE=$?
-rm -f .active-review
-rm -rf "$TMPDIR"
+rm -rf "$SIM_ROOT"
 run_test "No agent sections → exit 2" 2 "$EXIT_CODE"
 # Verify all 3 missing agents are listed
 if echo "$OUTPUT" | grep -q "Anti-Slop Auditor" && \
@@ -149,9 +146,10 @@ echo ""
 
 # --- Test 4: All 3 sections but no file:line refs → exit 2 (Layer 2 review theater) ---
 echo "Test 4: All 3 sections but PASS with zero file:line refs (Layer 2 triggers)"
-TMPDIR=$(mktemp -d)
-mkdir -p "$TMPDIR/review"
-cat > "$TMPDIR/review/review_verdict.md" << 'VERDICT'
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata"
+cat > "$SIM_ROOT/testdata/review_verdict.md" << 'VERDICT'
 ---
 skill: serious-review
 slug: test
@@ -177,12 +175,10 @@ All tasks are well structured and complete.
 Security looks good across the board.
 VERDICT
 
-cd "$PROJECT_ROOT"
-echo "$TMPDIR/review" > .active-review
+echo "testdata" > "$SIM_ROOT/.active-review"
 OUTPUT=$(bash "$HOOK" 2>&1)
 EXIT_CODE=$?
-rm -f .active-review
-rm -rf "$TMPDIR"
+rm -rf "$SIM_ROOT"
 run_test "All sections but no file:line refs → exit 2 (review theater)" 2 "$EXIT_CODE"
 # Verify it's the Layer 2 check that triggers, not Layer 3
 if echo "$OUTPUT" | grep -q "REVIEW QUALITY WARNING"; then

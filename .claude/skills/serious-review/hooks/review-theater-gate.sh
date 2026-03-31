@@ -9,8 +9,11 @@
 #   0 = allow (no active session, non-verdict file, or substantive review)
 #   2 = block (review theater detected)
 
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
+[ ! -d "$PROJECT_ROOT" ] && exit 0
+
 # No active review session? Allow.
-[ ! -f ".active-review" ] && exit 0
+[ ! -f "${PROJECT_ROOT}/.active-review" ] && exit 0
 
 # --- CHECKS_PASSED fail-closed pattern ---
 # All grep -c invocations MUST use || true (returns exit 1 on zero matches)
@@ -23,14 +26,14 @@ FILE_PATH=$(echo "$CLAUDE_TOOL_INPUT" | grep -o '"file_path"[[:space:]]*:[[:spac
 
 # Only check verdict files
 BASENAME=$(basename "$FILE_PATH")
-echo "$BASENAME" | grep -qiE 'verdict|review' || exit 0
+echo "$BASENAME" | grep -qiE 'verdict' || exit 0
 
 # Check for review theater patterns in content
 THEATER=$(echo "$CLAUDE_TOOL_INPUT" | grep -ioE 'no (significant )?issues found|looks good|LGTM|no concerns|all good|passes all checks' | head -3)
 
 if [ -n "$THEATER" ]; then
   # Check if there are also specific file references (indicates real review)
-  SPECIFICS=$(echo "$CLAUDE_TOOL_INPUT" | grep -oE '[a-zA-Z_/]+\.(ts|js|py|md|sh):[0-9]+' | head -1)
+  SPECIFICS=$(echo "$CLAUDE_TOOL_INPUT" | grep -oE '[a-zA-Z_/]+\.(ts|tsx|js|jsx|py|rb|go|rs|java|kt|c|cpp|cs|swift|md|sh|bash|yaml|yml|json|toml|css|scss|html|vue|svelte):[0-9]+' | head -1)
 
   if [ -z "$SPECIFICS" ]; then
     echo "REVIEW THEATER DETECTED" >&2

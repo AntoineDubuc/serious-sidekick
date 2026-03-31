@@ -11,10 +11,19 @@
 #   0 = allow exit (no active session, still in progress, or summary exists)
 #   2 = block exit (status is "done" but no summary — skill claimed to finish without delivering)
 
-# No active conversation session? Allow exit.
-[ ! -f ".active-conversation" ] && exit 0
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
+[ ! -d "$PROJECT_ROOT" ] && exit 0
 
-CONV_DIR=$(cat .active-conversation | tr -d '[:space:]')
+# No active conversation session? Allow exit.
+[ ! -f "${PROJECT_ROOT}/.active-conversation" ] && exit 0
+
+BREADCRUMB_CONTENT=$(cat "${PROJECT_ROOT}/.active-conversation" | tr -d '[:space:]')
+case "$BREADCRUMB_CONTENT" in
+  /* | *..* )
+    echo "WARNING: breadcrumb content rejected (path traversal or absolute path)" >&2
+    exit 0 ;;
+esac
+CONV_DIR="${PROJECT_ROOT}/${BREADCRUMB_CONTENT}"
 
 # No conversation directory? Allow exit.
 [ ! -d "$CONV_DIR" ] && exit 0
@@ -28,7 +37,7 @@ CHECKS_PASSED=false
 
 # Only block if status is "done" but summary is missing
 # If status is "active", the user is still working — don't block
-FRONTMATTER_STATUS=$(head -20 "${CONV_DIR}/conversation.md" | grep "^status:" | head -1 | sed 's/status: *//')
+FRONTMATTER_STATUS=$(head -50 "${CONV_DIR}/conversation.md" | grep "^status:" | head -1 | sed 's/status: *//')
 
 if [ "$FRONTMATTER_STATUS" = "done" ] && [ ! -f "${CONV_DIR}/summary.md" ]; then
   echo "CONVERSATION CAPTURE WARNING" >&2

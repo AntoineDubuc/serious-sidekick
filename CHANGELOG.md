@@ -6,6 +6,32 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ---
 
+## [1.5.0] — 2026-03-31
+
+### Worktree-safe hooks + pre-existing bug sweep
+
+All 15 hook scripts were silently bypassing enforcement when running in git worktrees — the exact parallel execution mode `/serious-code` was designed for. This release fixes that, plus 8 pre-existing bugs found while editing every file.
+
+#### Fixed
+
+- **Worktree breadcrumb resolution** — All 15 hooks now use `PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"` to find breadcrumb files instead of assuming CWD is the project root. In worktrees, CWD changes to the worktree path, causing every hook to exit 0 (allow) — a complete fail-open bypass. Fixed with a consistent prefix pattern across all hooks.
+- **Path traversal protection** — 6 Stop hooks now validate breadcrumb content, rejecting absolute paths (`/...`) and traversal sequences (`../`) before path construction. Warns to stderr on rejection.
+- **PROJECT_ROOT directory validation** — All 15 hooks verify `$CLAUDE_PROJECT_DIR` points to an existing directory before proceeding.
+- **Extension allowlists expanded** — `check-verdict.sh` and `review-theater-gate.sh` now recognize 25 file extensions (was 5-7). Covers tsx, jsx, go, rs, java, kt, c, cpp, cs, swift, css, scss, html, vue, svelte, and more. Prevents false "zero file:line references" warnings for non-JS/TS stacks.
+- **Missing `+` quantifier** — `check-verdict.sh` `lines [0-9]` changed to `lines [0-9]+` (was only matching single-digit line numbers).
+- **Word boundary on pass/fail detection** — `check-verdict.sh` changed from `grep -qi 'pass'` to `grep -qiE '\bpass\b'` (was matching "password", "bypass"). Consistent with the fix already in `verify-completion-gate.sh`.
+- **Frontmatter parsing limit** — `head -20` changed to `head -50` across 9 occurrences in 4 hooks. Prevents truncation as frontmatter grows with verification stamps.
+- **"if needed" false positive** — Removed from `hedge-language-gate.sh` pattern list. Too common in legitimate technical prose.
+- **Hedge pattern sync** — `check-extraction.sh` hedge patterns updated to match `hedge-language-gate.sh` (was 4 patterns, now 6).
+- **"review" filename matching** — `review-theater-gate.sh` changed from `verdict|review` to `verdict` only. Prevents false triggers on `code_review.json` and similar evidence files.
+
+#### Changed
+
+- **9 test scripts restructured** — All tests now use a simulated project root with `CLAUDE_PROJECT_DIR` export and relative breadcrumb paths, matching production behavior.
+- **New test suite** — `tests/hooks/test_worktree_simulation.sh` (12 scenarios) verifies hooks work when CWD differs from `CLAUDE_PROJECT_DIR`. Covers PreToolUse hooks, Stop hooks, content resolution, fallback, path traversal rejection, and negative cases.
+
+---
+
 ## [1.3.0] — 2026-03-25
 
 ### Pipeline split: scope, review-before-code

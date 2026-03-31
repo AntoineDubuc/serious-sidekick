@@ -7,10 +7,19 @@
 #   0 = allow exit (no active session, or verdict exists)
 #   2 = block exit (active session without verdict)
 
-# No active review session? Allow exit.
-[ ! -f ".active-review" ] && exit 0
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
+[ ! -d "$PROJECT_ROOT" ] && exit 0
 
-REVIEW_DIR=$(cat .active-review | tr -d '[:space:]')
+# No active review session? Allow exit.
+[ ! -f "${PROJECT_ROOT}/.active-review" ] && exit 0
+
+BREADCRUMB_CONTENT=$(cat "${PROJECT_ROOT}/.active-review" | tr -d '[:space:]')
+case "$BREADCRUMB_CONTENT" in
+  /* | *..* )
+    echo "WARNING: breadcrumb content rejected (path traversal or absolute path)" >&2
+    exit 0 ;;
+esac
+REVIEW_DIR="${PROJECT_ROOT}/${BREADCRUMB_CONTENT}"
 
 # No review directory? Allow exit.
 [ ! -d "$REVIEW_DIR" ] && exit 0
@@ -36,10 +45,10 @@ fi
 if [ -f "${REVIEW_DIR}/review_verdict.md" ]; then
   VERDICT_CONTENT=$(cat "${REVIEW_DIR}/review_verdict.md")
   # Check for review theater: verdict exists but has no file:line references
-  HAS_REFS=$(echo "$VERDICT_CONTENT" | grep -cE '[a-zA-Z_/]+\.(ts|js|py|md|sh|yaml|json):[0-9]+|line [0-9]+|lines [0-9]' || true)
+  HAS_REFS=$(echo "$VERDICT_CONTENT" | grep -cE '[a-zA-Z_/]+\.(ts|tsx|js|jsx|py|rb|go|rs|java|kt|c|cpp|cs|swift|md|sh|bash|yaml|yml|json|toml|css|scss|html|vue|svelte):[0-9]+|line [0-9]+|lines [0-9]+' || true)
   VERDICT_LINE=$(echo "$VERDICT_CONTENT" | grep -i 'verdict:' | head -1)
   # Only flag if verdict says PASS but has zero specific references
-  if echo "$VERDICT_LINE" | grep -qi 'pass' && [ "$HAS_REFS" -eq 0 ]; then
+  if echo "$VERDICT_LINE" | grep -qiE '\bpass\b' && [ "$HAS_REFS" -eq 0 ]; then
     echo "REVIEW QUALITY WARNING" >&2
     echo "" >&2
     echo "Review verdict at ${REVIEW_DIR}/review_verdict.md passed but contains" >&2

@@ -30,37 +30,35 @@ echo ""
 
 # --- Test 1: Complete evidence set (all 6 files with PASS in gate) → exit 0 ---
 echo "Test 1: Complete evidence set with PASS verdict"
-TMPDIR=$(mktemp -d)
-mkdir -p "$TMPDIR/evidence/task_01"
-echo "ALL ACs PASS — 5/5 criteria met" > "$TMPDIR/evidence/task_01/gate_passed.md"
-echo "# Implementation Evidence" > "$TMPDIR/evidence/task_01/implementation.md"
-echo "# Review Evidence" > "$TMPDIR/evidence/task_01/review.md"
-echo "# Test Evidence" > "$TMPDIR/evidence/task_01/tests.md"
-echo "# Runtime Evidence" > "$TMPDIR/evidence/task_01/runtime.md"
-echo "# QA Evidence" > "$TMPDIR/evidence/task_01/qa.md"
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata/evidence/task_01"
+echo "ALL ACs PASS — 5/5 criteria met" > "$SIM_ROOT/testdata/evidence/task_01/gate_passed.md"
+echo "# Implementation Evidence" > "$SIM_ROOT/testdata/evidence/task_01/implementation.md"
+echo "# Review Evidence" > "$SIM_ROOT/testdata/evidence/task_01/review.md"
+echo "# Test Evidence" > "$SIM_ROOT/testdata/evidence/task_01/tests.md"
+echo "# Runtime Evidence" > "$SIM_ROOT/testdata/evidence/task_01/runtime.md"
+echo "# QA Evidence" > "$SIM_ROOT/testdata/evidence/task_01/qa.md"
 
-cd "$PROJECT_ROOT"
-echo "$TMPDIR" > .active-code
+echo "testdata" > "$SIM_ROOT/.active-code"
 bash "$HOOK" 2>/dev/null
 EXIT_CODE=$?
-rm -f .active-code
-rm -rf "$TMPDIR"
+rm -rf "$SIM_ROOT"
 run_test "Complete evidence set (6 files + PASS verdict) allows exit" 0 "$EXIT_CODE"
 echo ""
 
 # --- Test 2: Task with only gate_passed.md (missing 5 evidence files) → exit 2 ---
 echo "Test 2: Task with only gate_passed.md (missing 5 evidence files)"
-TMPDIR=$(mktemp -d)
-mkdir -p "$TMPDIR/evidence/task_01"
-echo "ALL ACs PASS" > "$TMPDIR/evidence/task_01/gate_passed.md"
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata/evidence/task_01"
+echo "ALL ACs PASS" > "$SIM_ROOT/testdata/evidence/task_01/gate_passed.md"
 # Missing: implementation.md, review.md, tests.md, runtime.md, qa.md
 
-cd "$PROJECT_ROOT"
-echo "$TMPDIR" > .active-code
+echo "testdata" > "$SIM_ROOT/.active-code"
 STDERR=$(bash "$HOOK" 2>&1)
 EXIT_CODE=$?
-rm -f .active-code
-rm -rf "$TMPDIR"
+rm -rf "$SIM_ROOT"
 run_test "Missing 5 evidence files blocks exit" 2 "$EXIT_CODE"
 
 # Verify the error message lists specific missing files
@@ -73,46 +71,42 @@ echo ""
 
 # --- Test 3: gate_passed.md containing "FAIL" → exit 2 ---
 echo "Test 3: gate_passed.md containing FAIL verdict"
-TMPDIR=$(mktemp -d)
-mkdir -p "$TMPDIR/evidence/task_01"
-echo "0/5 ACs passed — FAIL" > "$TMPDIR/evidence/task_01/gate_passed.md"
-echo "# Implementation Evidence" > "$TMPDIR/evidence/task_01/implementation.md"
-echo "# Review Evidence" > "$TMPDIR/evidence/task_01/review.md"
-echo "# Test Evidence" > "$TMPDIR/evidence/task_01/tests.md"
-echo "# Runtime Evidence" > "$TMPDIR/evidence/task_01/runtime.md"
-echo "# QA Evidence" > "$TMPDIR/evidence/task_01/qa.md"
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata/evidence/task_01"
+echo "0/5 ACs passed — FAIL" > "$SIM_ROOT/testdata/evidence/task_01/gate_passed.md"
+echo "# Implementation Evidence" > "$SIM_ROOT/testdata/evidence/task_01/implementation.md"
+echo "# Review Evidence" > "$SIM_ROOT/testdata/evidence/task_01/review.md"
+echo "# Test Evidence" > "$SIM_ROOT/testdata/evidence/task_01/tests.md"
+echo "# Runtime Evidence" > "$SIM_ROOT/testdata/evidence/task_01/runtime.md"
+echo "# QA Evidence" > "$SIM_ROOT/testdata/evidence/task_01/qa.md"
 
-cd "$PROJECT_ROOT"
-echo "$TMPDIR" > .active-code
+echo "testdata" > "$SIM_ROOT/.active-code"
 STDERR=$(bash "$HOOK" 2>&1)
 EXIT_CODE=$?
-rm -f .active-code
-rm -rf "$TMPDIR"
-# Note: "FAIL" also contains no case-insensitive match for "pass" — wait, actually
-# the file says "0/5 ACs passed" which DOES contain "pass" (in "passed").
-# Let me use a file that truly has no "pass" substring at all.
-# Actually, the grep -qi 'pass' would match "passed". So "FAIL" alone without "pass" in it:
-# Re-do this test with content that has zero "pass" anywhere.
-run_test "gate_passed.md with FAIL (but 'passed' substring present) — see Test 3b" 0 "$EXIT_CODE"
+rm -rf "$SIM_ROOT"
+# The hook uses \bpass\b and \bfail\b word boundaries.
+# "0/5 ACs passed — FAIL": \bpass\b does NOT match "passed", \bfail\b DOES match "FAIL".
+# So HAS_FAIL > 0, which means the hook blocks (exit 2).
+run_test "gate_passed.md with FAIL word blocks exit" 2 "$EXIT_CODE"
 echo ""
 
 # --- Test 3b: gate_passed.md with truly no PASS → exit 2 ---
 echo "Test 3b: gate_passed.md with no PASS substring at all"
-TMPDIR=$(mktemp -d)
-mkdir -p "$TMPDIR/evidence/task_01"
-echo "0/5 ACs met — REJECTED" > "$TMPDIR/evidence/task_01/gate_passed.md"
-echo "# Implementation Evidence" > "$TMPDIR/evidence/task_01/implementation.md"
-echo "# Review Evidence" > "$TMPDIR/evidence/task_01/review.md"
-echo "# Test Evidence" > "$TMPDIR/evidence/task_01/tests.md"
-echo "# Runtime Evidence" > "$TMPDIR/evidence/task_01/runtime.md"
-echo "# QA Evidence" > "$TMPDIR/evidence/task_01/qa.md"
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata/evidence/task_01"
+echo "0/5 ACs met — REJECTED" > "$SIM_ROOT/testdata/evidence/task_01/gate_passed.md"
+echo "# Implementation Evidence" > "$SIM_ROOT/testdata/evidence/task_01/implementation.md"
+echo "# Review Evidence" > "$SIM_ROOT/testdata/evidence/task_01/review.md"
+echo "# Test Evidence" > "$SIM_ROOT/testdata/evidence/task_01/tests.md"
+echo "# Runtime Evidence" > "$SIM_ROOT/testdata/evidence/task_01/runtime.md"
+echo "# QA Evidence" > "$SIM_ROOT/testdata/evidence/task_01/qa.md"
 
-cd "$PROJECT_ROOT"
-echo "$TMPDIR" > .active-code
+echo "testdata" > "$SIM_ROOT/.active-code"
 STDERR=$(bash "$HOOK" 2>&1)
 EXIT_CODE=$?
-rm -f .active-code
-rm -rf "$TMPDIR"
+rm -rf "$SIM_ROOT"
 run_test "gate_passed.md with REJECTED (no PASS) blocks exit" 2 "$EXIT_CODE"
 
 if echo "$STDERR" | grep -q "GATE VERDICT BLOCK"; then
@@ -124,47 +118,48 @@ echo ""
 
 # --- Test 4: No evidence directory (early session) → exit 0 ---
 echo "Test 4: No evidence directory (early session)"
-TMPDIR=$(mktemp -d)
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata"
 # Don't create evidence directory at all
 
-cd "$PROJECT_ROOT"
-echo "$TMPDIR" > .active-code
+echo "testdata" > "$SIM_ROOT/.active-code"
 bash "$HOOK" 2>/dev/null
 EXIT_CODE=$?
-rm -f .active-code
-rm -rf "$TMPDIR"
+rm -rf "$SIM_ROOT"
 run_test "No evidence directory allows exit (early session)" 0 "$EXIT_CODE"
 echo ""
 
 # --- Test 5: No active session → exit 0 ---
 echo "Test 5: No active session"
-cd "$PROJECT_ROOT"
-rm -f .active-code
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+# No .active-code breadcrumb
 bash "$HOOK" 2>/dev/null
 EXIT_CODE=$?
+rm -rf "$SIM_ROOT"
 run_test "No .active-code breadcrumb allows exit" 0 "$EXIT_CODE"
 echo ""
 
 # --- Test 6: Multiple tasks, one incomplete → exit 2 ---
 echo "Test 6: Two tasks, second missing evidence files"
-TMPDIR=$(mktemp -d)
-mkdir -p "$TMPDIR/evidence/task_01" "$TMPDIR/evidence/task_02"
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata/evidence/task_01" "$SIM_ROOT/testdata/evidence/task_02"
 # task_01 is complete
-echo "ALL ACs PASS" > "$TMPDIR/evidence/task_01/gate_passed.md"
-echo "# impl" > "$TMPDIR/evidence/task_01/implementation.md"
-echo "# review" > "$TMPDIR/evidence/task_01/review.md"
-echo "# tests" > "$TMPDIR/evidence/task_01/tests.md"
-echo "# runtime" > "$TMPDIR/evidence/task_01/runtime.md"
-echo "# qa" > "$TMPDIR/evidence/task_01/qa.md"
+echo "ALL ACs PASS" > "$SIM_ROOT/testdata/evidence/task_01/gate_passed.md"
+echo "# impl" > "$SIM_ROOT/testdata/evidence/task_01/implementation.md"
+echo "# review" > "$SIM_ROOT/testdata/evidence/task_01/review.md"
+echo "# tests" > "$SIM_ROOT/testdata/evidence/task_01/tests.md"
+echo "# runtime" > "$SIM_ROOT/testdata/evidence/task_01/runtime.md"
+echo "# qa" > "$SIM_ROOT/testdata/evidence/task_01/qa.md"
 # task_02 has gate but missing evidence
-echo "ALL ACs PASS" > "$TMPDIR/evidence/task_02/gate_passed.md"
+echo "ALL ACs PASS" > "$SIM_ROOT/testdata/evidence/task_02/gate_passed.md"
 
-cd "$PROJECT_ROOT"
-echo "$TMPDIR" > .active-code
+echo "testdata" > "$SIM_ROOT/.active-code"
 STDERR=$(bash "$HOOK" 2>&1)
 EXIT_CODE=$?
-rm -f .active-code
-rm -rf "$TMPDIR"
+rm -rf "$SIM_ROOT"
 run_test "Second task missing evidence files blocks exit" 2 "$EXIT_CODE"
 
 if echo "$STDERR" | grep -q "task_02"; then

@@ -35,9 +35,10 @@ echo ""
 
 # --- Test 1: Full happy path ---
 echo "Test 1: Research done + source + extracted + verified → exit 0"
-TMPDIR=$(mktemp -d)
-mkdir -p "$TMPDIR"
-cat > "$TMPDIR/research.md" << 'RESEARCH'
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata"
+cat > "$SIM_ROOT/testdata/research.md" << 'RESEARCH'
 ---
 skill: serious-research
 slug: test
@@ -47,22 +48,21 @@ verified: 2026-03-29
 ---
 # Research Findings
 RESEARCH
-echo "# Extracted Items" > "$TMPDIR/_extracted_items.md"
+echo "# Extracted Items" > "$SIM_ROOT/testdata/_extracted_items.md"
 
-cd "$PROJECT_ROOT"
-echo "$TMPDIR" > .active-research
+echo "testdata" > "$SIM_ROOT/.active-research"
 bash "$HOOK" 2>/dev/null
 EXIT_CODE=$?
-rm -f .active-research
-rm -rf "$TMPDIR"
+rm -rf "$SIM_ROOT"
 run_test "Full happy path (done + source + extracted + verified)" 0 "$EXIT_CODE"
 echo ""
 
 # --- Test 2: Research done + source + no _extracted_items.md ---
 echo "Test 2: Research done + source + no _extracted_items.md → exit 2"
-TMPDIR=$(mktemp -d)
-mkdir -p "$TMPDIR"
-cat > "$TMPDIR/research.md" << 'RESEARCH'
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata"
+cat > "$SIM_ROOT/testdata/research.md" << 'RESEARCH'
 ---
 skill: serious-research
 slug: test
@@ -74,20 +74,19 @@ verified: 2026-03-29
 RESEARCH
 # Deliberately NOT creating _extracted_items.md
 
-cd "$PROJECT_ROOT"
-echo "$TMPDIR" > .active-research
+echo "testdata" > "$SIM_ROOT/.active-research"
 bash "$HOOK" 2>/dev/null
 EXIT_CODE=$?
-rm -f .active-research
-rm -rf "$TMPDIR"
+rm -rf "$SIM_ROOT"
 run_test "Source without _extracted_items.md blocks" 2 "$EXIT_CODE"
 echo ""
 
 # --- Test 3: Research done + no source → exit 0 (skip checks) ---
 echo "Test 3: Research done + no source → exit 0 (skip extraction checks)"
-TMPDIR=$(mktemp -d)
-mkdir -p "$TMPDIR"
-cat > "$TMPDIR/research.md" << 'RESEARCH'
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata"
+cat > "$SIM_ROOT/testdata/research.md" << 'RESEARCH'
 ---
 skill: serious-research
 slug: test
@@ -96,20 +95,19 @@ status: done
 # Research Findings
 RESEARCH
 
-cd "$PROJECT_ROOT"
-echo "$TMPDIR" > .active-research
+echo "testdata" > "$SIM_ROOT/.active-research"
 bash "$HOOK" 2>/dev/null
 EXIT_CODE=$?
-rm -f .active-research
-rm -rf "$TMPDIR"
+rm -rf "$SIM_ROOT"
 run_test "No source skips extraction checks" 0 "$EXIT_CODE"
 echo ""
 
 # --- Test 4: Research done + source + no verified stamp ---
 echo "Test 4: Research done + source + extracted + no verified stamp → exit 2"
-TMPDIR=$(mktemp -d)
-mkdir -p "$TMPDIR"
-cat > "$TMPDIR/research.md" << 'RESEARCH'
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata"
+cat > "$SIM_ROOT/testdata/research.md" << 'RESEARCH'
 ---
 skill: serious-research
 slug: test
@@ -118,14 +116,12 @@ source: Research/conversations/test/summary.md
 ---
 # Research Findings
 RESEARCH
-echo "# Extracted Items" > "$TMPDIR/_extracted_items.md"
+echo "# Extracted Items" > "$SIM_ROOT/testdata/_extracted_items.md"
 
-cd "$PROJECT_ROOT"
-echo "$TMPDIR" > .active-research
+echo "testdata" > "$SIM_ROOT/.active-research"
 bash "$HOOK" 2>/dev/null
 EXIT_CODE=$?
-rm -f .active-research
-rm -rf "$TMPDIR"
+rm -rf "$SIM_ROOT"
 run_test "Source + extracted but no verified stamp blocks" 2 "$EXIT_CODE"
 echo ""
 

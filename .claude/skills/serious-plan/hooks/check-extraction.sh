@@ -11,10 +11,19 @@
 #   0 = allow exit (no active session, or extraction exists, or no upstream)
 #   2 = block exit (active session with upstream but no extraction)
 
-# No active plan session? Allow exit.
-[ ! -f ".active-plan" ] && exit 0
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
+[ ! -d "$PROJECT_ROOT" ] && exit 0
 
-PLAN_DIR=$(cat .active-plan | tr -d '[:space:]')
+# No active plan session? Allow exit.
+[ ! -f "${PROJECT_ROOT}/.active-plan" ] && exit 0
+
+BREADCRUMB_CONTENT=$(cat "${PROJECT_ROOT}/.active-plan" | tr -d '[:space:]')
+case "$BREADCRUMB_CONTENT" in
+  /* | *..* )
+    echo "WARNING: breadcrumb content rejected (path traversal or absolute path)" >&2
+    exit 0 ;;
+esac
+PLAN_DIR="${PROJECT_ROOT}/${BREADCRUMB_CONTENT}"
 
 # No plan directory? Allow exit.
 [ ! -d "$PLAN_DIR" ] && exit 0
@@ -38,7 +47,7 @@ fi
 if [ ! -f "${PLAN_DIR}/_extracted_items.md" ]; then
   # Check if the plan has a source field (upstream artifact)
   # If no source, extraction isn't needed
-  SOURCE=$(head -20 "$HAS_PLAN" | grep "^source:" | sed 's/source: *//')
+  SOURCE=$(head -50 "$HAS_PLAN" | grep "^source:" | sed 's/source: *//')
   if [ -n "$SOURCE" ] && [ "$SOURCE" != "" ]; then
     echo "PLAN EXTRACTION WARNING" >&2
     echo "" >&2
@@ -77,7 +86,7 @@ fi
 if [ -n "$HAS_PLAN" ] && [ -f "$HAS_PLAN" ]; then
   TASK_SECTION=$(sed -n '/^## Task Descriptions/,$ p' "$HAS_PLAN" 2>/dev/null)
   if [ -n "$TASK_SECTION" ]; then
-    HEDGE=$(echo "$TASK_SECTION" | grep -inE 'consider whether|you might want to|think about|it may be worth' | head -5)
+    HEDGE=$(echo "$TASK_SECTION" | grep -inE 'consider whether|you might want to|think about|it may be worth|as appropriate|optionally' | head -5)
     if [ -n "$HEDGE" ]; then
       echo "HEDGE LANGUAGE WARNING" >&2
       echo "" >&2
@@ -94,9 +103,9 @@ fi
 # --- Handoff verifier stamp check ---
 # Plans with upstream sources must have verified: stamp from handoff-verifier
 if [ -n "$HAS_PLAN" ] && [ -f "$HAS_PLAN" ]; then
-  SOURCE=$(head -20 "$HAS_PLAN" | grep "^source:" | sed 's/source: *//' | tr -d '[:space:]')
+  SOURCE=$(head -50 "$HAS_PLAN" | grep "^source:" | sed 's/source: *//' | tr -d '[:space:]')
   if [ -n "$SOURCE" ] && [ "$SOURCE" != "" ]; then
-    VERIFIED=$(head -20 "$HAS_PLAN" | grep "^verified:" | head -1)
+    VERIFIED=$(head -50 "$HAS_PLAN" | grep "^verified:" | head -1)
     if [ -z "$VERIFIED" ]; then
       echo "TRACEABILITY VERIFICATION WARNING" >&2
       echo "" >&2

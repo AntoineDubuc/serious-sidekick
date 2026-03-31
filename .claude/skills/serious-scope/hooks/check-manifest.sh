@@ -7,10 +7,19 @@
 #   0 = allow exit (no active session, or manifest exists)
 #   2 = block exit (active session without manifest)
 
-# No active scope session? Allow exit.
-[ ! -f ".active-scope" ] && exit 0
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
+[ ! -d "$PROJECT_ROOT" ] && exit 0
 
-SCOPE_DIR=$(cat .active-scope | tr -d '[:space:]')
+# No active scope session? Allow exit.
+[ ! -f "${PROJECT_ROOT}/.active-scope" ] && exit 0
+
+BREADCRUMB_CONTENT=$(cat "${PROJECT_ROOT}/.active-scope" | tr -d '[:space:]')
+case "$BREADCRUMB_CONTENT" in
+  /* | *..* )
+    echo "WARNING: breadcrumb content rejected (path traversal or absolute path)" >&2
+    exit 0 ;;
+esac
+SCOPE_DIR="${PROJECT_ROOT}/${BREADCRUMB_CONTENT}"
 
 # No scope directory? Allow exit.
 [ ! -d "$SCOPE_DIR" ] && exit 0
@@ -34,9 +43,9 @@ fi
 # --- Extraction gate + verifier stamp (only when upstream source exists) ---
 # Only require extraction and verification when the manifest has an upstream source.
 # Scopes created from scratch (no source:) don't need extraction.
-SOURCE=$(head -20 "${SCOPE_DIR}/manifest.md" | grep "^source:" | sed 's/source: *//' | tr -d '[:space:]')
+SOURCE=$(head -50 "${SCOPE_DIR}/manifest.md" | grep "^source:" | sed 's/source: *//' | tr -d '[:space:]')
 if [ -n "$SOURCE" ] && [ "$SOURCE" != "" ]; then
-  VERIFIED=$(head -20 "${SCOPE_DIR}/manifest.md" | grep "^verified:" | head -1)
+  VERIFIED=$(head -50 "${SCOPE_DIR}/manifest.md" | grep "^verified:" | head -1)
   if [ -z "$VERIFIED" ]; then
     echo "TRACEABILITY VERIFICATION WARNING" >&2
     echo "" >&2

@@ -30,23 +30,18 @@ run_test() {
 echo "=== Task 4: check-extraction.sh — Citation Counting + Verified Stamp ==="
 echo ""
 
-# --- Setup temp directory ---
-TMPDIR=$(mktemp -d)
-trap "rm -rf '$TMPDIR'" EXIT
-
 # ============================================================
 # Test 1: Items present + citations present + verified stamp -> exit 0
 # ============================================================
 echo "--- Test 1: Full pass — items, citations, verified stamp ---"
-(
-  cd "$TMPDIR"
-  rm -rf plan_dir .active-plan
-  mkdir -p plan_dir
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata"
 
-  echo "plan_dir" > .active-plan
+echo "testdata" > "$SIM_ROOT/.active-plan"
 
-  # Plan with source, verified stamp, citations, and clean task section
-  cat > plan_dir/implementation_plan.md << 'PLAN'
+# Plan with source, verified stamp, citations, and clean task section
+cat > "$SIM_ROOT/testdata/implementation_plan.md" << 'PLAN'
 ---
 skill: serious-plan
 slug: test-plan
@@ -64,30 +59,29 @@ verified: 2026-03-29
 Create the widget component at src/Widget.tsx.
 PLAN
 
-  # Extracted items with numbered items
-  cat > plan_dir/_extracted_items.md << 'ITEMS'
+# Extracted items with numbered items
+cat > "$SIM_ROOT/testdata/_extracted_items.md" << 'ITEMS'
 1. Widget must render correctly
 2. API must return 200
 - **Design Decision**: Use React for components
 ITEMS
 
-  bash "$HOOK" 2>/dev/null
-)
+bash "$HOOK" 2>/dev/null
 run_test "Items + citations + verified stamp" 0 $?
+rm -rf "$SIM_ROOT"
 
 # ============================================================
 # Test 2: Items present + NO citations -> exit 2
 # ============================================================
 echo "--- Test 2: Items present, zero citations -> block ---"
-(
-  cd "$TMPDIR"
-  rm -rf plan_dir .active-plan
-  mkdir -p plan_dir
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata"
 
-  echo "plan_dir" > .active-plan
+echo "testdata" > "$SIM_ROOT/.active-plan"
 
-  # Plan with source and verified, but NO [Source:] citations
-  cat > plan_dir/implementation_plan.md << 'PLAN'
+# Plan with source and verified, but NO [Source:] citations
+cat > "$SIM_ROOT/testdata/implementation_plan.md" << 'PLAN'
 ---
 skill: serious-plan
 slug: test-plan
@@ -105,30 +99,29 @@ verified: 2026-03-29
 Create the widget component at src/Widget.tsx.
 PLAN
 
-  # Extracted items with content
-  cat > plan_dir/_extracted_items.md << 'ITEMS'
+# Extracted items with content
+cat > "$SIM_ROOT/testdata/_extracted_items.md" << 'ITEMS'
 1. Widget must render correctly
 2. API must return 200
 - **Design Decision**: Use React for components
 ITEMS
 
-  bash "$HOOK" 2>/dev/null
-)
+bash "$HOOK" 2>/dev/null
 run_test "Items present + no citations" 2 $?
+rm -rf "$SIM_ROOT"
 
 # ============================================================
 # Test 3: Source present + NO verified stamp -> exit 2
 # ============================================================
 echo "--- Test 3: Source field but no verified stamp -> block ---"
-(
-  cd "$TMPDIR"
-  rm -rf plan_dir .active-plan
-  mkdir -p plan_dir
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata"
 
-  echo "plan_dir" > .active-plan
+echo "testdata" > "$SIM_ROOT/.active-plan"
 
-  # Plan with source but NO verified: stamp; has citations to pass Block A
-  cat > plan_dir/implementation_plan.md << 'PLAN'
+# Plan with source but NO verified: stamp; has citations to pass Block A
+cat > "$SIM_ROOT/testdata/implementation_plan.md" << 'PLAN'
 ---
 skill: serious-plan
 slug: test-plan
@@ -144,27 +137,26 @@ source: Research/features/test/research.md
 Create the widget component at src/Widget.tsx.
 PLAN
 
-  cat > plan_dir/_extracted_items.md << 'ITEMS'
+cat > "$SIM_ROOT/testdata/_extracted_items.md" << 'ITEMS'
 1. Widget must render correctly
 ITEMS
 
-  bash "$HOOK" 2>/dev/null
-)
+bash "$HOOK" 2>/dev/null
 run_test "Source present + no verified stamp" 2 $?
+rm -rf "$SIM_ROOT"
 
 # ============================================================
 # Test 4: No source field -> exit 0 (skip all checks)
 # ============================================================
 echo "--- Test 4: No source field -> skip, allow exit ---"
-(
-  cd "$TMPDIR"
-  rm -rf plan_dir .active-plan
-  mkdir -p plan_dir
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata"
 
-  echo "plan_dir" > .active-plan
+echo "testdata" > "$SIM_ROOT/.active-plan"
 
-  # Plan WITHOUT source field — no upstream, no checks needed
-  cat > plan_dir/implementation_plan.md << 'PLAN'
+# Plan WITHOUT source field — no upstream, no checks needed
+cat > "$SIM_ROOT/testdata/implementation_plan.md" << 'PLAN'
 ---
 skill: serious-plan
 slug: test-plan
@@ -179,23 +171,22 @@ status: active
 Create the widget component at src/Widget.tsx.
 PLAN
 
-  bash "$HOOK" 2>/dev/null
-)
+bash "$HOOK" 2>/dev/null
 run_test "No source field -> skip all checks" 0 $?
+rm -rf "$SIM_ROOT"
 
 # ============================================================
 # Test 5: Empty _extracted_items.md (0 items) + no citations -> exit 0
 # ============================================================
 echo "--- Test 5: Empty extracted items + no citations -> allow ---"
-(
-  cd "$TMPDIR"
-  rm -rf plan_dir .active-plan
-  mkdir -p plan_dir
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata"
 
-  echo "plan_dir" > .active-plan
+echo "testdata" > "$SIM_ROOT/.active-plan"
 
-  # Plan with source and verified stamp but no citations
-  cat > plan_dir/implementation_plan.md << 'PLAN'
+# Plan with source and verified stamp but no citations
+cat > "$SIM_ROOT/testdata/implementation_plan.md" << 'PLAN'
 ---
 skill: serious-plan
 slug: test-plan
@@ -212,15 +203,15 @@ verified: 2026-03-29
 Create the widget component at src/Widget.tsx.
 PLAN
 
-  # Empty extracted items file (no numbered items or bold items)
-  cat > plan_dir/_extracted_items.md << 'ITEMS'
+# Empty extracted items file (no numbered items or bold items)
+cat > "$SIM_ROOT/testdata/_extracted_items.md" << 'ITEMS'
 # Extracted Items
 (no items extracted)
 ITEMS
 
-  bash "$HOOK" 2>/dev/null
-)
+bash "$HOOK" 2>/dev/null
 run_test "Empty extracted items (0 items) + no citations" 0 $?
+rm -rf "$SIM_ROOT"
 
 # ============================================================
 # Summary

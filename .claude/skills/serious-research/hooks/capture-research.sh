@@ -7,10 +7,19 @@
 #   0 = allow exit (no active session, or research is done)
 #   2 = block exit (active session with incomplete research)
 
-# No active research session? Allow exit.
-[ ! -f ".active-research" ] && exit 0
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
+[ ! -d "$PROJECT_ROOT" ] && exit 0
 
-RESEARCH_DIR=$(cat .active-research | tr -d '[:space:]')
+# No active research session? Allow exit.
+[ ! -f "${PROJECT_ROOT}/.active-research" ] && exit 0
+
+BREADCRUMB_CONTENT=$(cat "${PROJECT_ROOT}/.active-research" | tr -d '[:space:]')
+case "$BREADCRUMB_CONTENT" in
+  /* | *..* )
+    echo "WARNING: breadcrumb content rejected (path traversal or absolute path)" >&2
+    exit 0 ;;
+esac
+RESEARCH_DIR="${PROJECT_ROOT}/${BREADCRUMB_CONTENT}"
 
 # No research directory? Allow exit.
 [ ! -d "$RESEARCH_DIR" ] && exit 0
@@ -30,7 +39,7 @@ fi
 
 # Check frontmatter only (first 20 lines) for status
 # This avoids matching "status: active" in code examples within the body
-FRONTMATTER_STATUS=$(head -20 "${RESEARCH_DIR}/research.md" | grep "^status:" | head -1 | sed 's/status: *//')
+FRONTMATTER_STATUS=$(head -50 "${RESEARCH_DIR}/research.md" | grep "^status:" | head -1 | sed 's/status: *//')
 
 if [ "$FRONTMATTER_STATUS" = "active" ]; then
   echo "RESEARCH CAPTURE WARNING" >&2
@@ -45,7 +54,7 @@ fi
 
 # --- Extraction gate check ---
 # Research with an upstream source must have _extracted_items.md
-SOURCE=$(head -20 "${RESEARCH_DIR}/research.md" | grep "^source:" | sed 's/source: *//' | tr -d '[:space:]')
+SOURCE=$(head -50 "${RESEARCH_DIR}/research.md" | grep "^source:" | sed 's/source: *//' | tr -d '[:space:]')
 if [ -n "$SOURCE" ] && [ "$SOURCE" != "" ]; then
   if [ ! -f "${RESEARCH_DIR}/_extracted_items.md" ]; then
     echo "RESEARCH EXTRACTION WARNING" >&2
@@ -56,7 +65,7 @@ if [ -n "$SOURCE" ] && [ "$SOURCE" != "" ]; then
   fi
 
   # --- Handoff verifier stamp check ---
-  VERIFIED=$(head -20 "${RESEARCH_DIR}/research.md" | grep "^verified:" | head -1)
+  VERIFIED=$(head -50 "${RESEARCH_DIR}/research.md" | grep "^verified:" | head -1)
   if [ -z "$VERIFIED" ]; then
     echo "TRACEABILITY VERIFICATION WARNING" >&2
     echo "" >&2

@@ -16,10 +16,23 @@
 #   0 = allow exit (no active session, or all tasks verified)
 #   2 = block exit (unverified tasks exist)
 
-# No active code session? Allow exit.
-[ ! -f ".active-code" ] && exit 0
+# Breadcrumb files are written by SKILL.md prompt instructions from the main
+# session (project root CWD). If skills are ever invoked from worktree agents,
+# the write side will need the same PROJECT_ROOT fix.
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
+[ ! -d "$PROJECT_ROOT" ] && exit 0
 
-PLAN_DIR=$(cat .active-code | tr -d '[:space:]')
+# No active code session? Allow exit.
+[ ! -f "${PROJECT_ROOT}/.active-code" ] && exit 0
+
+BREADCRUMB_CONTENT=$(cat "${PROJECT_ROOT}/.active-code" | tr -d '[:space:]')
+# Reject path traversal and absolute paths
+case "$BREADCRUMB_CONTENT" in
+  /* | *..* )
+    echo "WARNING: breadcrumb content rejected (path traversal or absolute path)" >&2
+    exit 0 ;;
+esac
+PLAN_DIR="${PROJECT_ROOT}/${BREADCRUMB_CONTENT}"
 
 # No plan directory? Allow exit.
 [ ! -d "$PLAN_DIR" ] && exit 0

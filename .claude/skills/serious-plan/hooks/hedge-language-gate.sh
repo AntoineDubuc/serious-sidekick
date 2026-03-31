@@ -10,8 +10,11 @@
 #   0 = allow (no active session, no hedge language, or non-plan file)
 #   2 = block (hedge language detected in plan content)
 
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
+[ ! -d "$PROJECT_ROOT" ] && exit 0
+
 # No active plan session? Allow.
-[ ! -f ".active-plan" ] && exit 0
+[ ! -f "${PROJECT_ROOT}/.active-plan" ] && exit 0
 
 # --- CHECKS_PASSED fail-closed pattern ---
 # All grep -c invocations MUST use || true (returns exit 1 on zero matches)
@@ -32,7 +35,7 @@ CONTENT=$(echo "$CLAUDE_TOOL_INPUT" | grep -o '"content"[[:space:]]*:[[:space:]]
 
 # Check for hedge patterns in the raw tool input (content field)
 # These are the exact patterns from the guardrail table
-VIOLATIONS=$(echo "$CLAUDE_TOOL_INPUT" | grep -ioE 'consider whether|you might want to|think about|it may be worth|as appropriate|if needed|optionally' | head -5)
+VIOLATIONS=$(echo "$CLAUDE_TOOL_INPUT" | grep -ioE 'consider whether|you might want to|think about|it may be worth|as appropriate|optionally' | head -5)
 
 if [ -n "$VIOLATIONS" ]; then
   echo "HEDGE LANGUAGE DETECTED in plan content." >&2

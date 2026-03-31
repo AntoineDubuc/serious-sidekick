@@ -1,6 +1,6 @@
 # Serious Sidekick — Feature Roadmap
 
-> Last updated: 2026-03-29 | Current version: v1.4.0 | Claude Code: v2.1.86
+> Last updated: 2026-03-31 | Current version: v1.5.0 | Claude Code: v2.1.86
 
 ## Status Legend
 
@@ -102,10 +102,13 @@ Features from v2.1.69–v2.1.86 that give us finer control over subagent behavio
 
 ---
 
-## 5. Worktree & Execution Improvements (NEW from Changelog)
+## 5. Worktree & Execution Improvements
+
+**v1.5.0 (2026-03-31):** Worktree breadcrumb path fix shipped. All 15 hooks now resolve paths via `$CLAUDE_PROJECT_DIR`. 8 pre-existing bugs fixed. 10 test suites, 96 assertions, 0 failures. See `Research/bugs/worktree-breadcrumb-paths/`.
 
 | # | Feature | Version | Details | Potential Use | Status |
 |---|---------|---------|---------|---------------|--------|
+| 5.0 | Worktree-safe hooks | v1.5.0 | All 15 hooks use `PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"` + path validation + 8 bug fixes | Unblocks multi-plan parallel execution in `/serious-code` | DONE |
 | 5.1 | `ExitWorktree` tool | v2.1.72 | Programmatically exit a worktree | Cleaner worktree lifecycle in `/serious-code` | NEW |
 | 5.2 | `WorktreeCreate` / `WorktreeRemove` hooks | v2.1.50 | Fire when worktrees are created or removed | Validate worktree setup, cleanup tracking | NEW |
 | 5.3 | `WorktreeCreate` supports `type: "http"` | v2.1.84 | HTTP-based hooks for worktree creation | Remote validation or logging | NEW |

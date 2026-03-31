@@ -29,7 +29,8 @@ echo ""
 
 # --- Test 1: No active session → still exits 0 (early exit, not failure) ---
 echo "Test 1: Hooks with no active session still exit 0"
-cd "$PROJECT_ROOT"
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
 for hook in \
   ".claude/skills/serious-code/hooks/verify-completion-gate.sh" \
   ".claude/skills/serious-conversation/hooks/capture-conversation.sh" \
@@ -37,36 +38,39 @@ for hook in \
   ".claude/skills/serious-plan/hooks/check-extraction.sh" \
   ".claude/skills/serious-scope/hooks/check-manifest.sh" \
   ".claude/skills/serious-review/hooks/check-verdict.sh"; do
-  # Ensure no breadcrumbs exist
-  rm -f .active-code .active-conversation .active-research .active-plan .active-scope .active-review
+  # No breadcrumbs in SIM_ROOT — clean slate
   bash "$PROJECT_ROOT/$hook" 2>/dev/null
   EXIT_CODE=$?
   BASENAME=$(basename "$hook")
   run_test "No session: $BASENAME" 0 "$EXIT_CODE"
 done
+rm -rf "$SIM_ROOT"
 echo ""
 
 # --- Test 2: PreToolUse hooks with no active session → exit 0 ---
 echo "Test 2: PreToolUse hooks with no active session still exit 0"
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
 for hook in \
   ".claude/skills/serious-code/hooks/tdd-gate.sh" \
   ".claude/skills/serious-plan/hooks/hedge-language-gate.sh" \
   ".claude/skills/serious-review/hooks/review-theater-gate.sh"; do
-  rm -f .active-code .active-plan .active-review
   bash "$PROJECT_ROOT/$hook" 2>/dev/null
   EXIT_CODE=$?
   BASENAME=$(basename "$hook")
   run_test "No session: $BASENAME" 0 "$EXIT_CODE"
 done
+rm -rf "$SIM_ROOT"
 echo ""
 
 # --- Test 3: Active session with valid data → exit 0 ---
 echo "Test 3: Valid active sessions pass correctly"
-TMPDIR=$(mktemp -d)
 
 # check-verdict.sh with complete verdict
-mkdir -p "$TMPDIR/review"
-cat > "$TMPDIR/review/review_verdict.md" << 'EOF'
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata"
+cat > "$SIM_ROOT/testdata/review_verdict.md" << 'EOF'
 ---
 skill: serious-review
 slug: test
@@ -84,14 +88,16 @@ Found: src/main.ts:42
 ## Security Review Report
 Found: src/main.ts:42
 EOF
-echo "$TMPDIR/review" > "$PROJECT_ROOT/.active-review"
+echo "testdata" > "$SIM_ROOT/.active-review"
 bash "$PROJECT_ROOT/.claude/skills/serious-review/hooks/check-verdict.sh" 2>/dev/null
 run_test "Valid verdict: check-verdict.sh" 0 $?
-rm -f "$PROJECT_ROOT/.active-review"
+rm -rf "$SIM_ROOT"
 
 # capture-research.sh with done status
-mkdir -p "$TMPDIR/research"
-cat > "$TMPDIR/research/research.md" << 'EOF'
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata"
+cat > "$SIM_ROOT/testdata/research.md" << 'EOF'
 ---
 skill: serious-research
 slug: test
@@ -99,21 +105,21 @@ status: done
 ---
 # Research
 EOF
-echo "$TMPDIR/research" > "$PROJECT_ROOT/.active-research"
+echo "testdata" > "$SIM_ROOT/.active-research"
 bash "$PROJECT_ROOT/.claude/skills/serious-research/hooks/capture-research.sh" 2>/dev/null
 run_test "Done research: capture-research.sh" 0 $?
-rm -f "$PROJECT_ROOT/.active-research"
+rm -rf "$SIM_ROOT"
 
 # check-manifest.sh with manifest
-mkdir -p "$TMPDIR/scope"
-echo "# Manifest" > "$TMPDIR/scope/manifest.md"
-echo "# Items" > "$TMPDIR/scope/_extracted_items.md"
-echo "$TMPDIR/scope" > "$PROJECT_ROOT/.active-scope"
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata"
+echo "# Manifest" > "$SIM_ROOT/testdata/manifest.md"
+echo "# Items" > "$SIM_ROOT/testdata/_extracted_items.md"
+echo "testdata" > "$SIM_ROOT/.active-scope"
 bash "$PROJECT_ROOT/.claude/skills/serious-scope/hooks/check-manifest.sh" 2>/dev/null
 run_test "Valid manifest: check-manifest.sh" 0 $?
-rm -f "$PROJECT_ROOT/.active-scope"
-
-rm -rf "$TMPDIR"
+rm -rf "$SIM_ROOT"
 echo ""
 
 # --- Test 4: CHECKS_PASSED pattern exists in all 9 hooks ---
