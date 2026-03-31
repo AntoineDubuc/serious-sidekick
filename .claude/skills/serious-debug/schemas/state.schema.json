@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "serious-debug state",
+  "description": "Runtime state for /serious-debug sessions. Written by hooks, read by SKILL.md.",
+  "type": "object",
+  "properties": {
+    "slug": { "type": "string", "description": "Debug session slug (kebab-case)" },
+    "mode": { "type": "string", "enum": ["auto-fix", "quick", "deep"], "description": "Current debug mode" },
+    "phase": { "type": "string", "enum": ["triage", "reproduce", "trace", "diagnose", "fix", "harden", "done"], "description": "Current phase" },
+    "reproducer_cmd": { "type": ["string", "null"], "default": null, "description": "Command that demonstrates the bug. Non-zero = bug present, zero = fixed." },
+    "reproducer_test": { "type": ["string", "null"], "default": null, "description": "Path to the regression test file, if one exists." },
+    "fix_attempts": { "type": "integer", "default": 0, "description": "Number of failed fix attempts. Triggers escalation at 2." },
+    "root_cause": { "type": ["string", "null"], "default": null, "description": "One-sentence root cause statement. Lifts the blocking ratchet when set." },
+    "hypotheses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string" },
+          "status": { "type": "string", "enum": ["testing", "confirmed", "refuted", "inconclusive"] },
+          "evidence": { "type": "string" }
+        },
+        "required": ["text", "status"]
+      },
+      "default": [],
+      "description": "Hypothesis log for deep mode investigation."
+    },
+    "watches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "expr": { "type": "string" },
+          "last_value": { "type": ["string", "null"] },
+          "changed": { "type": "boolean", "default": false }
+        },
+        "required": ["expr"]
+      },
+      "default": [],
+      "description": "Watch list expressions evaluated after every edit."
+    },
+    "triage_result": {
+      "type": "object",
+      "properties": {
+        "bug_class": { "type": ["string", "null"] },
+        "file_count": { "type": "integer" },
+        "locality": { "type": "string", "enum": ["single", "local", "systemic"] },
+        "recurrence": { "type": "string", "enum": ["none", "low", "high"] },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+        "corpus_hits": { "type": "array", "items": { "type": "object" }, "default": [] },
+        "investigation_template": { "type": ["string", "null"] }
+      },
+      "description": "Output of the triage algorithm."
+    },
+    "blast_radius": {
+      "type": "object",
+      "properties": {
+        "direct_callers": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "transitive": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "affected_tests": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "api_endpoints": { "type": "array", "items": { "type": "string" }, "default": [] }
+      },
+      "description": "Blast radius map from LSP analysis."
+    },
+    "debug_candidate": { "type": "boolean", "default": false, "description": "Set by /serious-code when 2 consecutive red cycles detected." },
+    "created": { "type": "string", "format": "date-time" },
+    "updated": { "type": "string", "format": "date-time" }
+  },
+  "required": ["slug", "mode", "phase", "created"]
+}

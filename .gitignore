@@ -11,6 +11,9 @@ __pycache__/
 linkedin_article.md
 linkedin_images/
 
+# Personal images
+cpap_*.png
+
 # OS
 .DS_Store
 Thumbs.db

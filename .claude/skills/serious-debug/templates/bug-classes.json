@@ -1,0 +1,148 @@
+[
+  {
+    "name": "null_propagation",
+    "display": "Null Propagation",
+    "signature_patterns": [
+      "Cannot read propert(y|ies) of (null|undefined)",
+      "TypeError: (null|undefined) is not an object",
+      "NoneType has no attribute",
+      "nil:NilClass"
+    ],
+    "deterministic": false,
+    "investigation_steps": [
+      "Trace the null value backward: which function returned null?",
+      "Check the function's return type — is null a valid return?",
+      "Find the earliest point where the value could be null-checked",
+      "Check if the null comes from external input (API, DB, user) or internal logic"
+    ],
+    "common_misleading_hypotheses": [
+      "Adding a null check at the crash site (treats symptom, not cause)",
+      "The data is always supposed to exist (assumption, not verified)"
+    ],
+    "fix_strategy": "Guard at the source (where null is produced), not at the crash site. Add a test that exercises the null path explicitly.",
+    "expected_blast_shape": "Linear call chain — null propagates through return values until something crashes."
+  },
+  {
+    "name": "race_condition",
+    "display": "Race Condition",
+    "signature_patterns": [
+      "intermittent",
+      "sometimes fails",
+      "works on retry",
+      "deadlock",
+      "concurrent modification"
+    ],
+    "deterministic": false,
+    "investigation_steps": [
+      "Identify shared mutable state — what data is accessed by multiple paths?",
+      "Check timing dependencies: does the outcome depend on execution order?",
+      "Look for missing locks, missing await, or fire-and-forget async calls",
+      "Reproduce under load or with artificial delays to confirm timing sensitivity"
+    ],
+    "common_misleading_hypotheses": [
+      "Adding a retry/delay (masks the race, doesn't fix it)",
+      "It only happens in production (different timing, same bug)"
+    ],
+    "fix_strategy": "Eliminate shared mutable state or add proper synchronization. Test with concurrent execution, not just sequential.",
+    "expected_blast_shape": "Fan-out — multiple code paths converge on shared state."
+  },
+  {
+    "name": "type_coercion",
+    "display": "Type Coercion / Mismatch",
+    "signature_patterns": [
+      "NaN",
+      "\\[object Object\\]",
+      "unexpected token",
+      "cannot convert",
+      "type.*mismatch",
+      "expected.*got"
+    ],
+    "deterministic": true,
+    "investigation_steps": [
+      "Find where the type changes — which function receives one type and outputs another?",
+      "Check API boundaries: is the value a string from JSON that should be a number?",
+      "Look for implicit coercion: string concatenation instead of addition, parseInt without radix",
+      "Check if the type is correct at the source and wrong at the consumer"
+    ],
+    "common_misleading_hypotheses": [
+      "Casting at the crash site (hides the real type boundary)",
+      "The API always returns the right type (assumption, not validated)"
+    ],
+    "fix_strategy": "Validate and convert at the system boundary (API response, DB query, user input). Add type assertions at the boundary, not at usage sites.",
+    "expected_blast_shape": "Point source — one boundary produces the wrong type, multiple consumers fail."
+  },
+  {
+    "name": "stale_cache",
+    "display": "Stale Cache / State",
+    "signature_patterns": [
+      "shows old data",
+      "not updating",
+      "stale",
+      "cache",
+      "out of date",
+      "doesn't reflect"
+    ],
+    "deterministic": false,
+    "investigation_steps": [
+      "Identify all caching layers between source of truth and display",
+      "Check cache invalidation logic — when does the cache clear?",
+      "Look for derived state that doesn't subscribe to source changes",
+      "Check if the issue is a read cache (showing old data) or write cache (not persisting new data)"
+    ],
+    "common_misleading_hypotheses": [
+      "Clearing all caches (fixes symptom, performance regression)",
+      "Adding a manual refresh button (defers the real fix to the user)"
+    ],
+    "fix_strategy": "Fix the invalidation logic so the cache clears when the source changes. Test by mutating the source and verifying the consumer sees the update without manual intervention.",
+    "expected_blast_shape": "Star — one stale source, multiple consumers showing old data."
+  },
+  {
+    "name": "config_drift",
+    "display": "Configuration Drift",
+    "signature_patterns": [
+      "env.*not set",
+      "missing.*config",
+      "ECONNREFUSED",
+      "connection.*refused",
+      "MODULE_NOT_FOUND",
+      "Cannot find module"
+    ],
+    "deterministic": true,
+    "investigation_steps": [
+      "Compare the running config against .env.example or schema",
+      "Check if the value exists in one environment but not another",
+      "Look for recently changed config keys, renamed variables, or moved files",
+      "Verify the config loading order — does a local override shadow a default?"
+    ],
+    "common_misleading_hypotheses": [
+      "The config works on my machine (environment-specific, not code-specific)",
+      "Just add the missing key (doesn't prevent recurrence)"
+    ],
+    "fix_strategy": "Add the missing config to .env.example with a comment. Add startup validation that fails fast on missing required config. Test by removing the key and verifying a clear error message.",
+    "expected_blast_shape": "Isolated — one missing config, one failing component."
+  },
+  {
+    "name": "off_by_one",
+    "display": "Off-by-One / Boundary Error",
+    "signature_patterns": [
+      "index out of (range|bounds)",
+      "ArrayIndexOutOfBoundsException",
+      "slice.*undefined",
+      "fence.?post",
+      "last element.*missing"
+    ],
+    "deterministic": true,
+    "investigation_steps": [
+      "Identify the loop or index calculation that's off",
+      "Check boundary conditions: empty array, single element, last element",
+      "Look for < vs <= or 0-based vs 1-based index confusion",
+      "Check if the error is at the start boundary, end boundary, or both"
+    ],
+    "common_misleading_hypotheses": [
+      "Adding a bounds check at the crash site (hides the calculation error)",
+      "It only happens with edge case data (the edge case is the real test)"
+    ],
+    "fix_strategy": "Fix the index calculation. Add tests for empty, single-element, and boundary cases. The fix is usually changing < to <= or adjusting by 1.",
+    "expected_blast_shape": "Point — one calculation, one boundary, one failure."
+  }
+]
