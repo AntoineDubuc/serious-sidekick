@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Serious Sidekick — Verified AI Development for Claude Code</title>
-  <meta name="description" content="A Claude Code toolkit that verifies every step — so you ship with evidence, not hope.">
+  <meta name="description" content="Shell-level gates for Claude Code — deterministic checks the AI can't reason around, skip, or hallucinate through.">
   <meta property="og:title" content="Serious Sidekick">
-  <meta property="og:description" content="Your AI writes code. This makes sure it's right.">
+  <meta property="og:description" content="Your AI says 'done.' It isn't. Serious Sidekick fixes that with bash, not prompts.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://antoinedubuc.github.io/serious-sidekick/">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -55,8 +55,11 @@
       --code-green: #4ade80;
       --code-blue: #60a5fa;
       --code-comment: #64748b;
+      --code-amber: #fbbf24;
       --pain-card-bg: rgba(30, 41, 59, 0.8);
       --check-bg: rgba(16, 185, 129, 0.1);
+      --callout-bg: rgba(59, 130, 246, 0.08);
+      --callout-border: rgba(59, 130, 246, 0.25);
     }
 
     /* Light theme */
@@ -77,8 +80,11 @@
       --code-green: #4ade80;
       --code-blue: #60a5fa;
       --code-comment: #94a3b8;
+      --code-amber: #fbbf24;
       --pain-card-bg: rgba(255, 255, 255, 0.9);
       --check-bg: rgba(16, 185, 129, 0.08);
+      --callout-bg: rgba(59, 130, 246, 0.05);
+      --callout-border: rgba(59, 130, 246, 0.2);
     }
 
     /* ========================================
@@ -146,6 +152,7 @@
     .reveal-delay-1 { transition-delay: 0.1s; }
     .reveal-delay-2 { transition-delay: 0.2s; }
     .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
 
     /* ========================================
        Hero Section
@@ -203,7 +210,7 @@
     .hero-sub {
       font-size: clamp(16px, 2vw, 20px);
       color: var(--text-secondary);
-      max-width: 560px;
+      max-width: 600px;
       margin: 0 auto 40px;
       line-height: 1.5;
     }
@@ -214,7 +221,7 @@
       gap: 16px;
       justify-content: center;
       flex-wrap: wrap;
-      margin-bottom: 48px;
+      margin-bottom: 20px;
     }
 
     .btn {
@@ -259,6 +266,23 @@
       color: var(--text);
     }
 
+    .btn-subtitle {
+      display: block;
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-top: 6px;
+      text-align: center;
+    }
+
+    /* Hero byline */
+    .hero-byline {
+      font-size: 15px;
+      color: var(--text-muted);
+      font-style: italic;
+      margin-bottom: 24px;
+    }
+
     /* Hero badges */
     .hero-badges {
       display: flex;
@@ -291,6 +315,12 @@
       background: rgba(16, 185, 129, 0.1);
       color: var(--green);
       border-color: rgba(16, 185, 129, 0.2);
+    }
+
+    .badge.amber {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--amber);
+      border-color: rgba(245, 158, 11, 0.2);
     }
 
     .badge-dot {
@@ -327,8 +357,63 @@
       line-height: 1.15;
     }
 
+    .section-heading-sm {
+      font-size: clamp(20px, 2.5vw, 28px);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      text-align: center;
+      margin-bottom: 32px;
+      color: var(--text-secondary);
+    }
+
     /* ========================================
-       Section 2: The Problem (Pain Cards)
+       Section 2: Qualifier
+       ======================================== */
+    .qualifier {
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    .qualifier-list {
+      list-style: none;
+      display: grid;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .qualifier-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 16px;
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .qualifier-list li::before {
+      content: '';
+      flex-shrink: 0;
+      width: 8px;
+      height: 8px;
+      margin-top: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .qualifier-distinction {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+    }
+
+    .qualifier-distinction strong {
+      color: var(--text);
+    }
+
+    /* ========================================
+       Section 3: Pain Cards
        ======================================== */
     .pain-cards {
       display: grid;
@@ -354,7 +439,7 @@
     }
 
     .pain-card:last-child {
-      border-left-color: var(--amber);
+      border-left-color: var(--red);
     }
 
     .pain-card h3 {
@@ -370,96 +455,17 @@
       line-height: 1.6;
     }
 
-    /* ========================================
-       Section 3 & 4: Image Sections
-       ======================================== */
-    .section-image {
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      transition: border-color var(--transition), box-shadow var(--transition);
-      cursor: pointer;
-    }
-
-    .section-image:hover {
-      box-shadow: var(--shadow-lg);
-    }
-
-    .section-image img {
-      width: 100%;
-      display: block;
-    }
-
-    .section-note {
-      font-size: 16px;
-      color: var(--text-secondary);
-      text-align: center;
-      max-width: 640px;
-      margin: 32px auto 0;
-      line-height: 1.6;
-    }
-
-    /* ========================================
-       Section 5: The AI Can't Quit
-       ======================================== */
-    .proof-section {
-      display: grid;
-      gap: 48px;
-    }
-
-    .proof-image {
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      transition: border-color var(--transition), box-shadow var(--transition);
-    }
-
-    .proof-scenario {
-      font-size: 16px;
-      color: var(--text-secondary);
-      line-height: 1.7;
-      text-align: center;
-      max-width: 640px;
-      margin: 0 auto;
-    }
-
-    .proof-checks {
-      display: grid;
-      gap: 16px;
-      max-width: 540px;
-      margin: 0 auto;
-    }
-
-    .proof-check {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 16px 20px;
-      background: var(--check-bg);
-      border-radius: var(--radius-sm);
-      font-size: 15px;
-      font-weight: 500;
+    .transition-line {
+      font-size: 17px;
+      font-weight: 700;
       color: var(--text);
-      transition: background var(--transition);
-    }
-
-    .proof-check-icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: var(--green);
-      color: #fff;
-      font-size: 14px;
-      flex-shrink: 0;
+      text-align: center;
+      margin-top: 48px;
+      line-height: 1.5;
     }
 
     /* ========================================
-       Section 6: Install (Terminal Block)
+       Terminal Blocks
        ======================================== */
     .terminal {
       background: var(--terminal-bg);
@@ -467,7 +473,7 @@
       border-radius: var(--radius);
       overflow: hidden;
       box-shadow: var(--shadow-lg);
-      max-width: 560px;
+      max-width: 600px;
       margin: 0 auto;
       transition: border-color var(--transition), box-shadow var(--transition);
     }
@@ -501,28 +507,316 @@
     .terminal-body {
       padding: 24px 28px;
       font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
-      font-size: 14px;
-      line-height: 2;
+      font-size: 13px;
+      line-height: 1.8;
+      color: #e2e8f0;
     }
+
+    .terminal-body .prompt { color: var(--code-green); }
+    .terminal-body .cmd { color: #e2e8f0; }
+    .terminal-body .url { color: var(--code-blue); }
+    .terminal-body .comment { color: var(--code-comment); }
+    .terminal-body .dim { color: var(--code-comment); }
+    .terminal-body .success { color: var(--code-green); }
+    .terminal-body .warn { color: var(--code-amber); }
+    .terminal-body .heading { color: var(--code-blue); font-weight: 600; }
+    .terminal-body .key { color: var(--code-blue); }
+    .terminal-body .value { color: var(--code-green); }
+    .terminal-body .string { color: var(--code-amber); }
+    .terminal-body .brace { color: var(--text-muted); }
 
     .terminal-line {
       display: block;
     }
 
-    .terminal-prompt {
-      color: var(--code-green);
+    .terminal-gap {
+      display: block;
+      height: 8px;
     }
 
-    .terminal-cmd {
-      color: #e2e8f0;
+    /* ========================================
+       Section 4: Workflow Blocks
+       ======================================== */
+    .workflow-blocks {
+      display: grid;
+      gap: 48px;
     }
 
-    .terminal-url {
-      color: var(--code-blue);
+    .workflow-block {
+      display: grid;
+      gap: 16px;
     }
 
-    .terminal-comment {
-      color: var(--code-comment);
+    .workflow-explainer {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .workflow-explainer strong {
+      color: var(--text);
+    }
+
+    .section-note {
+      font-size: 16px;
+      color: var(--text-secondary);
+      text-align: center;
+      max-width: 640px;
+      margin: 32px auto 0;
+      line-height: 1.6;
+    }
+
+    .section-link {
+      font-size: 15px;
+      text-align: center;
+      margin-top: 16px;
+    }
+
+    /* ========================================
+       Section 5: Enforcement
+       ======================================== */
+    .enforcement-body {
+      font-size: 17px;
+      color: var(--text-secondary);
+      text-align: center;
+      max-width: 620px;
+      margin: 0 auto 32px;
+      line-height: 1.7;
+    }
+
+    .enforcement-scenario {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      text-align: center;
+      max-width: 640px;
+      margin: 0 auto 24px;
+    }
+
+    .enforcement-precision {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      text-align: center;
+      max-width: 640px;
+      margin: 0 auto 32px;
+    }
+
+    .enforcement-precision strong {
+      color: var(--text);
+    }
+
+    .proof-checks {
+      display: grid;
+      gap: 16px;
+      max-width: 580px;
+      margin: 32px auto;
+    }
+
+    .proof-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px 20px;
+      background: var(--check-bg);
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      color: var(--text);
+      line-height: 1.5;
+      transition: background var(--transition);
+    }
+
+    .proof-check-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--green);
+      color: #fff;
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .mechanism-line {
+      max-width: 620px;
+      margin: 40px auto;
+      padding: 24px 28px;
+      background: var(--callout-bg);
+      border: 1px solid var(--callout-border);
+      border-radius: var(--radius-sm);
+      text-align: center;
+    }
+
+    .mechanism-line p:first-child {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .mechanism-line p:last-child {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .callout {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      text-align: center;
+      max-width: 600px;
+      margin: 32px auto;
+      padding: 20px 24px;
+      background: var(--check-bg);
+      border-radius: var(--radius-sm);
+      line-height: 1.6;
+    }
+
+    .enforcement-invite {
+      font-size: 14px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 16px;
+      font-style: italic;
+    }
+
+    /* ========================================
+       Section 6: The System
+       ======================================== */
+    .system-list {
+      max-width: 640px;
+      margin: 0 auto 32px;
+      display: grid;
+      gap: 20px;
+    }
+
+    .system-item {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      padding-left: 20px;
+      border-left: 3px solid var(--border);
+      transition: border-color var(--transition);
+    }
+
+    .system-item:hover {
+      border-left-color: var(--accent);
+    }
+
+    .system-item strong {
+      color: var(--text);
+    }
+
+    .system-item code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      background: rgba(59, 130, 246, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+
+    .system-summary {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* ========================================
+       Section 7: Honest Scope + CTA
+       ======================================== */
+    .honest-scope {
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .honest-scope-text {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 32px;
+    }
+
+    .honest-scope-cta {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 24px;
+    }
+
+    /* ========================================
+       Section 8: Install
+       ======================================== */
+    .install-prereq {
+      font-size: 15px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .install-explainer {
+      max-width: 560px;
+      margin: 32px auto 0;
+    }
+
+    .install-explainer h4 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .install-explainer p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .install-list {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .install-list li {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      padding-left: 16px;
+      position: relative;
+    }
+
+    .install-list li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 8px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .install-list li strong {
+      color: var(--text);
+    }
+
+    .install-try {
+      font-size: 15px;
+      color: var(--text);
+      font-weight: 500;
     }
 
     .terminal-note {
@@ -617,51 +911,6 @@
     }
 
     /* ========================================
-       Lightbox
-       ======================================== */
-    .lightbox-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 200;
-      background: rgba(0, 0, 0, 0.88);
-      backdrop-filter: blur(12px);
-      align-items: center;
-      justify-content: center;
-      cursor: zoom-out;
-    }
-
-    .lightbox-overlay.open {
-      display: flex;
-    }
-
-    .lightbox-overlay img {
-      max-width: 92vw;
-      max-height: 92vh;
-      object-fit: contain;
-      border-radius: 8px;
-      box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5);
-    }
-
-    .lightbox-close {
-      position: absolute;
-      top: 20px;
-      right: 28px;
-      background: none;
-      border: none;
-      color: #fff;
-      font-size: 32px;
-      cursor: pointer;
-      opacity: 0.7;
-      transition: opacity 0.2s ease;
-      line-height: 1;
-    }
-
-    .lightbox-close:hover {
-      opacity: 1;
-    }
-
-    /* ========================================
        Responsive
        ======================================== */
     @media (max-width: 768px) {
@@ -700,7 +949,7 @@
 
       .terminal-body {
         padding: 20px;
-        font-size: 13px;
+        font-size: 12px;
       }
 
       .proof-check {
@@ -727,8 +976,7 @@
        Print Styles
        ======================================== */
     @media print {
-      .theme-toggle,
-      .lightbox-overlay {
+      .theme-toggle {
         display: none !important;
       }
 
@@ -810,30 +1058,55 @@
 <body>
 
   <!-- ====================================
-       Hero
+       Section 1: Hero
        ==================================== -->
   <section class="hero">
     <div class="hero-bg" aria-hidden="true"></div>
     <div class="hero-content">
-      <h1 class="reveal">Your AI writes code.<br><span class="gradient-text">This makes sure it's right.</span></h1>
-      <p class="hero-sub reveal reveal-delay-1">A Claude Code toolkit with deterministic enforcement &mdash; shell hooks the AI can't reason around, rationalize past, or hallucinate through.</p>
+      <h1 class="reveal">Your AI says "done."<br><span class="gradient-text">It isn't.</span></h1>
+      <p class="hero-sub reveal reveal-delay-1">Serious Sidekick adds shell-level gates to Claude Code &mdash; deterministic checks the AI can't reason around, skip, or hallucinate through. You stop re-doing AI work. You ship with evidence, not hope.</p>
       <div class="hero-buttons reveal reveal-delay-2">
-        <a href="#install" class="btn btn-primary">Get Started</a>
+        <a href="#install" class="btn btn-primary">
+          Get Started
+          <span class="btn-subtitle">3 lines. No signup. No API key.</span>
+        </a>
         <a href="https://github.com/AntoineDubuc/serious-sidekick" target="_blank" rel="noopener" class="btn btn-secondary">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
           View on GitHub
         </a>
       </div>
+      <p class="hero-byline reveal reveal-delay-2">Built by a TPM who got tired of cleaning up after AI.</p>
       <div class="hero-badges reveal reveal-delay-3">
-        <span class="badge"><span class="badge-dot"></span>7 verified steps</span>
-        <span class="badge purple"><span class="badge-dot"></span>5 independent reviewers</span>
-        <span class="badge green"><span class="badge-dot"></span>6 automatic quality gates</span>
+        <span class="badge"><span class="badge-dot"></span>Shell hooks, not prompts</span>
+        <span class="badge purple"><span class="badge-dot"></span>5 specialized review agents</span>
+        <span class="badge green"><span class="badge-dot"></span>Fail-closed enforcement</span>
+        <span class="badge amber"><span class="badge-dot"></span>Conditional hook gates</span>
       </div>
     </div>
   </section>
 
   <!-- ====================================
-       Section 2: The Problem
+       Section 2: Is This for You?
+       ==================================== -->
+  <section class="section">
+    <div class="container">
+      <h3 class="section-heading-sm reveal">Is this for you?</h3>
+      <div class="qualifier reveal">
+        <ul class="qualifier-list">
+          <li>You use Claude Code for real work &mdash; features, refactors, bug fixes &mdash; not just experiments</li>
+          <li>You've had the AI tell you something was "complete" when it wasn't</li>
+          <li>You're tired of scanning AI-generated code for bugs you didn't write</li>
+          <li>You want verification that runs outside the AI's reasoning loop &mdash; not more prompt engineering</li>
+        </ul>
+        <div class="qualifier-distinction">
+          <strong>This is not a prompt library, a linter, or a wrapper.</strong> It's a development pipeline with deterministic enforcement &mdash; shell scripts that check the AI's work before it can move on.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================================
+       Section 3: Pain Cards
        ==================================== -->
   <section class="section section-alt">
     <div class="container">
@@ -853,100 +1126,296 @@
         </div>
         <div class="pain-card reveal reveal-delay-3">
           <h3>You told it to verify. It told you it did.</h3>
-          <p>Prompt-based verification lives inside the AI's reasoning loop. It can be rationalized, skipped, or hallucinated. You need checks that run <em>outside</em> the AI's process.</p>
+          <p>Prompt-based verification lives inside the AI's reasoning loop. It can be rationalized, skipped, or hallucinated. <strong>Every toolkit that tells the AI to check itself has this problem.</strong> You need checks that run <em>outside</em> the AI's process &mdash; checks the AI can't see, can't modify, and can't argue with.</p>
         </div>
       </div>
+      <p class="transition-line reveal">Serious Sidekick fixes this. Not with better prompts &mdash; with shell-level enforcement.</p>
     </div>
   </section>
 
   <!-- ====================================
-       Section 3: Before / After
+       Section 4: What It Feels Like
        ==================================== -->
   <section class="section">
     <div class="container">
-      <h2 class="section-heading reveal">See the difference.</h2>
-      <div class="section-image reveal" onclick="openLightbox(this)">
-        <img src="images/before_after.png" alt="Before and after comparison: AI development without vs. with Serious Sidekick" loading="lazy">
+      <h2 class="section-heading reveal">Type a command. Get verified work.</h2>
+      <p class="enforcement-body reveal">Every slash command does something concrete. Here's what your terminal looks like.</p>
+      <div class="workflow-blocks">
+
+        <!-- Terminal Block 1: Research -->
+        <div class="workflow-block reveal">
+          <div class="terminal">
+            <div class="terminal-header">
+              <span class="terminal-dot red"></span>
+              <span class="terminal-dot yellow"></span>
+              <span class="terminal-dot green"></span>
+              <span class="terminal-title">Research</span>
+            </div>
+            <div class="terminal-body">
+<span class="terminal-line"><span class="prompt">&gt; </span><span class="cmd">/serious-research</span></span>
+<span class="terminal-gap"></span>
+<span class="terminal-line"><span class="dim">Topic: Why are auth tokens expiring early?</span></span>
+<span class="terminal-line"><span class="dim">Mode: quick</span></span>
+<span class="terminal-gap"></span>
+<span class="terminal-line"><span class="heading">── Investigating ──────────────────────────</span></span>
+<span class="terminal-line">  <span class="dim">Searching codebase for token lifecycle...</span></span>
+<span class="terminal-line">  <span class="dim">Found 3 relevant files</span></span>
+<span class="terminal-line">  <span class="dim">Checking refresh logic in auth-service.ts</span></span>
+<span class="terminal-line">  <span class="dim">Cross-referencing with session config</span></span>
+<span class="terminal-gap"></span>
+<span class="terminal-line"><span class="heading">── Findings ───────────────────────────────</span></span>
+<span class="terminal-line">  Root cause: Token TTL hardcoded to 15min,</span>
+<span class="terminal-line">  but refresh window is 20min. Tokens expire</span>
+<span class="terminal-line">  before the refresh fires.</span>
+<span class="terminal-gap"></span>
+<span class="terminal-line">  Evidence grade: <span class="success">HIGH</span> (code + config match)</span>
+<span class="terminal-line">  Written to: <span class="url">Research/bugs/auth-token-expiry/research.md</span></span>
+            </div>
+          </div>
+          <p class="workflow-explainer"><strong>What just happened:</strong> You described a bug. The agent searched your codebase, identified the root cause, graded the evidence, and wrote a structured findings document.</p>
+        </div>
+
+        <!-- Terminal Block 2: Plan -->
+        <div class="workflow-block reveal">
+          <div class="terminal">
+            <div class="terminal-header">
+              <span class="terminal-dot red"></span>
+              <span class="terminal-dot yellow"></span>
+              <span class="terminal-dot green"></span>
+              <span class="terminal-title">Plan</span>
+            </div>
+            <div class="terminal-body">
+<span class="terminal-line"><span class="prompt">&gt; </span><span class="cmd">/serious-plan</span></span>
+<span class="terminal-gap"></span>
+<span class="terminal-line"><span class="dim">Source: Research/bugs/auth-token-expiry/research.md</span></span>
+<span class="terminal-gap"></span>
+<span class="terminal-line"><span class="heading">── Generating plan ────────────────────────</span></span>
+<span class="terminal-line">  <span class="dim">Extracting constraints from research...</span></span>
+<span class="terminal-line">  <span class="dim">Building TDD test sequence</span></span>
+<span class="terminal-line">  <span class="dim">Defining acceptance criteria</span></span>
+<span class="terminal-line">  <span class="dim">Adding anti-rationalization table</span></span>
+<span class="terminal-gap"></span>
+<span class="terminal-line"><span class="heading">── Plan ready ─────────────────────────────</span></span>
+<span class="terminal-line">  4 phases, 11 tasks, 6 tests</span>
+<span class="terminal-gap"></span>
+<span class="terminal-line">  <span class="warn">Anti-rationalization rules:</span></span>
+<span class="terminal-line">  <span class="warn">&#10007;</span> DO NOT skip refresh window test</span>
+<span class="terminal-line">  <span class="warn">&#10007;</span> DO NOT hardcode new TTL value</span>
+<span class="terminal-line">  <span class="warn">&#10007;</span> DO NOT modify session config structure</span>
+<span class="terminal-gap"></span>
+<span class="terminal-line">  Written to: <span class="url">plans/fix-auth-token-expiry/plan.md</span></span>
+<span class="terminal-line">  Next: <span class="cmd">/serious-review</span> to validate before coding</span>
+            </div>
+          </div>
+          <p class="workflow-explainer"><strong>What just happened:</strong> The research output fed directly into a structured implementation plan &mdash; with TDD built in and anti-rationalization rules that prevent the AI from cutting corners during execution. Those rules aren't suggestions. Hooks verify compliance.</p>
+        </div>
+
+        <!-- Terminal Block 3: Code -->
+        <div class="workflow-block reveal">
+          <div class="terminal">
+            <div class="terminal-header">
+              <span class="terminal-dot red"></span>
+              <span class="terminal-dot yellow"></span>
+              <span class="terminal-dot green"></span>
+              <span class="terminal-title">Code</span>
+            </div>
+            <div class="terminal-body">
+<span class="terminal-line"><span class="prompt">&gt; </span><span class="cmd">/serious-code</span></span>
+<span class="terminal-gap"></span>
+<span class="terminal-line"><span class="dim">Plan: plans/fix-auth-token-expiry/plan.md</span></span>
+<span class="terminal-gap"></span>
+<span class="terminal-line"><span class="heading">── Executing Phase 1 ──────────────────────</span></span>
+<span class="terminal-line">  Running tests (RED)...  <span class="warn">6 failing</span> <span class="success">&#10003;</span></span>
+<span class="terminal-line">  Implementing...         auth-service.ts updated</span>
+<span class="terminal-line">  Running tests (GREEN)... <span class="success">6 passing</span> <span class="success">&#10003;</span></span>
+<span class="terminal-gap"></span>
+<span class="terminal-line"><span class="heading">── Hook: verify-completion-gate ───────────</span></span>
+<span class="terminal-line">  <span class="dim">Trigger: Write(*gate_passed*)</span></span>
+<span class="terminal-line">  <span class="success">&#10003;</span> All tests pass</span>
+<span class="terminal-line">  <span class="success">&#10003;</span> Plan tasks complete</span>
+<span class="terminal-line">  <span class="success">&#10003;</span> No skipped phases</span>
+<span class="terminal-line">  <span class="success">&#10003;</span> gate_passed.md written</span>
+<span class="terminal-gap"></span>
+<span class="terminal-line">  <span class="success">Session can close. Evidence saved.</span></span>
+            </div>
+          </div>
+          <p class="workflow-explainer"><strong>What just happened:</strong> The plan executed with TDD &mdash; tests first, then implementation. A hook with a conditional trigger verified everything before allowing the session to close. If tests had failed or the gate file was missing, the AI would have been blocked from finishing.</p>
+        </div>
+
       </div>
+
+      <p class="section-link reveal"><a href="https://github.com/AntoineDubuc/serious-sidekick#readme" target="_blank" rel="noopener">Read the full guide to see every command.</a></p>
+      <p class="transition-line reveal" style="margin-top:40px;">Those results aren't just convenient. They're verified.<br>Here's what makes that real.</p>
     </div>
   </section>
 
   <!-- ====================================
-       Section 4: How It Works
+       Section 5: Enforcement
        ==================================== -->
   <section class="section section-alt">
     <div class="container">
-      <h2 class="section-heading reveal">Seven steps. Every one verified.</h2>
-      <div class="section-image reveal" onclick="openLightbox(this)">
-        <img src="images/pipeline_flow.png" alt="The 7-step Serious Sidekick pipeline: conversation, research, mock-ups, scope, plan, review, code" loading="lazy">
+      <h2 class="section-heading reveal">Prompts are suggestions.<br><span class="gradient-text">Gates are law.</span></h2>
+      <p class="enforcement-body reveal">Telling the AI to verify is asking the contractor if they passed inspection. Serious Sidekick is the building inspector &mdash; bash scripts running outside the AI's process.</p>
+
+      <p class="enforcement-scenario reveal">The AI says it's done. A 50-line bash script checks if <code>gate_passed.md</code> exists. It doesn't. Session stays open. The AI can't argue &mdash; it fixes the work.</p>
+
+      <p class="enforcement-precision reveal"><strong>How precise?</strong> When the AI writes a verdict file, only the review-theater gate fires &mdash; not the TDD gate, not the completion gate. Each hook declares its trigger: <code>if: "Write(*verdict*)"</code>. Binary: pass or block.</p>
+
+      <!-- Hook config snippet -->
+      <div class="terminal reveal" style="max-width:520px;">
+        <div class="terminal-header">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+          <span class="terminal-title">settings.json</span>
+        </div>
+        <div class="terminal-body">
+<span class="terminal-line"><span class="brace">{</span></span>
+<span class="terminal-line">  <span class="key">"hooks"</span>: <span class="brace">{</span></span>
+<span class="terminal-line">    <span class="key">"PreToolUse"</span>: [<span class="brace">{</span></span>
+<span class="terminal-line">      <span class="key">"matcher"</span>: <span class="string">"Write"</span>,</span>
+<span class="terminal-line">      <span class="key">"hooks"</span>: [<span class="brace">{</span></span>
+<span class="terminal-line">        <span class="key">"type"</span>: <span class="string">"command"</span>,</span>
+<span class="terminal-line">        <span class="key">"if"</span>: <span class="string">"Write(*gate_passed*)"</span>,</span>
+<span class="terminal-line">        <span class="key">"command"</span>: <span class="string">"verify-completion-gate.sh"</span></span>
+<span class="terminal-line">      <span class="brace">}]</span></span>
+<span class="terminal-line">    <span class="brace">}]</span></span>
+<span class="terminal-line">  <span class="brace">}</span></span>
+<span class="terminal-line"><span class="brace">}</span></span>
+        </div>
       </div>
-      <p class="section-note reveal">Each step produces artifacts that feed the next. An independent verifier checks every handoff &mdash; nothing gets dropped between stages.</p>
+
+      <!-- Hook output -->
+      <div class="terminal reveal" style="max-width:520px;margin-top:16px;">
+        <div class="terminal-header">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+          <span class="terminal-title">Hook Output</span>
+        </div>
+        <div class="terminal-body">
+<span class="terminal-line"><span class="heading">── Hook: verify-completion-gate ───────────</span></span>
+<span class="terminal-line">  <span class="dim">Trigger: Write(*gate_passed*)</span></span>
+<span class="terminal-line">  <span class="success">&#10003;</span> All tests pass</span>
+<span class="terminal-line">  <span class="success">&#10003;</span> Plan tasks complete</span>
+<span class="terminal-line">  <span class="success">&#10003;</span> No skipped phases</span>
+<span class="terminal-line">  <span class="success">&#10003;</span> gate_passed.md written</span>
+<span class="terminal-line">  <span class="success">PASS</span> — session can close</span>
+        </div>
+      </div>
+
+      <div class="proof-checks">
+        <div class="proof-check reveal">
+          <span class="proof-check-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <span><strong>Deterministic, not probabilistic.</strong> Hooks are bash scripts. They check if files exist, grep for required content, count citations. No AI reasoning in the verification loop &mdash; it either passes or it doesn't.</span>
+        </div>
+        <div class="proof-check reveal reveal-delay-1">
+          <span class="proof-check-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <span><strong>Outside the AI's process.</strong> The Claude Code runtime executes hooks after the AI responds. The AI cannot disable, skip, or override them.</span>
+        </div>
+        <div class="proof-check reveal reveal-delay-2">
+          <span class="proof-check-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <span><strong>Fail-closed.</strong> If a hook hits an unexpected error, it blocks instead of silently passing. No silent failures. No false confidence.</span>
+        </div>
+        <div class="proof-check reveal reveal-delay-3">
+          <span class="proof-check-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <span><strong>Surgical, not blunt.</strong> Hooks declare exactly which tool calls they care about. <code>Write(*verdict*)</code> fires the review gate. <code>Write(*.ts)</code> fires the TDD gate. <code>Write(*implementation_plan*)</code> fires the hedge language check. No wasted process spawning. No false positives.</span>
+        </div>
+      </div>
+
+      <div class="mechanism-line reveal">
+        <p>Most Claude Code toolkits verify with prompts. We verify with bash.</p>
+        <p>That's not a style choice &mdash; it's a structural one. Prompts live inside the AI's reasoning loop. Bash lives outside it. One can be rationalized. The other can't.</p>
+      </div>
+
+      <div class="callout reveal">Hooks verify that verification ran. You still trust the AI to do the work. You don't trust it to grade itself.</div>
+
+      <p class="enforcement-invite reveal">Every hook is a shell script you can read. No magic. No hidden AI. Open the file and see exactly what it checks.</p>
     </div>
   </section>
 
   <!-- ====================================
-       Section 5: Deterministic Enforcement
+       Section 6: The System
        ==================================== -->
   <section class="section">
     <div class="container">
-      <h2 class="section-heading reveal">Prompts are suggestions.<br><span class="gradient-text">Gates are law.</span></h2>
-      <p class="section-sub reveal" style="max-width:620px;margin:0 auto 32px;text-align:center;color:var(--text-secondary);font-size:17px;line-height:1.7;">
-        Telling the AI to verify is like asking the contractor if they passed inspection. Serious Sidekick is the actual building inspector &mdash; shell scripts running <em>outside</em> the AI's process that can't be reasoned around, rationalized past, or hallucinated through.
-      </p>
-      <div class="proof-section">
-        <div class="proof-image reveal" onclick="openLightbox(this)">
-          <img src="images/hook_block.png" alt="Terminal showing a blocked session: deterministic hook prevents the AI from closing until verification passes" loading="lazy">
+      <h2 class="section-heading reveal">Everything connects.<br>Everything is verified.</h2>
+      <div class="system-list">
+        <div class="system-item reveal">
+          <strong>Research feeds plans.</strong> Findings become constraints. Nothing is invented mid-implementation.
         </div>
-        <p class="proof-scenario reveal" style="margin-top:24px;">
-          The AI says it's done. A bash script &mdash; 50 lines, no AI, no reasoning &mdash; checks if <code>gate_passed.md</code> exists. It doesn't. The session stays open. The AI can't argue, negotiate, or explain why it should be allowed to quit. It fixes the work first.
-        </p>
-        <div class="proof-checks">
-          <div class="proof-check reveal">
-            <span class="proof-check-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            </span>
-            <strong>Deterministic, not probabilistic.</strong> Hooks are bash scripts, not prompts. They check file existence, grep for content, count citations. No reasoning. No hallucination.
-          </div>
-          <div class="proof-check reveal reveal-delay-1">
-            <span class="proof-check-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            </span>
-            <strong>Outside the AI's process.</strong> The Claude Code runtime executes hooks after the AI responds. The AI cannot disable, skip, or override them.
-          </div>
-          <div class="proof-check reveal reveal-delay-2">
-            <span class="proof-check-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            </span>
-            <strong>Fail-closed.</strong> If a hook hits an unexpected error, it blocks instead of silently passing. No silent failures. No false confidence.
-          </div>
+        <div class="system-item reveal reveal-delay-1">
+          <strong>Plans feed code.</strong> TDD sequences are defined before a single line is written. Anti-rationalization tables tell the AI what it's NOT allowed to skip.
         </div>
-        <p class="reveal" style="margin-top:20px;font-size:14px;color:var(--text-muted);text-align:center;font-style:italic;">
-          Hooks verify that verification ran &mdash; not that the verification was good. We moved the trust boundary: you still trust the AI to do the work, but you don't trust it to grade itself.
-        </p>
+        <div class="system-item reveal reveal-delay-2">
+          <strong>Hooks verify every handoff.</strong> A shell script checks that the plan references the research. That the code matches the plan. That the tests ran before the implementation. That the gate file exists before the session closes.
+        </div>
+        <div class="system-item reveal reveal-delay-3">
+          <strong>Conditional precision.</strong> Each hook fires only on the tool calls it cares about. <code>Write(*verdict*)</code> triggers the review gate. <code>Write(*.ts)</code> triggers the TDD gate. No wasted checks. No false positives.
+        </div>
+        <div class="system-item reveal reveal-delay-4">
+          <strong>Fail-closed, always.</strong> If any hook hits an unexpected error, it blocks. Not silently passes. Blocks.
+        </div>
+      </div>
+      <p class="system-summary reveal">7 pipeline steps. 6 enforcement hooks. 8 specialized agents. Zero trust in the AI's self-assessment.</p>
+    </div>
+  </section>
+
+  <!-- ====================================
+       Section 7: Honest Scope + CTA
+       ==================================== -->
+  <section class="section section-alt">
+    <div class="container">
+      <div class="honest-scope reveal">
+        <p class="honest-scope-text">Serious Sidekick verifies that the AI followed the process. It doesn't verify that the process produced correct code &mdash; that's still on you (and your tests).</p>
+        <p class="honest-scope-cta">The AI can't skip verification. You can try this in 5 minutes.</p>
+        <a href="#install" class="btn btn-primary">Get Started</a>
       </div>
     </div>
   </section>
 
   <!-- ====================================
-       Section 6: Install
+       Section 8: Install
        ==================================== -->
-  <section class="section section-alt" id="install">
+  <section class="section" id="install">
     <div class="container">
       <h2 class="section-heading reveal">Try it now.</h2>
+      <p class="install-prereq reveal">Requires Claude Code CLI. That's it.</p>
       <div class="terminal reveal">
         <div class="terminal-header">
           <span class="terminal-dot red"></span>
           <span class="terminal-dot yellow"></span>
           <span class="terminal-dot green"></span>
-          <span class="terminal-title">Terminal</span>
+          <span class="terminal-title">Install</span>
         </div>
         <div class="terminal-body">
-          <span class="terminal-line"><span class="terminal-prompt">$ </span><span class="terminal-cmd">git clone </span><span class="terminal-url">https://github.com/AntoineDubuc/serious-sidekick.git</span></span>
-          <span class="terminal-line"><span class="terminal-prompt">$ </span><span class="terminal-cmd">claude</span></span>
-          <span class="terminal-line"><span class="terminal-prompt">&gt; </span><span class="terminal-cmd">/serious-init</span></span>
+<span class="terminal-line"><span class="prompt">$ </span><span class="cmd">git clone </span><span class="url">https://github.com/AntoineDubuc/serious-sidekick.git</span></span>
+<span class="terminal-line"><span class="prompt">$ </span><span class="cmd">claude</span></span>
+<span class="terminal-line"><span class="prompt">&gt; </span><span class="cmd">/serious-init</span></span>
         </div>
       </div>
-      <p class="terminal-note reveal">That's it. The entire pipeline is available.</p>
+
+      <div class="install-explainer reveal">
+        <h4>What /serious-init does:</h4>
+        <p>Copies slash commands, hook scripts, agent configs, and templates into your project's <code>.claude/</code> directory. Nothing outside the repo is modified. No global installs, no PATH changes, no background processes.</p>
+        <ul class="install-list">
+          <li><strong>11 slash commands</strong> &mdash; /serious-research, /serious-plan, /serious-code, and 8 more</li>
+          <li><strong>6 enforcement hooks</strong> &mdash; shell scripts that block premature completion</li>
+          <li><strong>8 specialized agents</strong> &mdash; for code review, implementation, and QA</li>
+          <li><strong>Templates</strong> &mdash; for plans, research docs, and scope manifests</li>
+        </ul>
+        <p class="install-try">Try it: run <code>/serious-research</code> on a real bug in your project. Takes 5 minutes.</p>
+      </div>
+
+      <p class="terminal-note reveal">Open source. Actively maintained. <a href="https://github.com/AntoineDubuc/serious-sidekick/blob/main/CHANGELOG.md" target="_blank" rel="noopener">See the changelog.</a></p>
     </div>
   </section>
 
@@ -962,14 +1431,6 @@
     </nav>
     <p class="footer-note reveal">Open source. Fork and go.</p>
   </footer>
-
-  <!-- ====================================
-       Lightbox
-       ==================================== -->
-  <div class="lightbox-overlay" id="lightbox" onclick="closeLightbox()">
-    <button class="lightbox-close" aria-label="Close lightbox">&times;</button>
-    <img id="lightbox-img" src="" alt="Enlarged view">
-  </div>
 
   <!-- ====================================
        Theme Toggle
@@ -1013,28 +1474,7 @@
       observer.observe(el);
     });
 
-    /* Lightbox */
-    function openLightbox(container) {
-      var img = container.querySelector('img');
-      if (!img) return;
-      var lb = document.getElementById('lightbox');
-      document.getElementById('lightbox-img').src = img.src;
-      document.getElementById('lightbox-img').alt = img.alt;
-      lb.classList.add('open');
-      document.body.style.overflow = 'hidden';
-    }
-
-    function closeLightbox() {
-      var lb = document.getElementById('lightbox');
-      lb.classList.remove('open');
-      document.body.style.overflow = '';
-    }
-
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') closeLightbox();
-    });
-
-    /* Smooth scroll for anchor links (fallback for browsers without CSS scroll-behavior) */
+    /* Smooth scroll for anchor links */
     document.querySelectorAll('a[href^="#"]').forEach(function(link) {
       link.addEventListener('click', function(e) {
         var target = document.querySelector(this.getAttribute('href'));

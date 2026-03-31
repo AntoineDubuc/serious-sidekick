@@ -2,116 +2,25 @@
 
 # Serious Sidekick
 
-**A workflow toolkit for Claude Code that thinks before it builds.**
+**Your AI says "done." It isn't.**
 
-Structured conversations, research with evidence grading, implementation plans with TDD,<br>
-and shell hooks that physically block the AI from exiting until verification passes.
+Shell-level gates for Claude Code — deterministic checks the AI can't reason around, skip, or hallucinate through. You stop re-doing AI work. You ship with evidence, not hope.
 
 [![Version](https://img.shields.io/badge/version-1.5.0-blue?style=flat-square)](CHANGELOG.md)
-[![Pipeline](https://img.shields.io/badge/pipeline-7_steps-green?style=flat-square)](#the-pipeline)
-[![Hooks](https://img.shields.io/badge/enforcement-6_stop_hooks-purple?style=flat-square)](#how-the-system-checks-itself)
+[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
+[![Claude Code](https://img.shields.io/badge/requires-Claude_Code-purple?style=flat-square)](https://docs.anthropic.com/en/docs/claude-code/overview)
+
+[Landing Page](https://antoinedubuc.github.io/serious-sidekick/) · [Changelog](CHANGELOG.md) · [Report an Issue](https://github.com/AntoineDubuc/serious-sidekick/issues)
 
 </div>
 
 ---
 
-## The Problem
-
-You tell an AI to build something. It says "done." You check — half the requirements are missing, three items are marked "future enhancement," and one is contradicted by the implementation. You loop back. It fixes two, introduces a new gap, and defers another.
-
-**Serious Sidekick makes this loop unnecessary.** It structures the entire journey from idea to implementation. At every handoff, an independent verifier checks that nothing was dropped. And shell hooks running outside Claude's process **physically block the session from ending** until verification passes — the AI cannot say "done" and walk away.
-
----
-
-## How It Works
-
-The toolkit is a pipeline. Each stage produces artifacts that feed the next, and **automatic verification at every handoff ensures nothing gets lost.**
-
-<img src="images/readme/pipeline_flow.png" alt="Pipeline flow diagram showing Conversation → Research → Mock-ups → Scope → Plan → Review → Code with verification shields at every handoff" width="100%">
-
-**Drift is caught where it happens, not at the end.** Every 🛡️ is an independent verifier that fires before the downstream skill finishes. If research drops a conversation insight, it gets caught before the plan ever starts — not after code is written.
-
-<br>
-
-<table>
-<tr>
-<td width="50%" valign="top">
-
----
-
-## The Pipeline
-
-### 💬 `/serious-conversation` — Think Before You Build
-
-A structured conversation with a panel of AI personas. Each persona brings a different perspective — the Architect thinks about systems, the Skeptic pokes holes, the Pragmatist pushes for simplicity.
-
-<img src="images/readme/conversation_panel.png" alt="Conversation panel diagram showing Orchestrator distributing to personas, synthesizing, and looping with user" width="100%">
-
-- **10 built-in personas** — Architect, Skeptic, Pragmatist, Product Thinker, Debugger, Security Mind, DX Advocate, Mentor, Optimizer, Historian
-- **Create custom personas** from a description or by cloning an existing one
-- **Full synthesis presented in the chat** in plain PM language — you don't need to read the markdown files
-- **Structured questions** — when the Orchestrator needs input, you get: context, recommended option, alternatives, trade-offs
-
-<br>
-
-### 🔍 `/serious-research` — Investigate With Evidence
-
-Two modes. Quick mode for focused questions. Deep mode for multi-dimensional analysis.
-
-<table>
-<tr>
-<td width="50%">
-
-Before any research begins, mandatory pre-steps capture a smoke test baseline, trace the execution path, identify caching layers, and map downstream consumers.
-
-<br>
-
-### 🎨 `/serious-mock-ups` — Visualize Before Planning
-
-Three fidelity levels — wireframe (ASCII), visual (Gemini-generated), and interactive flow maps. Component inventory and design decisions feed directly into the plan.
-
-<br>
-
-### 📋 `/serious-plan` — Plan With Verification Built In
-
-Generates implementation plans using the v6 template. Not a to-do list — a contract with testable acceptance criteria, TDD protocol, and independent review.
-
-<img src="images/readme/plan_review.png" alt="Plan review diagram showing 3 mandatory agents (Anti-Slop Auditor, Structural Reviewer, Security Mind) reading plan cold, producing a verdict with circuit breaker" width="100%">
-
-- **3 mandatory review agents** — Anti-Slop Auditor (10 checks), Structural Reviewer, Security Mind. All read the plan cold — no research context, no author notes
-- **10 anti-slop checks** — weasel words, missing outputs, test gaps, copy-paste echo, scope creep, phantom architecture, unspecified error contracts, magic numbers, implicit ordering, dead-end tasks
-- **Circuit breaker** — 2 rounds max. FAIL = fix and re-review. After 2 failures, escalate to user
-- **Every acceptance criterion** must be testable and encodable as a test (TDD)
-
-<br>
-
-### ⚡ `/serious-code` — Execute With 5 Independent Agents
-
-Each task goes through a cycle with 5 independent agents. No self-grading. The agents are hardened against the same LLM failure modes they're meant to catch — inspired by techniques from [obra/superpowers](https://github.com/obra/superpowers).
-
-<img src="images/readme/code_execution.png" alt="Code execution cycle showing Smoke Test → Implementer → Stub Detection → Post-Impl Smoke → 4 Parallel Verification Agents → Completion Gate" width="100%">
-
-- **TDD enforced** — every acceptance criterion gets a failing test FIRST, then implementation
-- **Two-stage code review** — Stage 1: spec compliance (COMPLIANT / PARTIAL / MISSING / WRONG per criterion — any MISSING or WRONG = automatic FAIL regardless of code quality). Stage 2: code quality, security, consistency
-- **Anti-rationalization tables** — each agent has a table of excuses it might generate to skip its own protocol, with explanations of why each is wrong. Implementer: 8 TDD-skipping rationalizations. Reviewer: 7 review-softening rationalizations. QA: 6 spot-check shortcuts
-- **Anti-sycophancy** — Reviewer and QA agents are forbidden from performative praise ("Great work!", "Nice implementation!"). Both verify independently against the codebase, not the implementer's self-report
-- **Separation of duties** — Non-implementer agents are mechanically blocked from Edit/Write via `disallowedTools` frontmatter. The reviewer literally cannot edit the code it's reviewing. Effort levels are tuned per agent: `high` for reasoning-heavy work, `low` for the test runner (just runs commands).
-- **Completion Gate** — an independent agent verifies every criterion has implementing code AND that the code is reachable (catches dead code). A stop hook enforces this — the session can't exit without it.
-- **Stub detection** — scans for `TODO`, `throw UnimplementedException`, and other placeholder patterns after implementation
-- **Multi-plan execution** via git worktrees for parallel isolation
-- **Inter-plan regression checking** — after merging parallel plans, re-verifies all previous phases
-
-<br>
-
-### ✅ `/serious-review` — Quality Gate Before Code
-
-Adversarial plan review with 3 mandatory agents (Anti-Slop Auditor, Structural Reviewer, Security Mind). Each reads the plan cold — no research context. 10 anti-slop checks catch vagueness, phantom architecture, and scope creep. Plans must PASS before `/serious-code` can run.
-
----
-
 ## Quick Start
 
-### Install into any project
+```bash
+git clone https://github.com/AntoineDubuc/serious-sidekick.git
+```
 
 Open Claude Code in your project and run:
 
@@ -119,145 +28,165 @@ Open Claude Code in your project and run:
 /serious-init
 ```
 
-This copies everything — skills, agents, feature docs, plan template, and CLAUDE.md config.
+That's it. You get 11 slash commands, 6 enforcement hooks, 8 specialized agents, and templates for plans, research, and scope manifests. Nothing outside the repo is modified.
 
-**Variants:**
-
-```
-/serious-init --skills-only     # Just skills, no docs
-/serious-init --docs-only       # Just docs + CLAUDE.md
-/serious-init --no-claude-md    # Skip CLAUDE.md if you have one
-```
-
-### Prerequisites
-
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview) (`npm install -g @anthropic-ai/claude-code`)
-- A Claude account (Pro, Max, Team, or Enterprise)
-- For `/serious-init`: the global skill at `~/.claude/skills/serious-init/SKILL.md`
+**Prerequisites:** [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code/overview) and a Claude account (Pro, Max, Team, or Enterprise).
 
 ---
 
-## Skills
+## The Problem
 
-<table>
-<tr>
-<th>Workflow Skills (11)</th>
-<th>What They Do</th>
-</tr>
-<tr><td><code>/serious-conversation</code></td><td>Persona panel for ideation and exploration</td></tr>
-<tr><td><code>/serious-research</code></td><td>Structured investigation with evidence</td></tr>
-<tr><td><code>/serious-mock-ups</code></td><td>UI wireframes and visuals before planning</td></tr>
-<tr><td><code>/serious-scope</code></td><td>Scope manifest — splits research into plan boundaries</td></tr>
-<tr><td><code>/serious-plan</code></td><td>Single-plan generation with TDD protocol</td></tr>
-<tr><td><code>/serious-review</code></td><td>Plan quality gate — 3 mandatory agents, cold-read, 10 anti-slop checks</td></tr>
-<tr><td><code>/serious-code</code></td><td>Plan execution with 5 verification agents</td></tr>
-<tr><td><code>/serious-bananas</code></td><td>Image/diagram generation via Gemini API (Nano Banana 2 — 4K, dark mode, 3 model tiers)</td></tr>
-<tr><td><code>/serious-init</code></td><td>Scaffold a new project with the toolkit</td></tr>
-<tr><td><code>/serious-debug</code></td><td>Systematic debugging — 3 modes (auto-fix, quick, deep), reproducer-driven feedback, compounding debug corpus</td></tr>
-<tr><td><code>/serious-status</code></td><td>View active and completed workflows with tree structure</td></tr>
-<tr><td><code>/serious-abandon</code></td><td>Abandon a sub-workflow and restore parent context</td></tr>
-</table>
+You tell an AI to build something. It says "done." You check — half the requirements are missing, three are marked "future enhancement," and one is contradicted by the implementation.
 
-<table>
-<tr>
-<th>Auto-Loading Skills (18)</th>
-<th>Loads When You Discuss...</th>
-</tr>
-<tr><td><code>hooks</code></td><td>Lifecycle events, automation, policy enforcement</td></tr>
-<tr><td><code>skills-and-commands</code></td><td>Creating custom slash commands</td></tr>
-<tr><td><code>mcp-integration</code></td><td>MCP servers, external tools, databases</td></tr>
-<tr><td><code>subagents</code></td><td>Multi-agent workflows, parallel agents</td></tr>
-<tr><td><code>agent-teams</code></td><td>Agent swarms, multi-agent collaboration</td></tr>
-<tr><td><code>permissions</code></td><td>Allow/deny rules, sandboxing</td></tr>
-<tr><td><code>plan-mode</code></td><td>Read-only exploration, safe analysis</td></tr>
-<tr><td><code>worktrees</code></td><td>Parallel branches, isolated development</td></tr>
-<tr><td><code>headless-mode</code></td><td>Scripting, CI/CD, the -p flag</td></tr>
-<tr><td><code>plugins</code></td><td>Plugin creation and distribution</td></tr>
-<tr><td><code>chrome-integration</code></td><td>Browser automation, debugging</td></tr>
-<tr><td><code>fast-mode</code></td><td>Speed toggle, faster responses</td></tr>
-<tr><td><code>checkpointing</code></td><td>Rewind, undo, restoring code</td></tr>
-<tr><td><code>remote-control</code></td><td>Mobile access, session teleporting</td></tr>
-<tr><td><code>keybindings</code></td><td>Keyboard shortcuts, chord bindings</td></tr>
-<tr><td><code>output-styles</code></td><td>Response format, learning mode</td></tr>
-<tr><td><code>status-line</code></td><td>Status bar customization</td></tr>
-<tr><td><code>scheduled-tasks</code></td><td>Cron scheduling, recurring prompts</td></tr>
-</table>
+**Every toolkit that tells the AI to check itself has this problem.** Prompt-based verification lives inside the AI's reasoning loop. It can be rationalized, skipped, or hallucinated.
+
+Serious Sidekick fixes this. Not with better prompts — with shell-level enforcement.
 
 ---
 
-## Claude Code Knowledge Base
+## How It's Different
 
-39 documented features across 9 categories — each with a research file containing capabilities, configuration, usage examples, gotchas, and source URLs.
+Most Claude Code toolkits verify with prompts. **We verify with bash.**
 
-```mermaid
-pie title Features by Category
-    "Foundation" : 4
-    "Configuration" : 5
-    "Extensibility" : 4
-    "Orchestration" : 3
-    "Modes" : 4
-    "Security" : 3
-    "Platforms" : 7
-    "Tools" : 6
-    "Infrastructure" : 3
+That's not a style choice — it's a structural one. Prompts live inside the AI's reasoning loop. Bash lives outside it. One can be rationalized. The other can't.
+
+### Deterministic enforcement
+
+Shell hooks run outside the AI's process. The AI cannot disable, skip, or override them.
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "Write",
+      "hooks": [{
+        "type": "command",
+        "if": "Write(*gate_passed*)",
+        "command": "verify-completion-gate.sh"
+      }]
+    }]
+  }
+}
 ```
 
-The knowledge loads in three layers, each serving a different purpose:
+The AI says it's done. A 50-line bash script checks if `gate_passed.md` exists. It doesn't. Session stays open. The AI can't argue — it fixes the work.
 
-| Layer                   | What                          | When                    | Context Cost              |
-| :---------------------- | :---------------------------- | :---------------------- | :------------------------ |
-| **CLAUDE.md**     | Feature index + rules         | Every session           | Minimal — always present |
-| **Skills**        | How-to cheat sheets           | When the topic comes up | Only when relevant        |
-| **Research docs** | Deep reference with citations | When explicitly needed  | Only when read            |
+### Conditional precision
 
-This means Claude always *knows* what it can do (CLAUDE.md), gets the right syntax when it needs it (skills), and can go deep on edge cases (research docs) — without bloating every session with documentation it doesn't need.
+Hooks declare exactly which tool calls they care about. `Write(*verdict*)` fires the review gate. `Write(*.ts)` fires the TDD gate. `Write(*implementation_plan*)` fires the hedge language check. No wasted process spawning. No false positives.
+
+### Fail-closed
+
+If a hook hits an unexpected error, it blocks instead of silently passing. No silent failures. No false confidence.
+
+---
+
+## The Pipeline
+
+Seven steps. Each produces artifacts that feed the next. A verifier checks every handoff — nothing gets dropped between stages.
+
+| Step | Command | What it does |
+|:-----|:--------|:-------------|
+| 1 | `/serious-conversation` | Structured ideation with a panel of AI personas (10 built-in, custom supported) |
+| 2 | `/serious-research` | Investigation with evidence grading — quick mode or deep parallel analysis |
+| 3 | `/serious-mock-ups` | UI wireframes and visuals before planning (3 fidelity levels) |
+| 4 | `/serious-scope` | Splits research into discrete, independently-plannable units |
+| 5 | `/serious-plan` | Implementation plan with TDD protocol, acceptance criteria, and anti-rationalization rules |
+| 6 | `/serious-review` | Adversarial plan review — 3 mandatory agents read the plan cold |
+| 7 | `/serious-code` | Execution with 5 verification agents, TDD enforcement, and completion gates |
+
+**Research feeds plans.** Findings become constraints. Nothing is invented mid-implementation.
+
+**Plans feed code.** TDD sequences are defined before a single line is written. Anti-rationalization tables tell the AI what it's NOT allowed to skip.
+
+**Hooks verify every handoff.** A shell script checks that the plan references the research. That the code matches the plan. That the tests ran before the implementation. That the gate file exists before the session closes.
+
+---
+
+## What You Get
+
+### 11 Workflow Commands
+
+| Command | Purpose |
+|:--------|:--------|
+| `/serious-conversation` | Persona panel for ideation and exploration |
+| `/serious-research` | Structured investigation with evidence |
+| `/serious-mock-ups` | UI wireframes and visuals before planning |
+| `/serious-scope` | Scope manifest — splits research into plan boundaries |
+| `/serious-plan` | Implementation plan with TDD protocol |
+| `/serious-review` | Plan quality gate — 3 mandatory agents, 10 anti-slop checks |
+| `/serious-code` | Plan execution with 5 verification agents |
+| `/serious-debug` | Systematic debugging — 3 modes, reproducer-driven feedback |
+| `/serious-init` | Scaffold a new project with the toolkit |
+| `/serious-status` | View active and completed workflows |
+| `/serious-abandon` | Abandon a sub-workflow and restore parent context |
+
+### 6 Enforcement Hooks
+
+| Hook | Skill | What it blocks |
+|:-----|:------|:---------------|
+| Completion Gate | `/serious-code` | Missing `gate_passed.md`, missing agent evidence files, FAIL verdicts |
+| Extraction Check | `/serious-plan` | Missing upstream extraction, zero source citations, hedge language |
+| Manifest Check | `/serious-scope` | Missing manifest, missing verification stamps |
+| Verdict Check | `/serious-review` | Missing verdict, review theater (PASS with no specifics), missing agent reports |
+| Conversation Capture | `/serious-conversation` | Status "done" without summary |
+| Research Capture | `/serious-research` | Active research abandoned without completion |
+
+All hooks use a **fail-closed pattern** — unexpected errors block instead of silently passing. All are **worktree-safe** — they resolve paths via `$CLAUDE_PROJECT_DIR` and validate against path traversal.
+
+### 3 PreToolUse Gates
+
+| Gate | Trigger | What it catches |
+|:-----|:--------|:----------------|
+| TDD Gate | `Write(*.ts)` | Implementation files written before their tests exist |
+| Hedge Language Gate | `Write(*implementation_plan*)` | Vague language in plans ("consider whether", "as appropriate") |
+| Review Theater Gate | `Write(*verdict*)` | Generic approval without specific file:line references |
+
+### 8 Specialized Agents
+
+**Code agents** (5): Implementer, Code Reviewer, Test Runner, Runtime Checker, QA — each with anti-rationalization tables and anti-sycophancy rules. Non-implementer agents are mechanically blocked from `Edit`/`Write` via `disallowedTools`.
+
+**Review agents** (3): Anti-Slop Auditor (10 checks), Structural Reviewer, Security Mind — all read the plan cold with no research context.
+
+### 18 Auto-Loading Knowledge Skills
+
+Context-aware documentation for hooks, MCP, subagents, worktrees, permissions, plugins, and 12 more Claude Code features. Loads only when the topic comes up — zero context cost when you don't need it.
 
 ---
 
 ## How Verification Works
 
-The handoff verifier is the system's immune system. It runs automatically — no commands, no flags, no opt-in.
+The handoff verifier runs automatically at every pipeline stage. Each upstream item gets classified:
 
-<img src="images/readme/verification_flow.png" alt="Automatic handoff verification system showing Phase 0 Extract Mode and Completion Verify Mode with 6 disposition types" width="100%">
+| Disposition | Meaning |
+|:------------|:--------|
+| **Covered** | Substantive treatment — own section, acceptance criteria, design decisions |
+| **Deferred** | Explicitly marked with reason — passes with warning |
+| **Shirked** | Mentioned but waved away — "future enhancement," hollow sections |
+| **Missing** | Not mentioned at all |
+| **Contradicted** | Downstream says the opposite of upstream |
 
-**Six dispositions** — each item gets classified:
-
-|      | Disposition            | What It Means                                                                 |
-| :--- | :--------------------- | :---------------------------------------------------------------------------- |
-| ✅   | **Covered**      | Substantive treatment — own section, acceptance criteria, design decisions   |
-| ⚠️ | **Deferred**     | Explicitly marked `[DEFERRED: reason]` — passes with warning               |
-| 🚫   | **Shirked**      | Mentioned but waved away — "future enhancement," hollow sections, LLM dodges |
-| ❌   | **Missing**      | Not mentioned at all                                                          |
-| 🔀   | **Contradicted** | Downstream says the opposite of upstream                                      |
-| ✅   | **Override**     | User asserts it's handled with `[VERIFIED: override — reason]`             |
+Shirked, Missing, and Contradicted items **block the pipeline**. The AI must fix them before moving on.
 
 ---
 
-## How the System Checks Itself
+## Init Variants
 
-<img src="images/readme/hook_enforcement.png" alt="Hook enforcement dashboard showing 6 Stop hooks with content-aware checks, fail-closed pattern" width="100%">
-
-Nine shell hooks enforce quality at two levels: six fire when sessions end (Stop hooks), three guard file writes in real-time (PreToolUse hooks). All use a **fail-closed pattern** — unexpected errors block instead of silently passing. **All hooks are worktree-safe** (v1.5.0) — they resolve paths via `$CLAUDE_PROJECT_DIR`, validate breadcrumb content against path traversal, and work correctly when CWD is a git worktree.
-
-| Hook | Skill | What it catches |
-|:-----|:------|:----------------|
-| **Completion Gate** | `/serious-code` | Blocks exit if any task is missing `gate_passed.md` (must contain PASS, must not contain FAIL), OR if any of the 5 agent evidence files are missing (`implementation.md`, `review.md`, `tests.md`, `runtime.md`, `qa.md`). Catches skipped agents and hollow gate files. |
-| **Extraction Check** | `/serious-plan` | Blocks if `_extracted_items.md` is missing (extraction skipped), if items exist but the plan has zero `[Source:]` citations (items not cross-referenced), or if the `verified:` handoff stamp is missing. Also scans for hedge language in task descriptions. |
-| **Manifest Check** | `/serious-scope` | Blocks if `manifest.md` is missing. When upstream `source:` exists, also checks for `_extracted_items.md` and `verified:` stamp. |
-| **Verdict Check** | `/serious-review` | Blocks if `review_verdict.md` is missing, if a PASS verdict has zero file:line references (review theater), or if any of the 3 mandatory agent section headers are missing (`## Anti-Slop Audit Report`, `## Structural Review Report`, `## Security Review Report`). |
-| **Conversation Capture** | `/serious-conversation` | Blocks if status is `done` but no `summary.md` exists. Non-blocking during active conversations. |
-| **Research Capture** | `/serious-research` | Blocks if status is still `active`. When upstream `source:` exists, also checks for `_extracted_items.md` and `verified:` stamp. |
-
-All 9 hooks (6 Stop + 3 PreToolUse) use a **fail-closed pattern** — if any hook encounters an unexpected error (bad path, permission denied, malformed data), it blocks instead of silently passing. Every hook script has an explicit success marker; the session cannot exit unless all checks complete cleanly.
-
-These are registered in `.claude/settings.json` and installed by `/serious-init`. The AI cannot bypass them — they're enforced by the Claude Code runtime, not by prompts.
+```
+/serious-init                   # Everything — skills, agents, docs, CLAUDE.md
+/serious-init --skills-only     # Just skills and agents, no docs
+/serious-init --docs-only       # Just docs + CLAUDE.md
+/serious-init --no-claude-md    # Skip CLAUDE.md if you already have one
+```
 
 ---
 
 <div align="center">
 
-### Built with Claude Code. Verified by Claude Code. Kept honest by Claude Code.
+*Built by a TPM who got tired of cleaning up after AI.*
 
-[Changelog](CHANGELOG.md) · [Getting Started](#quick-start) · [Report an Issue](https://github.com/AntoineDubuc/serious-sidekick/issues)
+*Most Claude Code toolkits verify with prompts. This one verifies with bash.*
+
+[Get Started](#quick-start) · [Changelog](CHANGELOG.md) · [Report an Issue](https://github.com/AntoineDubuc/serious-sidekick/issues)
 
 </div>
