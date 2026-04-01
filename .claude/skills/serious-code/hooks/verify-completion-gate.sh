@@ -21,6 +21,7 @@
 # the write side will need the same PROJECT_ROOT fix.
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 [ ! -d "$PROJECT_ROOT" ] && exit 0
+[ -f "$PROJECT_ROOT/.claude/settings.json" ] || echo "WARNING: CLAUDE_PROJECT_DIR may be incorrect: $PROJECT_ROOT" >&2
 
 # No active code session? Allow exit.
 [ ! -f "${PROJECT_ROOT}/.active-code" ] && exit 0

@@ -6,16 +6,193 @@
         "hooks": [
           {
             "type": "command",
+            "if": "Write(*.ts)",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
             "timeout": 10
           },
           {
             "type": "command",
+            "if": "Edit(*.ts)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(*.tsx)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(*.tsx)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(*.js)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(*.js)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(*.jsx)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(*.jsx)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(*.py)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(*.py)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(*.go)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(*.go)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(*.rs)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(*.rs)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(*.java)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(*.java)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(*.rb)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(*.rb)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(*.kt)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(*.kt)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(*.swift)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(*.swift)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(*.c)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(*.c)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(*.cpp)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(*.cpp)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(*.cs)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(*.cs)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/tdd-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(*implementation_plan*.md)",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-plan/hooks/hedge-language-gate.sh\"",
             "timeout": 10
           },
           {
             "type": "command",
+            "if": "Edit(*implementation_plan*.md)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-plan/hooks/hedge-language-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(*review_verdict*)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-review/hooks/review-theater-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(*review_verdict*)",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-review/hooks/review-theater-gate.sh\"",
             "timeout": 10
           }

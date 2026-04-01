@@ -13,6 +13,7 @@
 
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 [ ! -d "$PROJECT_ROOT" ] && exit 0
+[ -f "$PROJECT_ROOT/.claude/settings.json" ] || echo "WARNING: CLAUDE_PROJECT_DIR may be incorrect: $PROJECT_ROOT" >&2
 
 # No active plan session? Allow exit.
 [ ! -f "${PROJECT_ROOT}/.active-plan" ] && exit 0

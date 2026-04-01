@@ -83,61 +83,23 @@ cp -r "/Users/cg-adubuc/Desktop/Antoine/_claude_code_template_/.claude/agents/"*
 
 **Important:** Each skill's `hooks/` subfolder must be included — they contain the Stop hook scripts that enforce quality gates.
 
-### Step 3: Register ALL 6 hooks in settings.json
-
-Six Stop hooks must be registered in `.claude/settings.json`. These fire on session exit and catch incomplete work. The scripts alone do nothing without registration.
+### Step 3: Register ALL hooks in settings.json
 
 **If `.claude/settings.json` does not exist:** Copy the template's settings.json:
 ```bash
 cp "/Users/cg-adubuc/Desktop/Antoine/_claude_code_template_/.claude/settings.json" .claude/settings.json
 ```
 
-**If `.claude/settings.json` already exists:** Merge the hooks. Read the existing file, ensure ALL 6 hook entries exist in `hooks.Stop[0].hooks[]`. Do NOT overwrite the entire file — preserve the user's other settings.
+**If `.claude/settings.json` already exists:** Merge the hooks. Read the existing file, ensure ALL hook entries exist. Do NOT overwrite the entire file — preserve the user's other settings.
 
-The 6 hooks to ensure exist:
-```json
-{
-  "hooks": {
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/verify-completion-gate.sh\"",
-            "timeout": 30
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-conversation/hooks/capture-conversation.sh\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-research/hooks/capture-research.sh\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-plan/hooks/check-extraction.sh\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-scope/hooks/check-manifest.sh\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-review/hooks/check-verdict.sh\"",
-            "timeout": 10
-          }
-        ]
-      }
-    ]
-  }
-}
-```
+The hooks configuration has two sections:
+
+**PreToolUse hooks** (matcher: `"Edit|Write"`) — 3 gates with conditional `if` filtering:
+- **TDD Gate**: 14 code extensions × 2 tools (Write + Edit) = 28 handlers with `if` patterns (e.g., `if: "Write(*.ts)"`, `if: "Edit(*.ts)"`)
+- **Hedge Language Gate**: 2 handlers — `if: "Write(*implementation_plan*.md)"` + `if: "Edit(*implementation_plan*.md)"`
+- **Review Theater Gate**: 2 handlers — `if: "Write(*review_verdict*)"` + `if: "Edit(*review_verdict*)"`
+
+**Stop hooks** (6) — fire on session exit:
 
 | Hook | Skill | What it catches |
 |------|-------|-----------------|
@@ -149,6 +111,23 @@ The 6 hooks to ensure exist:
 | check-verdict.sh | /serious-review | Warns if review started but no verdict |
 
 **Key:** Use `$CLAUDE_PROJECT_DIR` in commands — Claude Code provides this at runtime, making paths portable.
+
+### Step 3b: Validate hook configuration (MANDATORY)
+
+After writing or merging settings.json, validate:
+
+1. **No `if` field on Stop hooks.** Adding `if` to a Stop hook silently prevents it from running — this breaks enforcement. Scan all Stop hook entries and reject any that contain an `if` field:
+```bash
+# Pseudocode — implement in whatever language the init uses
+for each hook in settings.hooks.Stop[*].hooks[*]:
+  if hook has "if" field:
+    ERROR: "Stop hook '${hook.command}' has an 'if' field. This will BREAK the hook — 'if' only works on tool events (PreToolUse, PostToolUse). Remove the 'if' field."
+    EXIT with error
+```
+
+2. **PreToolUse matcher must be `"Edit|Write"`, not `"Write"`.** A `"Write"`-only matcher misses Edit tool calls, creating an enforcement gap.
+
+3. **All `if` patterns must include the tool name.** `if: "Write(*verdict*)"` is correct. `if: "*verdict*"` without a tool name is invalid.
 
 ### Step 4: Copy documentation and template
 
@@ -174,7 +153,8 @@ Check that everything was installed correctly:
 ```
 ✓ Skills: 29 installed (.claude/skills/)
 ✓ Agents: 8 installed (.claude/agents/)
-✓ Hooks: 6 Stop hooks registered in .claude/settings.json
+✓ Hooks: 6 Stop hooks + 32 PreToolUse handlers (with conditional if filtering) registered in .claude/settings.json
+✓ Validation: No if fields on Stop hooks, matcher is Edit|Write
 ✓ Docs: 39 feature folders (Claude Code Features/)
 ✓ Template: _implementation_plan_template_v6.md
 ✓ CLAUDE.md: installed / skipped
