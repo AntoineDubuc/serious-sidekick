@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "generated_from_commit": "abc1234def5678901234567890abcdef12345678",
+  "files": {
+    ".claude/skills/serious-code/SKILL.md": {
+      "ownership": "template",
+      "dest": "skills/serious-code/SKILL.md",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    ".claude/skills/serious-code/hooks/verify-completion-gate.sh": {
+      "ownership": "template",
+      "dest": "skills/serious-code/hooks/verify-completion-gate.sh",
+      "sha256": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+    },
+    ".claude/agents/serious-code-implementer.md": {
+      "ownership": "template",
+      "dest": "agents/serious-code-implementer.md",
+      "sha256": "f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2"
+    },
+    ".claude/settings.json": {
+      "ownership": "merge",
+      "dest": "settings.json",
+      "merge_key": "hooks"
+    },
+    "CLAUDE.md": {
+      "ownership": "user-init",
+      "dest": "CLAUDE.md",
+      "sha256": "d4e5f6a7b8c9d4e5f6a7b8c9d4e5f6a7b8c9d4e5f6a7b8c9d4e5f6a7b8c9d4e5"
+    }
+  }
+}

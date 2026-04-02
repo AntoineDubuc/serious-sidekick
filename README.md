@@ -6,7 +6,7 @@
 
 Shell-level gates for Claude Code — deterministic checks the AI can't reason around, skip, or hallucinate through. You stop re-doing AI work. You ship with evidence, not hope.
 
-[![Version](https://img.shields.io/badge/version-1.5.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue?style=flat-square)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/requires-Claude_Code-purple?style=flat-square)](https://docs.anthropic.com/en/docs/claude-code/overview)
 
@@ -18,17 +18,25 @@ Shell-level gates for Claude Code — deterministic checks the AI can't reason a
 
 ## Quick Start
 
+**New machine? One line:**
+
 ```bash
-git clone https://github.com/AntoineDubuc/serious-sidekick.git
+curl -fsSL https://raw.githubusercontent.com/AntoineDubuc/serious-sidekick/main/install.sh | bash
 ```
 
-Open Claude Code in your project and run:
+This clones the repo, symlinks `serious-update` to your PATH, sets up a daily staleness check, and previews what will be installed. Then open Claude Code in your project and run:
 
 ```
 /serious-init
 ```
 
-That's it. You get 11 slash commands, 6 enforcement hooks, 8 specialized agents, and templates for plans, research, and scope manifests. Nothing outside the repo is modified.
+That's it. You get 11 slash commands, 6 enforcement hooks, 8 specialized agents, and templates for plans, research, and scope manifests.
+
+**Already installed? Stay current:**
+
+```bash
+serious-update
+```
 
 **Prerequisites:** [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code/overview) and a Claude account (Pro, Max, Team, or Enterprise).
 
@@ -208,6 +216,41 @@ Shirked, Missing, and Contradicted items **block the pipeline**. The AI must fix
 
 ---
 
+## Staying Current
+
+Other toolkits are snapshots. You clone, you init, and from that moment you're frozen in time. Every improvement stays in the template repo while your projects drift.
+
+Serious Sidekick is a living system. One command updates everything — skills, agents, hooks, settings.json — across all your projects without touching your custom config.
+
+```
+$ serious-update
+Serious Sidekick updated to 7f19830 (was f14d40a)
+  ~/.claude/        6 updated, 2 new, 12 current
+  ~/.claude-work/   6 updated, 2 new, 12 current
+  ~/.claude-alex/   6 updated, 2 new, 12 current
+  Audit log: ~/.serious-sidekick/update.log
+```
+
+**How it works:**
+
+- A **manifest** tracks every distributable file with ownership tiers and content hashes
+- **Template-owned** files (skills, agents, hooks) get overwritten — you never edit these
+- **Merge-owned** files (settings.json) get a composite-key merge — your custom hooks survive, serious hooks get updated
+- **User-owned** files (CLAUDE.md) are never touched after first install
+- A **daily check** tells you when you're behind — no network call in your session, just a cached flag
+- An **audit log** records every update with commit SHAs and file counts
+
+| Command | What it does |
+|:--------|:-------------|
+| `serious-update` | Pull latest, update all global dirs, merge settings, log it |
+| `serious-update --check` | Check for updates without applying (runs daily via cron) |
+| `serious-update --diff` | Preview what would change |
+| `serious-update --rollback` | Revert to the previous version |
+
+Your hooks get stronger. Your agents get smarter. Your projects stay in sync. You never think about it.
+
+---
+
 ## Init Variants
 
 ```
@@ -215,6 +258,8 @@ Shirked, Missing, and Contradicted items **block the pipeline**. The AI must fix
 /serious-init --skills-only     # Just skills and agents, no docs
 /serious-init --docs-only       # Just docs + CLAUDE.md
 /serious-init --no-claude-md    # Skip CLAUDE.md if you already have one
+/serious-init --no-global       # Skip global directory updates
+/serious-init --dry-run         # Preview what would be installed
 ```
 
 ---

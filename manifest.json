@@ -1,0 +1,271 @@
+{
+  "files": {
+    ".claude/agents/serious-code-implementer.md": {
+      "dest": "agents/serious-code-implementer.md",
+      "ownership": "template",
+      "sha256": "b9faba5c59c4db504b023e7386b1020ae5ab5d54ed9d44a062ef52b0494e6996"
+    },
+    ".claude/agents/serious-code-qa.md": {
+      "dest": "agents/serious-code-qa.md",
+      "ownership": "template",
+      "sha256": "c1db8b7ba3c3107170eeec46559e2b13ab60f19d582df4a4df98bad3efdc8dce"
+    },
+    ".claude/agents/serious-code-reviewer.md": {
+      "dest": "agents/serious-code-reviewer.md",
+      "ownership": "template",
+      "sha256": "487c271078eabf33d9f0717e907e3d11d35d43b90c5b2953a97ab5eae63e5227"
+    },
+    ".claude/agents/serious-code-runtime-checker.md": {
+      "dest": "agents/serious-code-runtime-checker.md",
+      "ownership": "template",
+      "sha256": "b2808730e0f891a4f03c966e59c4bb3ba42827306704bf12c302c8e5ac3fddd0"
+    },
+    ".claude/agents/serious-code-test-runner.md": {
+      "dest": "agents/serious-code-test-runner.md",
+      "ownership": "template",
+      "sha256": "10f3904b7d21a0dd0aed62251807b059acdadb8c072701d95139800c120462de"
+    },
+    ".claude/agents/serious-review-anti-slop.md": {
+      "dest": "agents/serious-review-anti-slop.md",
+      "ownership": "template",
+      "sha256": "f1d0410f5e1e939b92742acc056bfbb8fb25d3245ebfe7b08040ddfbaeae4fa8"
+    },
+    ".claude/agents/serious-review-security.md": {
+      "dest": "agents/serious-review-security.md",
+      "ownership": "template",
+      "sha256": "cfcdacbd1a461f13d0c6af3842b1406715c4b61c895f4bca5cc0aabcbe4b8a7c"
+    },
+    ".claude/agents/serious-review-structural.md": {
+      "dest": "agents/serious-review-structural.md",
+      "ownership": "template",
+      "sha256": "d83a7ab2f7fa86792505fd011d0993921103d3a18b27b7ad18089be53eb4adbd"
+    },
+    ".claude/settings.json": {
+      "dest": "settings.json",
+      "merge_key": "hooks",
+      "ownership": "merge"
+    },
+    ".claude/skills/serious-abandon/SKILL.md": {
+      "dest": "skills/serious-abandon/SKILL.md",
+      "ownership": "template",
+      "sha256": "b0c4ed3d20aaa54b7ffc180002bea60dcd92deb57ffa26519a7de4e95dc2995c"
+    },
+    ".claude/skills/serious-bananas/SKILL.md": {
+      "dest": "skills/serious-bananas/SKILL.md",
+      "ownership": "template",
+      "sha256": "756e19614d16d4109eee96635168cb9483717d3013bf302129b80c1614b45257"
+    },
+    ".claude/skills/serious-code/SKILL.md": {
+      "dest": "skills/serious-code/SKILL.md",
+      "ownership": "template",
+      "sha256": "0b77141c427bb7c970157de358d019a847fc26503f5a28d6a7fa9c09e993f158"
+    },
+    ".claude/skills/serious-code/hooks/tdd-gate.sh": {
+      "dest": "skills/serious-code/hooks/tdd-gate.sh",
+      "ownership": "template",
+      "sha256": "9cb0d96da4de409a896c009fac38255215fe7ca33a0156f4ad397e615f948b21"
+    },
+    ".claude/skills/serious-code/hooks/verify-completion-gate.sh": {
+      "dest": "skills/serious-code/hooks/verify-completion-gate.sh",
+      "ownership": "template",
+      "sha256": "62bc898fa66310f15c383db783d99d55a87c67b4b008f122472aa63d08dd051a"
+    },
+    ".claude/skills/serious-conversation/SKILL.md": {
+      "dest": "skills/serious-conversation/SKILL.md",
+      "ownership": "template",
+      "sha256": "3d376a9ea1654c7d94fd7a3407610549bbf7f89fa338b15e3f2d612d5ab28565"
+    },
+    ".claude/skills/serious-conversation/hooks/capture-conversation.sh": {
+      "dest": "skills/serious-conversation/hooks/capture-conversation.sh",
+      "ownership": "template",
+      "sha256": "7f309c105cdda74b56f53184071031da39df75c774e67a8ba17fa841f4612e69"
+    },
+    ".claude/skills/serious-conversation/personas/architect.md": {
+      "dest": "skills/serious-conversation/personas/architect.md",
+      "ownership": "template",
+      "sha256": "8ced09dd271e4565d93eba81fdc2225efb356666e8ff66465d8aac67503d2dd4"
+    },
+    ".claude/skills/serious-conversation/personas/debugger.md": {
+      "dest": "skills/serious-conversation/personas/debugger.md",
+      "ownership": "template",
+      "sha256": "7454b6049bde8b18f2a2b7031be6a46ca418f0c0edae5031df6ae55d5ceb00ee"
+    },
+    ".claude/skills/serious-conversation/personas/dx-advocate.md": {
+      "dest": "skills/serious-conversation/personas/dx-advocate.md",
+      "ownership": "template",
+      "sha256": "42568c936b74cb92f5a8addac88744a73e557d52bb2baafd78c6d97667814f9e"
+    },
+    ".claude/skills/serious-conversation/personas/historian.md": {
+      "dest": "skills/serious-conversation/personas/historian.md",
+      "ownership": "template",
+      "sha256": "2387344e069314da76e6e44457f015957fa0de32c9968fd285cce645625fd8ae"
+    },
+    ".claude/skills/serious-conversation/personas/mentor.md": {
+      "dest": "skills/serious-conversation/personas/mentor.md",
+      "ownership": "template",
+      "sha256": "eb469fca772a0d1ad7596699f19b1913eb945d6c7c51783667299fe481cce7c3"
+    },
+    ".claude/skills/serious-conversation/personas/optimizer.md": {
+      "dest": "skills/serious-conversation/personas/optimizer.md",
+      "ownership": "template",
+      "sha256": "4cc67b303d833b7f1111abd5fc31303c4f2895244fb3a5262904bc7336bad4c1"
+    },
+    ".claude/skills/serious-conversation/personas/pragmatist.md": {
+      "dest": "skills/serious-conversation/personas/pragmatist.md",
+      "ownership": "template",
+      "sha256": "60a02426a00acd087c9043226bbf1c402d8e0afef59266060726b7f4716c96e5"
+    },
+    ".claude/skills/serious-conversation/personas/product-thinker.md": {
+      "dest": "skills/serious-conversation/personas/product-thinker.md",
+      "ownership": "template",
+      "sha256": "352ea27f8e128e2351d24913773d48a6d8bcf59c1dbff39970f8f1fd9e96dd01"
+    },
+    ".claude/skills/serious-conversation/personas/security-mind.md": {
+      "dest": "skills/serious-conversation/personas/security-mind.md",
+      "ownership": "template",
+      "sha256": "dd2eb98f142f2b55a41a8d33e2fe1698cef48c8858b45a2db92802ec04f42e86"
+    },
+    ".claude/skills/serious-conversation/personas/skeptic.md": {
+      "dest": "skills/serious-conversation/personas/skeptic.md",
+      "ownership": "template",
+      "sha256": "6ec40b14ca0e15292dd851f91b15a8bb81a843bc03f19b7daeb46d6bf78c2da4"
+    },
+    ".claude/skills/serious-debug/SKILL.md": {
+      "dest": "skills/serious-debug/SKILL.md",
+      "ownership": "template",
+      "sha256": "3ed3e6bcfb78e44fbc55b486617fc553461dc8515cbba8f9cdbfd097be29fd34"
+    },
+    ".claude/skills/serious-debug/hooks/block-edit-during-investigate.sh": {
+      "dest": "skills/serious-debug/hooks/block-edit-during-investigate.sh",
+      "ownership": "template",
+      "sha256": "262b23ec8a180b466186e560f0aa31ace2b93c2b2850344d6dfa31c7c0104d0f"
+    },
+    ".claude/skills/serious-debug/hooks/reproducer-gate.sh": {
+      "dest": "skills/serious-debug/hooks/reproducer-gate.sh",
+      "ownership": "template",
+      "sha256": "709494b20595f307a790aecf8c60894c37309e426a687de57e96354e11d1f337"
+    },
+    ".claude/skills/serious-debug/hooks/session-start.sh": {
+      "dest": "skills/serious-debug/hooks/session-start.sh",
+      "ownership": "template",
+      "sha256": "7d6c17fc2800ddbee8cca37c96bff834c093e2c8af112bff4c2d9400f8304736"
+    },
+    ".claude/skills/serious-debug/hooks/stop-corpus-append.sh": {
+      "dest": "skills/serious-debug/hooks/stop-corpus-append.sh",
+      "ownership": "template",
+      "sha256": "d25d21543cd1512c57af74982036139affa2217deb21f1e2349a03e933fbd13f"
+    },
+    ".claude/skills/serious-debug/hooks/stop-plan-escalation.sh": {
+      "dest": "skills/serious-debug/hooks/stop-plan-escalation.sh",
+      "ownership": "template",
+      "sha256": "8832e3e88db8c1eb4f6c0076f8cd958b66c81781cc0a205796d92b043058534b"
+    },
+    ".claude/skills/serious-debug/hooks/stop-require-report.sh": {
+      "dest": "skills/serious-debug/hooks/stop-require-report.sh",
+      "ownership": "template",
+      "sha256": "bf762dbb07fc8e88ccd71000b7174621f8f297130309fb9d72e0f537a0568f12"
+    },
+    ".claude/skills/serious-debug/schemas/state.schema.json": {
+      "dest": "skills/serious-debug/schemas/state.schema.json",
+      "ownership": "template",
+      "sha256": "88c64b05dabbd976172902cb6c29e77d874e581a6ebcb16145f4b46af2535d55"
+    },
+    ".claude/skills/serious-debug/templates/bug-classes.json": {
+      "dest": "skills/serious-debug/templates/bug-classes.json",
+      "ownership": "template",
+      "sha256": "4fdc6d10a8770485dd735ef09621a36f82fb2e532a6b14dd06569000c2825ec5"
+    },
+    ".claude/skills/serious-debug/templates/debug-report.md": {
+      "dest": "skills/serious-debug/templates/debug-report.md",
+      "ownership": "template",
+      "sha256": "9b304c87d92f737c58e3c839cf93e18fdc28e7afd1cbe724bafbcd025ac6b81b"
+    },
+    ".claude/skills/serious-init/SKILL.md": {
+      "dest": "skills/serious-init/SKILL.md",
+      "ownership": "template",
+      "sha256": "8424cbd9a9b89486cc0caf139a4cdee45e6b6cd50776cecfc03e4fe5d8a55fef"
+    },
+    ".claude/skills/serious-mock-ups/SKILL.md": {
+      "dest": "skills/serious-mock-ups/SKILL.md",
+      "ownership": "template",
+      "sha256": "93081e2c0de990b1fa393ef1b6b1cb32465da47cf87313502521f29df507bd38"
+    },
+    ".claude/skills/serious-plan/SKILL.md": {
+      "dest": "skills/serious-plan/SKILL.md",
+      "ownership": "template",
+      "sha256": "adc10d985f4409cfd1170c9b0be053d36138e09ee8ae6f4459536fd519bb83d8"
+    },
+    ".claude/skills/serious-plan/hooks/check-extraction.sh": {
+      "dest": "skills/serious-plan/hooks/check-extraction.sh",
+      "ownership": "template",
+      "sha256": "c2c76ca67c848f61bb424e3a11847948e4efe37e2449a9b9cad8d6d478d9b4ef"
+    },
+    ".claude/skills/serious-plan/hooks/hedge-language-gate.sh": {
+      "dest": "skills/serious-plan/hooks/hedge-language-gate.sh",
+      "ownership": "template",
+      "sha256": "50f05212157e444e9aad6429f798b5649a744a96485d3b006b112faf2a291b02"
+    },
+    ".claude/skills/serious-research/SKILL.md": {
+      "dest": "skills/serious-research/SKILL.md",
+      "ownership": "template",
+      "sha256": "5ea724650969cf4032acce76e465c576e5ac31182794bb9f9e894c19c2c96bd2"
+    },
+    ".claude/skills/serious-research/hooks/capture-research.sh": {
+      "dest": "skills/serious-research/hooks/capture-research.sh",
+      "ownership": "template",
+      "sha256": "789b457ff6bc0d7379f3a2905b3fbc4cd3182f786b53303278bae57bf110ff6b"
+    },
+    ".claude/skills/serious-review/SKILL.md": {
+      "dest": "skills/serious-review/SKILL.md",
+      "ownership": "template",
+      "sha256": "ed7b12350c1c64628bfc7c0d984a82cf220e216e98de284fb575ddce840624d5"
+    },
+    ".claude/skills/serious-review/_serious-review-v1-defect-capture.md": {
+      "dest": "skills/serious-review/_serious-review-v1-defect-capture.md",
+      "ownership": "template",
+      "sha256": "6d2f88c87b34e9344862e8f7d5a1169ad23e9285c8f1ab5e2bb5dd0dbadf50d7"
+    },
+    ".claude/skills/serious-review/hooks/check-verdict.sh": {
+      "dest": "skills/serious-review/hooks/check-verdict.sh",
+      "ownership": "template",
+      "sha256": "43ff4a91f47bd7d61ab477adbb63257f44d830e38a314facd042fe4e57c6db13"
+    },
+    ".claude/skills/serious-review/hooks/review-theater-gate.sh": {
+      "dest": "skills/serious-review/hooks/review-theater-gate.sh",
+      "ownership": "template",
+      "sha256": "e082366f2664ccb7b8acc4d9a251015c9cdba44ad901b1ae739ddb9671ab00e4"
+    },
+    ".claude/skills/serious-scope/SKILL.md": {
+      "dest": "skills/serious-scope/SKILL.md",
+      "ownership": "template",
+      "sha256": "a179c5611a85f4ecd3c0a35f97efcf278490295b25ecfbd59cee7914fbf50b43"
+    },
+    ".claude/skills/serious-scope/hooks/check-manifest.sh": {
+      "dest": "skills/serious-scope/hooks/check-manifest.sh",
+      "ownership": "template",
+      "sha256": "b0fd6d3bbfa9d548be6568cca3893f88ffeb061c799215a8aecfe58748a719fe"
+    },
+    ".claude/skills/serious-status/SKILL.md": {
+      "dest": "skills/serious-status/SKILL.md",
+      "ownership": "template",
+      "sha256": "920ec43cd2960a8c8beb4a98d2b92846fbc09aca6fecfa8973c1d7f10b17114a"
+    },
+    "CLAUDE.md": {
+      "dest": "CLAUDE.md",
+      "ownership": "user-init",
+      "sha256": "3a0a082f7b5f033d409015e9c61c6775d71912f41ea53b4f6a3ecee1f59844cc"
+    },
+    "_anti-rationalization-core.md": {
+      "dest": "../_anti-rationalization-core.md",
+      "ownership": "template",
+      "sha256": "a9fb83e940b60185365af3049a39fe4e602f96f7df8fd563312cc3517fc087dc"
+    },
+    "_implementation_plan_template_v6.md": {
+      "dest": "../_implementation_plan_template_v6.md",
+      "ownership": "template",
+      "sha256": "c65b3acedb85cee57151957f0ace6e9261a81f693e5cc17466032693a95f139d"
+    }
+  },
+  "generated_from_commit": "7f19830bc7cc3c3b46af971c9efade08305432dc",
+  "version": 1
+}

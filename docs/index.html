@@ -270,7 +270,7 @@
       display: block;
       font-size: 12px;
       font-weight: 400;
-      color: var(--text-muted);
+      color: rgba(255, 255, 255, 0.7);
       margin-top: 6px;
       text-align: center;
     }
@@ -1066,21 +1066,19 @@
       <h1 class="reveal">Your AI says "done."<br><span class="gradient-text">It isn't.</span></h1>
       <p class="hero-sub reveal reveal-delay-1">Serious Sidekick adds shell-level gates to Claude Code &mdash; deterministic checks the AI can't reason around, skip, or hallucinate through. You stop re-doing AI work. You ship with evidence, not hope.</p>
       <div class="hero-buttons reveal reveal-delay-2">
-        <a href="#install" class="btn btn-primary">
-          Get Started
-          <span class="btn-subtitle">3 lines. No signup. No API key.</span>
-        </a>
+        <a href="#install" class="btn btn-primary">Get Started</a>
         <a href="https://github.com/AntoineDubuc/serious-sidekick" target="_blank" rel="noopener" class="btn btn-secondary">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
           View on GitHub
         </a>
       </div>
+      <p class="hero-sub reveal reveal-delay-2" style="font-size:14px;margin-bottom:16px;">1 line to install. No signup. No API key.</p>
       <p class="hero-byline reveal reveal-delay-2">Built by a TPM who got tired of cleaning up after AI.</p>
       <div class="hero-badges reveal reveal-delay-3">
         <span class="badge"><span class="badge-dot"></span>Shell hooks, not prompts</span>
         <span class="badge purple"><span class="badge-dot"></span>5 specialized review agents</span>
         <span class="badge green"><span class="badge-dot"></span>Fail-closed enforcement</span>
-        <span class="badge amber"><span class="badge-dot"></span>Conditional hook gates</span>
+        <span class="badge amber"><span class="badge-dot"></span>One-command updates</span>
       </div>
     </div>
   </section>
@@ -1370,6 +1368,66 @@
   </section>
 
   <!-- ====================================
+       Section 6.5: Stay Current
+       ==================================== -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-heading reveal">Install once.<br><span class="gradient-text">Stay current everywhere.</span></h2>
+      <p class="enforcement-body reveal">Other toolkits are snapshots. You clone, you init, and from that moment you're frozen in time. Every improvement stays in the template repo while your projects drift.</p>
+
+      <div class="terminal reveal" style="max-width:560px;">
+        <div class="terminal-header">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+          <span class="terminal-title">Update</span>
+        </div>
+        <div class="terminal-body">
+<span class="terminal-line"><span class="prompt">$ </span><span class="cmd">serious-update</span></span>
+<span class="terminal-gap"></span>
+<span class="terminal-line"><span class="heading">Serious Sidekick updated to 7f19830 (was f14d40a)</span></span>
+<span class="terminal-line">  <span class="dim">~/.claude/       </span> <span class="success">6 updated</span>, <span class="warn">2 new</span>, 12 current</span>
+<span class="terminal-line">  <span class="dim">~/.claude-work/  </span> <span class="success">6 updated</span>, <span class="warn">2 new</span>, 12 current</span>
+<span class="terminal-line">  <span class="dim">~/.claude-alex/  </span> <span class="success">6 updated</span>, <span class="warn">2 new</span>, 12 current</span>
+<span class="terminal-gap"></span>
+<span class="terminal-line">  Audit log: <span class="url">~/.serious-sidekick/update.log</span></span>
+        </div>
+      </div>
+
+      <p class="workflow-explainer reveal" style="max-width:600px;margin:24px auto 0;"><strong>What just happened:</strong> One command updated skills, agents, hooks, and settings.json across all your Claude profiles. Your custom hooks survived. Your plugins survived. Your status line survived. Only serious-owned components were touched.</p>
+
+      <div class="proof-checks" style="margin-top:40px;">
+        <div class="proof-check reveal">
+          <span class="proof-check-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <span><strong>Manifest-driven.</strong> A JSON manifest tracks every file with ownership tiers and content hashes. Template files get overwritten. Your settings.json gets a surgical composite-key merge. Your CLAUDE.md is never touched.</span>
+        </div>
+        <div class="proof-check reveal reveal-delay-1">
+          <span class="proof-check-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <span><strong>Settings-safe.</strong> The merge engine knows the difference between your hooks and ours. It replaces serious-owned entries, appends new ones, and preserves everything else &mdash; including non-hook keys like statusLine and enabledPlugins.</span>
+        </div>
+        <div class="proof-check reveal reveal-delay-2">
+          <span class="proof-check-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <span><strong>Always aware.</strong> A daily background check tells you when you're behind. Next time you open Claude Code: "4 components behind. Run serious-update." No network call in your session &mdash; just a cached flag.</span>
+        </div>
+        <div class="proof-check reveal reveal-delay-3">
+          <span class="proof-check-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <span><strong>Rollback in seconds.</strong> <code>serious-update --rollback</code> reverts to the previous version across all directories. Every update is logged with commit SHAs and file counts.</span>
+        </div>
+      </div>
+
+      <div class="callout reveal">Your hooks get stronger. Your agents get smarter. Your projects stay in sync. You never think about it.</div>
+    </div>
+  </section>
+
+  <!-- ====================================
        Section 7: Honest Scope + CTA
        ==================================== -->
   <section class="section section-alt">
@@ -1388,29 +1446,48 @@
   <section class="section" id="install">
     <div class="container">
       <h2 class="section-heading reveal">Try it now.</h2>
-      <p class="install-prereq reveal">Requires Claude Code CLI. That's it.</p>
+      <p class="install-prereq reveal">Requires Claude Code CLI and git. That's it.</p>
+
       <div class="terminal reveal">
         <div class="terminal-header">
           <span class="terminal-dot red"></span>
           <span class="terminal-dot yellow"></span>
           <span class="terminal-dot green"></span>
-          <span class="terminal-title">Install</span>
+          <span class="terminal-title">Install (one line)</span>
         </div>
         <div class="terminal-body">
-<span class="terminal-line"><span class="prompt">$ </span><span class="cmd">git clone </span><span class="url">https://github.com/AntoineDubuc/serious-sidekick.git</span></span>
-<span class="terminal-line"><span class="prompt">$ </span><span class="cmd">claude</span></span>
-<span class="terminal-line"><span class="prompt">&gt; </span><span class="cmd">/serious-init</span></span>
+<span class="terminal-line"><span class="prompt">$ </span><span class="cmd">curl -fsSL </span><span class="url">https://raw.githubusercontent.com/AntoineDubuc/serious-sidekick/main/install.sh</span><span class="cmd"> | bash</span></span>
         </div>
       </div>
 
       <div class="install-explainer reveal">
-        <h4>What /serious-init does:</h4>
-        <p>Copies slash commands, hook scripts, agent configs, and templates into your project's <code>.claude/</code> directory. Nothing outside the repo is modified. No global installs, no PATH changes, no background processes.</p>
+        <h4>What happens:</h4>
+        <p>The installer clones the repo, symlinks <code>serious-update</code> to your PATH, sets up a daily staleness check, and previews what will be installed. Then open Claude Code in your project:</p>
+
+        <div class="terminal" style="margin:16px 0;">
+          <div class="terminal-header">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span class="terminal-title">In your project</span>
+          </div>
+          <div class="terminal-body">
+<span class="terminal-line"><span class="prompt">&gt; </span><span class="cmd">/serious-init</span></span>
+<span class="terminal-gap"></span>
+<span class="terminal-line"><span class="success">&#10003;</span> Skills: 30 installed</span>
+<span class="terminal-line"><span class="success">&#10003;</span> Agents: 8 installed</span>
+<span class="terminal-line"><span class="success">&#10003;</span> Hooks: 6 Stop + 32 PreToolUse registered</span>
+<span class="terminal-line"><span class="success">&#10003;</span> Docs: 39 feature folders</span>
+<span class="terminal-line"><span class="success">&#10003;</span> Template: _implementation_plan_template_v6.md</span>
+<span class="terminal-line"><span class="success">&#10003;</span> CLAUDE.md: installed</span>
+          </div>
+        </div>
+
         <ul class="install-list">
           <li><strong>11 slash commands</strong> &mdash; /serious-research, /serious-plan, /serious-code, and 8 more</li>
           <li><strong>6 enforcement hooks</strong> &mdash; shell scripts that block premature completion</li>
           <li><strong>8 specialized agents</strong> &mdash; for code review, implementation, and QA</li>
-          <li><strong>Templates</strong> &mdash; for plans, research docs, and scope manifests</li>
+          <li><strong>Manifest-driven updates</strong> &mdash; run <code>serious-update</code> anytime to stay current</li>
         </ul>
         <p class="install-try">Try it: run <code>/serious-research</code> on a real bug in your project. Takes 5 minutes.</p>
       </div>

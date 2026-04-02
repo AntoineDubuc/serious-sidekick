@@ -1,0 +1,729 @@
+#!/bin/bash
+# serious-update — Manifest-driven update system for Serious Sidekick
+#
+# Pulls latest from GitHub, reads manifest.json, distributes files
+# to all global directories using ownership-tier logic.
+#
+# Usage: serious-update [--check|--diff|--rollback|--no-global|--help]
+#
+# Environment overrides (for testing):
+#   SERIOUS_SIDEKICK_HOME  — override default ~/.serious-sidekick/
+#   SERIOUS_TARGET_DIRS    — override default global dirs (space-separated)
+
+set -euo pipefail
+
+# --- Resolve script location and source shared library ---
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [ ! -f "$REPO_ROOT/lib/serious-common.sh" ]; then
+  echo "ERROR: Cannot find lib/serious-common.sh relative to script" >&2
+  exit 1
+fi
+source "$REPO_ROOT/lib/serious-common.sh"
+
+# --- Defaults ---
+SIDEKICK_HOME="${SERIOUS_SIDEKICK_HOME:-$HOME/.serious-sidekick}"
+if [ -n "${SERIOUS_TARGET_DIRS:-}" ]; then
+  IFS=' ' read -ra TARGET_DIRS <<< "$SERIOUS_TARGET_DIRS"
+else
+  TARGET_DIRS=("$HOME/.claude" "$HOME/.claude-work" "$HOME/.claude-alex")
+fi
+
+# --- Flag parsing ---
+CHECK_ONLY=false
+DIFF_ONLY=false
+ROLLBACK=false
+NO_GLOBAL=false
+
+usage() {
+  cat <<'USAGE'
+Usage: serious-update [OPTIONS]
+
+Options:
+  --check       Check for staleness, write staleness.json, apply no changes
+  --diff        Show what would change without applying
+  --rollback    Revert to previous_commit from state file
+  --no-global   Skip global directory distribution
+  --help        Show this help message
+
+Environment variables:
+  SERIOUS_SIDEKICK_HOME   Override ~/.serious-sidekick/ (for testing)
+  SERIOUS_TARGET_DIRS     Override global dirs, space-separated (for testing)
+
+Exit codes:
+  0  Success
+  1  Error
+  2  Nothing to update
+USAGE
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --check)    CHECK_ONLY=true ;;
+    --diff)     DIFF_ONLY=true ;;
+    --rollback) ROLLBACK=true ;;
+    --no-global) NO_GLOBAL=true ;;
+    --help)     usage; exit 0 ;;
+    *)
+      echo "ERROR: Unknown flag: $1" >&2
+      echo "Run 'serious-update --help' for usage." >&2
+      exit 1
+      ;;
+  esac
+  shift
+done
+
+# --- Validate SIDEKICK_HOME exists ---
+if [ ! -d "$SIDEKICK_HOME" ]; then
+  echo "ERROR: Serious Sidekick home not found: $SIDEKICK_HOME" >&2
+  echo "Run install.sh first, or set SERIOUS_SIDEKICK_HOME." >&2
+  exit 1
+fi
+
+# --- Audit log ---
+AUDIT_LOG="$SIDEKICK_HOME/update.log"
+
+log_audit() {
+  local entry="$1"
+  local timestamp
+  timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  echo "$timestamp $entry" >> "$AUDIT_LOG"
+}
+
+# --- Git operations ---
+
+get_current_commit() {
+  git -C "$SIDEKICK_HOME" rev-parse HEAD 2>/dev/null || echo ""
+}
+
+do_git_pull() {
+  local old_commit
+  old_commit=$(get_current_commit)
+  if [ -z "$old_commit" ]; then
+    echo "ERROR: Not a git repository: $SIDEKICK_HOME" >&2
+    exit 1
+  fi
+
+  # Redirect git pull stdout/stderr to avoid polluting our output
+  if ! git -C "$SIDEKICK_HOME" pull >/dev/null 2>&1; then
+    echo "ERROR: git pull failed (network error?)" >&2
+    log_audit "ERROR git pull failed"
+    exit 1
+  fi
+
+  local new_commit
+  new_commit=$(get_current_commit)
+
+  echo "$old_commit"
+  echo "$new_commit"
+}
+
+do_git_fetch() {
+  local local_commit
+  local_commit=$(get_current_commit)
+  if [ -z "$local_commit" ]; then
+    echo "ERROR: Not a git repository: $SIDEKICK_HOME" >&2
+    exit 1
+  fi
+
+  if ! git -C "$SIDEKICK_HOME" fetch origin 2>/dev/null; then
+    echo "ERROR: git fetch failed (network error?)" >&2
+    log_audit "ERROR git fetch failed"
+    exit 1
+  fi
+
+  local remote_commit
+  remote_commit=$(git -C "$SIDEKICK_HOME" rev-parse origin/main 2>/dev/null || \
+                  git -C "$SIDEKICK_HOME" rev-parse origin/master 2>/dev/null || echo "")
+
+  echo "$local_commit"
+  echo "$remote_commit"
+}
+
+# --- Manifest reading ---
+
+do_read_manifest() {
+  local manifest_path="$SIDEKICK_HOME/manifest.json"
+  if [ ! -f "$manifest_path" ]; then
+    echo "ERROR: manifest.json not found at $manifest_path" >&2
+    exit 1
+  fi
+
+  local parsed
+  parsed=$(parse_manifest "$manifest_path" 2>&1)
+  local exit_code=$?
+  if [ $exit_code -ne 0 ]; then
+    echo "ERROR: Failed to parse manifest.json" >&2
+    echo "$parsed" >&2
+    exit 1
+  fi
+  echo "$parsed"
+}
+
+# --- File distribution engine ---
+
+# distribute_to_dir <target_dir> <manifest_entries> <dry_run>
+# Returns: "updated=N new=N current=N skipped=N errors=N"
+distribute_to_dir() {
+  local target_dir="$1"
+  local manifest_entries="$2"
+  local dry_run="${3:-false}"
+  local current_commit="$4"
+  local previous_commit="$5"
+
+  local updated=0
+  local new_count=0
+  local current=0
+  local skipped=0
+  local errors=0
+  local file_hashes="{}"
+
+  if [ ! -d "$target_dir" ]; then
+    mkdir -p "$target_dir" 2>/dev/null || {
+      echo "ERROR: Cannot create target directory: $target_dir" >&2
+      echo "updated=0 new=0 current=0 skipped=0 errors=1"
+      return 1
+    }
+  fi
+
+  while IFS=$'\t' read -r src ownership dest sha256 merge_key; do
+    [ -z "$src" ] && continue
+
+    local source_path="$SIDEKICK_HOME/$src"
+    local dest_path="$target_dir/$dest"
+
+    # Handle relative paths that go up (e.g., ../_implementation_plan_template_v6.md)
+    # dest is relative to target_dir
+
+    case "$ownership" in
+      template)
+        if [ ! -f "$source_path" ]; then
+          if [ "$dry_run" = "true" ]; then
+            echo "  MISSING  $dest (source not found: $src)"
+          fi
+          errors=$((errors + 1))
+          continue
+        fi
+
+        if [ "$dry_run" = "true" ]; then
+          if [ -f "$dest_path" ]; then
+            local current_hash
+            current_hash=$(hash_file "$dest_path" 2>/dev/null || echo "")
+            local new_hash
+            new_hash=$(hash_file "$source_path" 2>/dev/null || echo "")
+            if [ "$current_hash" = "$new_hash" ]; then
+              echo "  CURRENT  $dest"
+              current=$((current + 1))
+            else
+              echo "  OVERWRITE  $dest"
+              updated=$((updated + 1))
+            fi
+          else
+            echo "  NEW  $dest"
+            new_count=$((new_count + 1))
+          fi
+          continue
+        fi
+
+        # Create destination directory if needed
+        local dest_dir
+        dest_dir=$(dirname "$dest_path")
+        mkdir -p "$dest_dir" 2>/dev/null || {
+          echo "  ERROR: Cannot create directory for $dest" >&2
+          errors=$((errors + 1))
+          continue
+        }
+
+        # Check if file already current
+        if [ -f "$dest_path" ]; then
+          local current_hash new_hash
+          current_hash=$(hash_file "$dest_path" 2>/dev/null || echo "")
+          new_hash=$(hash_file "$source_path" 2>/dev/null || echo "")
+          if [ "$current_hash" = "$new_hash" ]; then
+            current=$((current + 1))
+            # Still record the hash
+            file_hashes=$(python3 -c "
+import json, sys
+h = json.loads(sys.argv[1])
+h[sys.argv[2]] = sys.argv[3]
+print(json.dumps(h))
+" "$file_hashes" "$dest" "$current_hash")
+            continue
+          fi
+        fi
+
+        if cp "$source_path" "$dest_path" 2>/dev/null; then
+          local new_hash
+          new_hash=$(hash_file "$dest_path" 2>/dev/null || echo "")
+          file_hashes=$(python3 -c "
+import json, sys
+h = json.loads(sys.argv[1])
+h[sys.argv[2]] = sys.argv[3]
+print(json.dumps(h))
+" "$file_hashes" "$dest" "$new_hash")
+          if [ -f "$dest_path" ]; then
+            # Was it there before? (we already know hashes differ if we got here)
+            updated=$((updated + 1))
+          else
+            new_count=$((new_count + 1))
+          fi
+        else
+          echo "  ERROR: Failed to copy $src -> $dest" >&2
+          errors=$((errors + 1))
+        fi
+        ;;
+
+      merge)
+        if [ ! -f "$source_path" ]; then
+          if [ "$dry_run" = "true" ]; then
+            echo "  MISSING  $dest (source not found: $src)"
+          fi
+          errors=$((errors + 1))
+          continue
+        fi
+
+        if [ "$dry_run" = "true" ]; then
+          if [ -f "$dest_path" ]; then
+            echo "  MERGE  $dest"
+            updated=$((updated + 1))
+          else
+            echo "  NEW  $dest (merge-owned, first install)"
+            new_count=$((new_count + 1))
+          fi
+          continue
+        fi
+
+        # Create destination directory if needed
+        local dest_dir
+        dest_dir=$(dirname "$dest_path")
+        mkdir -p "$dest_dir" 2>/dev/null || {
+          echo "  ERROR: Cannot create directory for $dest" >&2
+          errors=$((errors + 1))
+          continue
+        }
+
+        if [ -f "$dest_path" ]; then
+          # Existing file: merge
+          if merge_settings "$dest_path" "$source_path" 2>/dev/null; then
+            local new_hash
+            new_hash=$(hash_file "$dest_path" 2>/dev/null || echo "")
+            file_hashes=$(python3 -c "
+import json, sys
+h = json.loads(sys.argv[1])
+h[sys.argv[2]] = sys.argv[3]
+print(json.dumps(h))
+" "$file_hashes" "$dest" "$new_hash")
+            updated=$((updated + 1))
+          else
+            echo "  ERROR: merge_settings failed for $dest" >&2
+            errors=$((errors + 1))
+          fi
+        else
+          # First install: copy
+          if cp "$source_path" "$dest_path" 2>/dev/null; then
+            local new_hash
+            new_hash=$(hash_file "$dest_path" 2>/dev/null || echo "")
+            file_hashes=$(python3 -c "
+import json, sys
+h = json.loads(sys.argv[1])
+h[sys.argv[2]] = sys.argv[3]
+print(json.dumps(h))
+" "$file_hashes" "$dest" "$new_hash")
+            new_count=$((new_count + 1))
+          else
+            echo "  ERROR: Failed to copy $src -> $dest" >&2
+            errors=$((errors + 1))
+          fi
+        fi
+        ;;
+
+      user-init)
+        if [ "$dry_run" = "true" ]; then
+          if [ -f "$dest_path" ]; then
+            echo "  SKIP  $dest (user-init, already exists)"
+            skipped=$((skipped + 1))
+          else
+            echo "  NEW  $dest (user-init, first install)"
+            new_count=$((new_count + 1))
+          fi
+          continue
+        fi
+
+        if [ -f "$dest_path" ]; then
+          # Already exists: skip
+          skipped=$((skipped + 1))
+          # Record existing hash for state tracking
+          local existing_hash
+          existing_hash=$(hash_file "$dest_path" 2>/dev/null || echo "")
+          file_hashes=$(python3 -c "
+import json, sys
+h = json.loads(sys.argv[1])
+h[sys.argv[2]] = sys.argv[3]
+print(json.dumps(h))
+" "$file_hashes" "$dest" "$existing_hash")
+        else
+          # First install: copy
+          if [ ! -f "$source_path" ]; then
+            errors=$((errors + 1))
+            continue
+          fi
+          local dest_dir
+          dest_dir=$(dirname "$dest_path")
+          mkdir -p "$dest_dir" 2>/dev/null || {
+            errors=$((errors + 1))
+            continue
+          }
+          if cp "$source_path" "$dest_path" 2>/dev/null; then
+            local new_hash
+            new_hash=$(hash_file "$dest_path" 2>/dev/null || echo "")
+            file_hashes=$(python3 -c "
+import json, sys
+h = json.loads(sys.argv[1])
+h[sys.argv[2]] = sys.argv[3]
+print(json.dumps(h))
+" "$file_hashes" "$dest" "$new_hash")
+            new_count=$((new_count + 1))
+          else
+            errors=$((errors + 1))
+          fi
+        fi
+        ;;
+    esac
+  done <<< "$manifest_entries"
+
+  # Write state file LAST — only if not dry run and no critical errors
+  if [ "$dry_run" = "false" ] && [ "$errors" -eq 0 ]; then
+    update_state "$target_dir" "$current_commit" "$previous_commit" "$file_hashes" 2>/dev/null || {
+      echo "  ERROR: Failed to write state file for $target_dir" >&2
+      errors=$((errors + 1))
+    }
+  fi
+
+  echo "updated=$updated new=$new_count current=$current skipped=$skipped errors=$errors"
+}
+
+# --- --check implementation ---
+
+do_check() {
+  local commits
+  commits=$(do_git_fetch)
+  local local_commit remote_commit
+  local_commit=$(echo "$commits" | head -1)
+  remote_commit=$(echo "$commits" | tail -1)
+
+  # Count stale files by comparing manifest hashes against installed
+  local stale_count=0
+  local summary="up to date"
+
+  if [ "$local_commit" != "$remote_commit" ]; then
+    # Try to count how many files would change
+    # For a simple implementation, just report the commits differ
+    stale_count=1
+    summary="Update available: local=$local_commit remote=$remote_commit"
+  fi
+
+  # Write staleness.json
+  python3 -c "
+import json, sys
+from datetime import datetime, timezone
+
+data = {
+    'checked_at': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+    'local_commit': sys.argv[1],
+    'remote_commit': sys.argv[2],
+    'stale_count': int(sys.argv[3]),
+    'summary': sys.argv[4]
+}
+
+with open(sys.argv[5], 'w') as f:
+    json.dump(data, f, indent=2)
+    f.write('\n')
+" "$local_commit" "$remote_commit" "$stale_count" "$summary" "$SIDEKICK_HOME/staleness.json"
+
+  # Write CHECK audit log entry
+  log_audit "CHECK  $local_commit remote=$remote_commit stale=$stale_count"
+
+  echo "Staleness check complete."
+  echo "  Local:  $local_commit"
+  echo "  Remote: $remote_commit"
+  if [ "$stale_count" -gt 0 ]; then
+    echo "  Status: Update available"
+  else
+    echo "  Status: Up to date"
+  fi
+  echo "  Written: $SIDEKICK_HOME/staleness.json"
+
+  exit 0
+}
+
+# --- --rollback implementation ---
+
+do_rollback() {
+  # Find the first target dir that has a state file
+  local state_file=""
+  local current_installed=""
+  local previous=""
+
+  for dir in "${TARGET_DIRS[@]}"; do
+    if [ -f "$dir/.serious-sidekick-state.json" ]; then
+      state_file="$dir/.serious-sidekick-state.json"
+      break
+    fi
+  done
+
+  if [ -z "$state_file" ]; then
+    echo "ERROR: No state file found. Nothing to rollback." >&2
+    exit 1
+  fi
+
+  current_installed=$(python3 -c "
+import json, sys
+data = json.load(open(sys.argv[1]))
+print(data.get('installed_from_commit', ''))
+" "$state_file")
+
+  previous=$(python3 -c "
+import json, sys
+data = json.load(open(sys.argv[1]))
+print(data.get('previous_commit', ''))
+" "$state_file")
+
+  if [ -z "$previous" ]; then
+    echo "ERROR: No previous_commit in state file. Nothing to rollback." >&2
+    exit 1
+  fi
+
+  echo "Rolling back from $current_installed to $previous..."
+
+  # Checkout previous commit in the local clone
+  if ! git -C "$SIDEKICK_HOME" checkout "$previous" 2>/dev/null; then
+    echo "ERROR: git checkout $previous failed" >&2
+    exit 1
+  fi
+
+  # Read manifest at the previous commit
+  local manifest_entries
+  manifest_entries=$(do_read_manifest) || exit 1
+
+  # Re-distribute to all target dirs
+  local dirs_ok=0
+  local dirs_total=${#TARGET_DIRS[@]}
+
+  if [ "$NO_GLOBAL" = "true" ]; then
+    dirs_total=0
+    dirs_ok=0
+  else
+    for dir in "${TARGET_DIRS[@]}"; do
+      echo "Distributing to $dir..."
+      local result
+      result=$(distribute_to_dir "$dir" "$manifest_entries" "false" "$previous" "$current_installed")
+      local last_line
+      last_line=$(echo "$result" | tail -1)
+      local err_count
+      err_count=$(echo "$last_line" | sed -n 's/.*errors=\([0-9]*\).*/\1/p')
+      if [ "${err_count:-0}" -eq 0 ]; then
+        dirs_ok=$((dirs_ok + 1))
+      fi
+    done
+  fi
+
+  # Audit log
+  log_audit "ROLLBACK $current_installed->$previous dirs=$dirs_ok/$dirs_total OK"
+
+  echo ""
+  echo "Rollback complete."
+  echo "  Reverted: $current_installed -> $previous"
+  echo "  Dirs: $dirs_ok/$dirs_total OK"
+  echo "  Audit log: $AUDIT_LOG"
+
+  exit 0
+}
+
+# --- Migration: first-run state file creation ---
+
+# do_migrate <target_dir> <manifest_entries> <current_commit>
+# When no state file exists, hashes all existing installed files that match
+# manifest entries and builds an initial state file. Returns the count of
+# files found and hashed.
+do_migrate() {
+  local target_dir="$1"
+  local manifest_entries="$2"
+  local current_commit="$3"
+
+  local state_file="$target_dir/.serious-sidekick-state.json"
+
+  # Skip if state file already exists
+  if [ -f "$state_file" ]; then
+    return 0
+  fi
+
+  # Skip if target dir doesn't exist (nothing to migrate)
+  if [ ! -d "$target_dir" ]; then
+    return 0
+  fi
+
+  local file_count=0
+  local file_hashes="{}"
+
+  while IFS=$'\t' read -r src ownership dest sha256 merge_key; do
+    [ -z "$src" ] && continue
+
+    local dest_path="$target_dir/$dest"
+
+    if [ -f "$dest_path" ]; then
+      local existing_hash
+      existing_hash=$(hash_file "$dest_path" 2>/dev/null || echo "")
+      if [ -n "$existing_hash" ]; then
+        file_hashes=$(python3 -c "
+import json, sys
+h = json.loads(sys.argv[1])
+h[sys.argv[2]] = sys.argv[3]
+print(json.dumps(h))
+" "$file_hashes" "$dest" "$existing_hash")
+        file_count=$((file_count + 1))
+      fi
+    fi
+  done <<< "$manifest_entries"
+
+  # Write initial state file
+  if [ "$file_count" -gt 0 ]; then
+    update_state "$target_dir" "$current_commit" "" "$file_hashes" 2>/dev/null || {
+      echo "  WARNING: Failed to write migration state for $target_dir" >&2
+      return 1
+    }
+  else
+    # Even with 0 files, create the state file so subsequent runs don't re-migrate
+    update_state "$target_dir" "$current_commit" "" "{}" 2>/dev/null || {
+      echo "  WARNING: Failed to write migration state for $target_dir" >&2
+      return 1
+    }
+  fi
+
+  echo "$file_count"
+}
+
+# --- Main flow ---
+
+# Handle --check
+if [ "$CHECK_ONLY" = "true" ]; then
+  do_check
+fi
+
+# Handle --rollback
+if [ "$ROLLBACK" = "true" ]; then
+  do_rollback
+fi
+
+# Regular update (or --diff)
+
+# Step 1: Git pull
+pull_output=$(do_git_pull)
+OLD_COMMIT=$(echo "$pull_output" | head -1)
+NEW_COMMIT=$(echo "$pull_output" | tail -1)
+
+# Step 2: Check if anything changed
+if [ "$OLD_COMMIT" = "$NEW_COMMIT" ] && [ "$DIFF_ONLY" = "false" ]; then
+  log_audit "UPDATE $OLD_COMMIT->$NEW_COMMIT files=0 new=0 dirs=0/0 OK (nothing to update)"
+  echo "Already up to date at $NEW_COMMIT"
+  exit 2
+fi
+
+# Step 3: Read manifest
+MANIFEST_ENTRIES=$(do_read_manifest) || exit 1
+
+# Step 3.5: Migration — auto-detect first run for each target dir
+# Skip during --diff (dry run must not write anything)
+if [ "$NO_GLOBAL" != "true" ] && [ "$DIFF_ONLY" != "true" ]; then
+  for dir in "${TARGET_DIRS[@]}"; do
+    if [ -d "$dir" ] && [ ! -f "$dir/.serious-sidekick-state.json" ]; then
+      migrated_count=$(do_migrate "$dir" "$MANIFEST_ENTRIES" "$NEW_COMMIT" 2>&1)
+      # Only print if migrated_count is a number (not an error message)
+      if [[ "$migrated_count" =~ ^[0-9]+$ ]]; then
+        echo "First run detected for $dir. Built initial state from $migrated_count existing files."
+      fi
+    fi
+  done
+fi
+
+# Step 4: Distribute to target dirs
+if [ "$NO_GLOBAL" = "true" ]; then
+  echo "Skipping global directories (--no-global)."
+  TOTAL_DIRS=0
+  DIRS_OK=0
+  TOTAL_UPDATED=0
+  TOTAL_NEW=0
+  TOTAL_CURRENT=0
+else
+  TOTAL_DIRS=${#TARGET_DIRS[@]}
+  DIRS_OK=0
+  TOTAL_UPDATED=0
+  TOTAL_NEW=0
+  TOTAL_CURRENT=0
+  DIR_REPORTS=()
+
+  for dir in "${TARGET_DIRS[@]}"; do
+    if [ "$DIFF_ONLY" = "true" ]; then
+      echo ""
+      echo "=== $dir ==="
+    fi
+
+    result=$(distribute_to_dir "$dir" "$MANIFEST_ENTRIES" "$DIFF_ONLY" "$NEW_COMMIT" "$OLD_COMMIT" 2>&1)
+
+    # Parse the last line for counts
+    last_line=$(echo "$result" | tail -1)
+
+    # Show all output for --diff mode (non-summary lines)
+    if [ "$DIFF_ONLY" = "true" ]; then
+      total_lines=$(echo "$result" | wc -l | tr -d ' ')
+      if [ "$total_lines" -gt 1 ]; then
+        echo "$result" | sed '$d'
+      fi
+    fi
+
+    dir_updated=$(echo "$last_line" | sed -n 's/.*updated=\([0-9]*\).*/\1/p')
+    dir_new=$(echo "$last_line" | sed -n 's/.*new=\([0-9]*\).*/\1/p')
+    dir_current=$(echo "$last_line" | sed -n 's/.*current=\([0-9]*\).*/\1/p')
+    dir_errors=$(echo "$last_line" | sed -n 's/.*errors=\([0-9]*\).*/\1/p')
+
+    dir_updated=${dir_updated:-0}
+    dir_new=${dir_new:-0}
+    dir_current=${dir_current:-0}
+    dir_errors=${dir_errors:-0}
+
+    TOTAL_UPDATED=$((TOTAL_UPDATED + dir_updated))
+    TOTAL_NEW=$((TOTAL_NEW + dir_new))
+    TOTAL_CURRENT=$((TOTAL_CURRENT + dir_current))
+
+    if [ "$dir_errors" -eq 0 ]; then
+      DIRS_OK=$((DIRS_OK + 1))
+    fi
+
+    DIR_REPORTS+=("$dir  $dir_updated updated, $dir_new new, $dir_current current")
+  done
+fi
+
+# Step 5: For --diff, we're done (no writes happened)
+if [ "$DIFF_ONLY" = "true" ]; then
+  echo ""
+  echo "Dry run complete. No files were modified."
+  exit 0
+fi
+
+# Step 6: Audit log + completion receipt
+TOTAL_FILES=$((TOTAL_UPDATED + TOTAL_NEW))
+log_audit "UPDATE $OLD_COMMIT->$NEW_COMMIT files=$TOTAL_FILES new=$TOTAL_NEW dirs=$DIRS_OK/$TOTAL_DIRS OK"
+
+echo ""
+echo "Serious Sidekick updated to $NEW_COMMIT (was $OLD_COMMIT)"
+echo ""
+for report in "${DIR_REPORTS[@]}"; do
+  echo "  $report"
+done
+echo ""
+echo "Audit log: $AUDIT_LOG"
+
+if [ "$DIRS_OK" -lt "$TOTAL_DIRS" ]; then
+  exit 1
+fi
+exit 0
