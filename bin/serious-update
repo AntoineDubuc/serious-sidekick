@@ -275,67 +275,13 @@ print(json.dumps(h))
         ;;
 
       merge)
-        if [ ! -f "$source_path" ]; then
-          if [ "$dry_run" = "true" ]; then
-            echo "  MISSING  $dest (source not found: $src)"
-          fi
-          errors=$((errors + 1))
-          continue
-        fi
-
-        if [ "$dry_run" = "true" ]; then
-          if [ -f "$dest_path" ]; then
-            echo "  MERGE  $dest"
-            updated=$((updated + 1))
-          else
-            echo "  NEW  $dest (merge-owned, first install)"
-            new_count=$((new_count + 1))
-          fi
-          continue
-        fi
-
-        # Create destination directory if needed
-        local dest_dir
-        dest_dir=$(dirname "$dest_path")
-        mkdir -p "$dest_dir" 2>/dev/null || {
-          echo "  ERROR: Cannot create directory for $dest" >&2
-          errors=$((errors + 1))
-          continue
-        }
-
-        if [ -f "$dest_path" ]; then
-          # Existing file: merge
-          if merge_settings "$dest_path" "$source_path" 2>/dev/null; then
-            local new_hash
-            new_hash=$(hash_file "$dest_path" 2>/dev/null || echo "")
-            file_hashes=$(python3 -c "
-import json, sys
-h = json.loads(sys.argv[1])
-h[sys.argv[2]] = sys.argv[3]
-print(json.dumps(h))
-" "$file_hashes" "$dest" "$new_hash")
-            updated=$((updated + 1))
-          else
-            echo "  ERROR: merge_settings failed for $dest" >&2
-            errors=$((errors + 1))
-          fi
-        else
-          # First install: copy
-          if cp "$source_path" "$dest_path" 2>/dev/null; then
-            local new_hash
-            new_hash=$(hash_file "$dest_path" 2>/dev/null || echo "")
-            file_hashes=$(python3 -c "
-import json, sys
-h = json.loads(sys.argv[1])
-h[sys.argv[2]] = sys.argv[3]
-print(json.dumps(h))
-" "$file_hashes" "$dest" "$new_hash")
-            new_count=$((new_count + 1))
-          else
-            echo "  ERROR: Failed to copy $src -> $dest" >&2
-            errors=$((errors + 1))
-          fi
-        fi
+        # Skip merge-tier files (settings.json hooks) for global dirs.
+        # Hooks use $CLAUDE_PROJECT_DIR paths that only work in projects
+        # where /serious-init has been run. Merging them into global
+        # settings breaks every project that hasn't run /serious-init.
+        # Settings.json hooks are installed per-project by /serious-init.
+        echo "  SKIP  $dest (merge-tier — hooks are project-level, use /serious-init)"
+        skipped=$((skipped + 1))
         ;;
 
       user-init)
