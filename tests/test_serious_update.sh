@@ -171,6 +171,12 @@ setup_sidekick_home "$TASK1_BASE"
 TASK1_TARGETS="$TMP_DIR/task1_targets"
 TASK1_DIRS=$(setup_target_dirs "$TASK1_TARGETS")
 
+# Seed state files in target dirs so NEEDS_FIRST_RUN=false
+# (without state files, first-run detection bypasses the exit-2 "nothing to update" check)
+for d in $TASK1_DIRS; do
+  echo '{"installed_from_commit":"dummy","previous_commit":"","installed_at":"2026-04-02T00:00:00Z","file_hashes":{}}' > "$d/.serious-sidekick-state.json"
+done
+
 # Pull when already at HEAD = nothing to update → exit 2
 EXIT2_CODE=0
 EXIT2_OUTPUT=$(SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$TASK1_DIRS" bash "$REPO_ROOT/bin/serious-update" 2>&1) || EXIT2_CODE=$?
@@ -252,11 +258,13 @@ else
     "Missing: $TASK3_FIRST/skills/serious-code/SKILL.md"
 fi
 
-# AC3.2: Merge-owned files (settings.json) distributed
-if [ -f "$TASK3_FIRST/settings.json" ]; then
-  assert "AC3.2: Merge-owned file (settings.json) distributed" "pass"
+# AC3.2: Merge-owned files (settings.json) SKIPPED for global dirs
+# Hooks use $CLAUDE_PROJECT_DIR paths — only valid in projects with /serious-init
+if [ ! -f "$TASK3_FIRST/settings.json" ]; then
+  assert "AC3.2: Merge-owned file (settings.json) skipped for global dir" "pass"
 else
-  assert "AC3.2: Merge-owned file (settings.json) distributed" "fail"
+  assert "AC3.2: Merge-owned file (settings.json) skipped for global dir" "fail" \
+    "settings.json should NOT be distributed to global dirs"
 fi
 
 # AC3.3: User-init files copied on first install

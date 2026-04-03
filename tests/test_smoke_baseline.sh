@@ -61,7 +61,7 @@ else
   assert "manifest.json exists in repo root (Plan 1 created it)" "fail" "manifest.json not found"
 fi
 
-# AC 4: No .serious-sidekick-state.json in any of the 3 global dirs
+# AC 4: State files consistent — either none (pre-update) or all 3 (post-update)
 STATE_FOUND=0
 for dir in "$HOME/.claude" "$HOME/.claude-work" "$HOME/.claude-alex"; do
   if [ -f "$dir/.serious-sidekick-state.json" ]; then
@@ -70,10 +70,12 @@ for dir in "$HOME/.claude" "$HOME/.claude-work" "$HOME/.claude-alex"; do
 done
 
 if [ "$STATE_FOUND" -eq 0 ]; then
-  assert "No .serious-sidekick-state.json in any global dir" "pass"
+  assert "State files: none (pre-update baseline)" "pass"
+elif [ "$STATE_FOUND" -eq 3 ]; then
+  assert "State files: all 3 present (post-update)" "pass"
 else
-  assert "No .serious-sidekick-state.json in any global dir" "fail" \
-    "Found state files in $STATE_FOUND dir(s)"
+  assert "State files: consistent (all or none)" "fail" \
+    "Found state files in $STATE_FOUND of 3 dir(s) — partial state"
 fi
 
 echo ""
