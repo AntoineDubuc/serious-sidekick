@@ -622,8 +622,18 @@ pull_output=$(do_git_pull)
 OLD_COMMIT=$(echo "$pull_output" | head -1)
 NEW_COMMIT=$(echo "$pull_output" | tail -1)
 
-# Step 2: Check if anything changed
-if [ "$OLD_COMMIT" = "$NEW_COMMIT" ] && [ "$DIFF_ONLY" = "false" ]; then
+# Step 2: Check if anything changed — but always proceed if any target dir lacks a state file (first run)
+NEEDS_FIRST_RUN=false
+if [ "$NO_GLOBAL" != "true" ]; then
+  for dir in "${TARGET_DIRS[@]}"; do
+    if [ -d "$dir" ] && [ ! -f "$dir/.serious-sidekick-state.json" ]; then
+      NEEDS_FIRST_RUN=true
+      break
+    fi
+  done
+fi
+
+if [ "$OLD_COMMIT" = "$NEW_COMMIT" ] && [ "$NEEDS_FIRST_RUN" = "false" ] && [ "$DIFF_ONLY" = "false" ]; then
   log_audit "UPDATE $OLD_COMMIT->$NEW_COMMIT files=0 new=0 dirs=0/0 OK (nothing to update)"
   echo "Already up to date at $NEW_COMMIT"
   exit 2
