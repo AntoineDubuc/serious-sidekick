@@ -37,7 +37,7 @@ Before anything else, check for active workflow breadcrumbs in the project root:
 4. **Determine the deepest active workflow:** If multiple valid breadcrumbs exist, follow `parent:` chains in each breadcrumb's target frontmatter. The workflow with the longest parent chain is the deepest. If multiple independent top-level breadcrumbs exist (none with parent fields), use the most recently modified breadcrumb as the comparison target.
 5. **Compare pipeline order:** This skill is `debug` (order 8). The deepest active skill is order {M}.
    - **Pipeline order:** conversation(1) → research(2) → mock-ups(3) → scope(4) → plan(5) → review(6) → code(7) → debug(8)
-   - If 8 > {M}: this is **advancing**. Skip the rest of 0-pre, proceed to Phase 0a as normal. Both breadcrumbs coexist. No parent field set, no sub/ folder created.
+   - If 8 > {M}: this is **advancing**. Proceed directly to the next phase without any output about breadcrumbs or pipeline ordering. Both breadcrumbs coexist. No parent field set, no sub/ folder created.
    - If 8 ≤ {M}: this is **branching**. Continue to step 6.
    - **Special case — invoked from /serious-code (order 7):** This is always advancing. Both `.active-code` and `.active-debug` coexist. Plan state is frozen. Debug output goes to `Research/debug/{slug}/`. On debug completion, `.active-debug` is removed and `/serious-code` resumes.
 6. **Branching prompt:**
