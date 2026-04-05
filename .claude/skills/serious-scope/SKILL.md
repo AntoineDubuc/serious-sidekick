@@ -14,6 +14,8 @@ Read research output, propose how to split the work into implementation plans, a
 
 1. **Scan for breadcrumbs:** Check for `.active-conversation`, `.active-research`, `.active-mock-ups`, `.active-scope`, `.active-plan`, `.active-code`, `.active-review`
 2. **Validate each:** Verify target folder exists with valid YAML frontmatter. Delete stale breadcrumbs with warning.
+2b. **Status-based staleness:** If target frontmatter has `status: done` or `abandoned`, remove the breadcrumb silently.
+2c. **Age-based staleness:** If target has `status: active` and `.active-*` file is older than 4 hours, prompt: "Treat as active? (Y/N)". No → remove. Yes → continue to step 4.
 3. **If no valid breadcrumbs:** Proceed directly to Phase 0a without any output. Do NOT mention breadcrumbs or scanning.
 4. **Deepest active workflow:** Follow `parent:` chains. Longest chain = deepest. If multiple independent top-level breadcrumbs, use most recently modified.
 5. **Compare pipeline order:** This skill is `scope` (order 4). Pipeline: conversation(1) → research(2) → mock-ups(3) → scope(4) → plan(5) → review(6) → code(7)
