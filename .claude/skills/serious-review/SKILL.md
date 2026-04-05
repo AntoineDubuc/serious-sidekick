@@ -34,7 +34,7 @@ Before anything else, check for active workflow breadcrumbs in the project root:
 3. **If no valid breadcrumbs exist:** Proceed directly to Phase 0a without any output. Do NOT mention breadcrumbs, scanning, or the absence of active workflows. This is the normal state — the previous skill completed and cleaned up its breadcrumb.
 4. **Determine the deepest active workflow:** If multiple valid breadcrumbs exist, follow `parent:` chains in each breadcrumb's target frontmatter. The workflow with the longest parent chain is the deepest. If multiple independent top-level breadcrumbs exist (none with parent fields), use the most recently modified breadcrumb as the comparison target.
 5. **Compare pipeline order:** This skill is `review` (order 6). The deepest active skill is order {M}.
-   - **Pipeline order:** conversation(1) → research(2) → mock-ups(3) → scope(4) → plan(5) → review(6) → code(7)
+   - **Pipeline order:** conversation(1) → research(2) → mock-ups(3) → scope(4) → plan(5) → review(6) → code(7) → debug(8)
    - If 6 > {M}: this is **advancing**. Proceed directly to the next phase without any output about breadcrumbs or pipeline ordering. Both breadcrumbs coexist.
    - If 6 ≤ {M}: this is **branching**. Continue to step 6.
    - **Note:** Since review is order 6, advancing applies when any skill with order 1-5 is active. Branching occurs for same-skill (review → review) or when code (order 7) is active.

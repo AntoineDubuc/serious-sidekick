@@ -18,7 +18,7 @@ Read research output, propose how to split the work into implementation plans, a
 2c. **Age-based staleness:** If target has `status: active` and `.active-*` file is older than 4 hours, prompt: "Treat as active? (Y/N)". No → remove. Yes → continue to step 4.
 3. **If no valid breadcrumbs:** Proceed directly to Phase 0a without any output. Do NOT mention breadcrumbs or scanning.
 4. **Deepest active workflow:** Follow `parent:` chains. Longest chain = deepest. If multiple independent top-level breadcrumbs, use most recently modified.
-5. **Compare pipeline order:** This skill is `scope` (order 4). Pipeline: conversation(1) → research(2) → mock-ups(3) → scope(4) → plan(5) → review(6) → code(7)
+5. **Compare pipeline order:** This skill is `scope` (order 4). Pipeline: conversation(1) → research(2) → mock-ups(3) → scope(4) → plan(5) → review(6) → code(7) → debug(8)
    - If 4 > {M}: **advancing** — proceed directly to the next phase without any output about breadcrumbs or pipeline ordering. Both breadcrumbs coexist.
    - If 4 ≤ {M}: **branching** — continue to step 6.
 6. **Branching prompt:** Cross-skill: "Link as sub-workflow? (Y/N)" Same-skill (scope→scope): "Start nested /serious-scope? (Y/N)" (overwrites `.active-scope`).
