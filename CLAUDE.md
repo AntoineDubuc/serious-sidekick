@@ -72,7 +72,7 @@ created: 2026-03-08
 | `verified_source` | string | Path to the upstream artifact that was verified against. Set automatically by the verifier. |
 | `verified_hash` | string | First 8 characters of the SHA-256 hash of the upstream artifact's contract sections. Used for staleness detection. |
 
-**Pipeline order:** `conversation(1) → research(2) → mock-ups(3) → scope(4) → plan(5) → review(6) → code(7)`
+**Pipeline order:** `conversation(1) → research(2) → mock-ups(3) → scope(4) → plan(5) → review(6) → code(7) → debug(8)`
 
 **Advancing vs branching:**
 - New skill order **>** active skill order = **advancing** (no prompt, normal behavior)
