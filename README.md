@@ -30,7 +30,7 @@ This clones the repo, symlinks `serious-update` to your PATH, sets up a daily st
 /serious-init
 ```
 
-That's it. You get 11 slash commands, 6 enforcement hooks, 8 specialized agents, and templates for plans, research, and scope manifests.
+That's it. You get 12 slash commands, 7 enforcement hooks, 8 specialized agents, and templates for plans, research, and scope manifests.
 
 **Already installed? Stay current:**
 
@@ -91,7 +91,7 @@ If a hook hits an unexpected error, it blocks instead of silently passing. No si
 
 ## The Pipeline
 
-Seven steps. Each produces artifacts that feed the next. A verifier checks every handoff — nothing gets dropped between stages.
+Seven core pipeline steps, plus an optional ingestion step. Each produces artifacts that feed the next. A verifier checks every handoff — nothing gets dropped between stages.
 
 <div align="center">
   <img src="images/readme/pipeline_flow.png" alt="Pipeline flow: Conversation → Research → Mock-ups → Scope → Plan → Review → Code with verification at every handoff" />
@@ -99,6 +99,7 @@ Seven steps. Each produces artifacts that feed the next. A verifier checks every
 
 | Step | Command | What it does |
 |:-----|:--------|:-------------|
+| 0.5 | `/serious-youtube-tldr` | Ingest YouTube videos via transcripts — structured summaries and cross-video synthesis |
 | 1 | `/serious-conversation` | Structured ideation with a panel of AI personas (10 built-in, custom supported) |
 | 2 | `/serious-research` | Investigation with evidence grading — quick mode or deep parallel analysis |
 | 3 | `/serious-mock-ups` | UI wireframes and visuals before planning (3 fidelity levels) |
@@ -141,10 +142,11 @@ Seven steps. Each produces artifacts that feed the next. A verifier checks every
 
 ## What You Get
 
-### 11 Workflow Commands
+### 12 Workflow Commands
 
 | Command | Purpose |
 |:--------|:--------|
+| `/serious-youtube-tldr` | Video ingestion — transcripts, summaries, batch synthesis |
 | `/serious-conversation` | Persona panel for ideation and exploration |
 | `/serious-research` | Structured investigation with evidence |
 | `/serious-mock-ups` | UI wireframes and visuals before planning |
@@ -157,10 +159,11 @@ Seven steps. Each produces artifacts that feed the next. A verifier checks every
 | `/serious-status` | View active and completed workflows |
 | `/serious-abandon` | Abandon a sub-workflow and restore parent context |
 
-### 6 Enforcement Hooks
+### 7 Enforcement Hooks
 
 | Hook | Skill | What it blocks |
 |:-----|:------|:---------------|
+| YouTube Progress | `/serious-youtube-tldr` | Saves notebook progress on session end — ensures work survives context compaction |
 | Completion Gate | `/serious-code` | Missing `gate_passed.md`, missing agent evidence files, FAIL verdicts |
 | Extraction Check | `/serious-plan` | Missing upstream extraction, zero source citations, hedge language |
 | Manifest Check | `/serious-scope` | Missing manifest, missing verification stamps |

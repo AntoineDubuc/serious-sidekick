@@ -497,6 +497,7 @@
         <li><a href="#pipeline"><span class="toc-num" style="background:var(--accent-bg);color:var(--accent);">&#9654;</span> Pipeline Overview</a></li>
         <li><a href="#verification"><span class="toc-num" style="background:var(--red-bg);color:var(--red);">&#128737;</span> Handoff Verification</a></li>
         <li><a href="#hooks-enforcement"><span class="toc-num" style="background:var(--green-bg);color:var(--green);">&#128274;</span> Stop Hooks</a></li>
+        <li><a href="#youtube-tldr"><span class="toc-num" style="background:var(--red-bg);color:var(--red);">0.5</span> /serious-youtube-tldr</a></li>
         <li><a href="#conversation"><span class="toc-num" style="background:var(--amber-bg);color:var(--amber);">1</span> /serious-conversation</a></li>
         <li><a href="#research"><span class="toc-num" style="background:var(--blue-bg);color:var(--blue);">2</span> /serious-research</a></li>
         <li><a href="#mockups"><span class="toc-num" style="background:var(--pink-bg);color:var(--pink);">3</span> /serious-mock-ups</a></li>
@@ -581,6 +582,8 @@
     </div>
 
     <div class="pipeline reveal delay-1">
+      <div class="pipe-box c-red" style="opacity:0.7;font-size:0.85em;">/serious-youtube-tldr</div>
+      <div class="pipe-arrow">&rarr;</div>
       <div class="pipe-box c-amber">/serious-conversation</div>
       <div class="pipe-arrow">&rarr;</div>
       <div class="pipe-box c-blue">/serious-research</div>
@@ -598,7 +601,7 @@
 
     <div class="tip reveal delay-2">
       <div class="tip-icon">&#128161;</div>
-      <div><strong>You don't have to use them all.</strong> Have a bug? Jump straight to <code>/serious-research</code>. Know exactly what to build? Start at <code>/serious-plan</code>. Each skill works on its own.</div>
+      <div><strong>You don't have to use them all.</strong> Have a bug? Jump straight to <code>/serious-research</code>. Know exactly what to build? Start at <code>/serious-plan</code>. Want to ingest a YouTube video first? Start at <code>/serious-youtube-tldr</code>. Each skill works on its own.</div>
     </div>
   </div>
 </section>
@@ -671,7 +674,7 @@
     <div class="reveal">
       <div class="section-label">Enforcement</div>
       <h2>Stop Hooks — The System Checks Itself</h2>
-      <p>Nine shell hooks enforce quality at two levels: six fire when sessions end (Stop hooks), three guard file writes in real-time (PreToolUse hooks). All use a <strong>fail-closed pattern</strong> &mdash; unexpected errors block instead of silently passing.</p>
+      <p>Ten shell hooks enforce quality at two levels: seven fire when sessions end (Stop hooks), three guard file writes in real-time (PreToolUse hooks). All use a <strong>fail-closed pattern</strong> &mdash; unexpected errors block instead of silently passing.</p>
     </div>
 
     <div class="util-grid reveal delay-1">
@@ -699,6 +702,10 @@
         <h3>Research Capture</h3>
         <p><code>/serious-research</code> &mdash; Blocks if research is still <code>status: active</code>. When upstream <code>source:</code> exists, also checks for <code>_extracted_items.md</code> and <code>verified:</code> stamp.</p>
       </div>
+      <div class="util-card">
+        <h3>YouTube Progress</h3>
+        <p><code>/serious-youtube-tldr</code> &mdash; Saves transcript and summary progress to <code>notebook.md</code> on session end. Ensures partially-processed batch jobs survive context compaction and can be resumed.</p>
+      </div>
     </div>
 
     <div class="tip reveal delay-2">
@@ -714,6 +721,100 @@
 </div>
 
 <hr class="divider">
+
+
+<!-- ═══════════════════ 0.5 YOUTUBE TLDR ═══════════════════ -->
+<div class="skill-section" id="youtube-tldr">
+  <div class="container">
+    <div class="reveal">
+      <div class="skill-number" style="color:var(--red);">Skill 0.5 &mdash; Ingestion</div>
+      <div class="skill-header">
+        <div class="skill-icon" style="background:var(--red-bg);color:var(--red);">&#127909;</div>
+        <div>
+          <h2>Ingest YouTube Videos</h2>
+          <div class="skill-cmd">/serious-youtube-tldr</div>
+        </div>
+      </div>
+      <p class="skill-intro">Turn YouTube videos into structured research artifacts. Claude fetches transcripts, produces timestamped summaries with key topics and actionable takeaways, and &mdash; for batch jobs &mdash; synthesizes cross-video insights. Output feeds directly into <code>/serious-research</code> or <code>/serious-conversation</code>.</p>
+    </div>
+
+    <div class="when-what reveal delay-1">
+      <div class="ww-box ww-when">
+        <h4>When to use it</h4>
+        <ul>
+          <li>Conference talks relevant to your project</li>
+          <li>Tutorial videos you want as reference docs</li>
+          <li>Batch-ingesting a playlist for research</li>
+          <li>You'd rather read a 2-minute summary than watch a 45-minute video</li>
+        </ul>
+      </div>
+      <div class="ww-box ww-what">
+        <h4>What you get</h4>
+        <ul>
+          <li>Timestamped transcripts per video</li>
+          <li>Structured summaries with TLDR, key topics, quotes, and takeaways</li>
+          <li>Cross-video synthesis with common themes and contradictions (batch)</li>
+          <li>Watch priority ranking (batch)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sub-heading reveal">How it works</div>
+    <div class="steps reveal delay-1">
+      <div class="step">
+        <div class="step-num" style="background:var(--red-bg);color:var(--red);border-color:var(--red);">1</div>
+        <div class="step-content">
+          <h4>Provide one or more YouTube URLs</h4>
+          <p>Supports <code>youtube.com/watch?v=</code>, <code>youtu.be/</code>, <code>youtube.com/shorts/</code>, raw video IDs, or a file with a list of URLs.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--red-bg);color:var(--red);border-color:var(--red);">2</div>
+        <div class="step-content">
+          <h4>Claude fetches and saves each transcript</h4>
+          <p>Timestamped transcripts written to disk immediately. Failed fetches are logged and skipped &mdash; the batch continues.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--red-bg);color:var(--red);border-color:var(--red);">3</div>
+        <div class="step-content">
+          <h4>Structured summaries generated per video</h4>
+          <p>TLDR, key topics with timestamps, notable quotes, actionable takeaways, and references mentioned. Each written to disk as it completes.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--red-bg);color:var(--red);border-color:var(--red);">4</div>
+        <div class="step-content">
+          <h4>Cross-video synthesis (batch only)</h4>
+          <p>Common themes, contradictions, combined takeaways ranked by importance, and a watch priority table.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="output-preview reveal delay-2">
+      <h4>Output structure</h4>
+      <div class="output-tree">
+        <span class="folder">Research/youtube/{slug}/</span><br>
+        &nbsp;&nbsp;<span class="file">transcript-01-{video-id}.md</span> &mdash; timestamped transcript<br>
+        &nbsp;&nbsp;<span class="file">summary-01-{video-id}.md</span> &mdash; structured analysis<br>
+        &nbsp;&nbsp;<span class="file">transcript-02-{video-id}.md</span><br>
+        &nbsp;&nbsp;<span class="file">summary-02-{video-id}.md</span><br>
+        &nbsp;&nbsp;<span class="highlight">synthesis.md</span> &mdash; cross-video insights (batch)<br>
+        &nbsp;&nbsp;<span class="file">notebook.md</span> &mdash; progress log
+      </div>
+    </div>
+
+    <div class="tip reveal">
+      <div class="tip-icon">&#128161;</div>
+      <div><strong>Resumable.</strong> If a session is interrupted, re-invoke the skill with the same URLs. It detects existing transcripts and summaries on disk and picks up where it left off. The Stop hook saves progress to <code>notebook.md</code> at every session boundary.</div>
+    </div>
+
+    <div class="warning reveal">
+      <div class="warn-icon">&#9888;&#65039;</div>
+      <div><strong>Prerequisite:</strong> <code>pip install youtube-transcript-api</code>. Videos without English transcripts (live streams, music videos, some region-locked content) are skipped with a logged warning.</div>
+    </div>
+  </div>
+</div>
 
 
 <!-- ═══════════════════ 1. CONVERSATION ═══════════════════ -->

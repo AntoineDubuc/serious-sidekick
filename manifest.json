@@ -250,6 +250,11 @@
       "ownership": "template",
       "sha256": "920ec43cd2960a8c8beb4a98d2b92846fbc09aca6fecfa8973c1d7f10b17114a"
     },
+    ".claude/skills/serious-youtube-tldr/SKILL.md": {
+      "dest": "skills/serious-youtube-tldr/SKILL.md",
+      "ownership": "template",
+      "sha256": "0c1356790a87d6ff643c10832a7523d6cd0a970448aa18855d74f329d763ef93"
+    },
     "CLAUDE.md": {
       "dest": "CLAUDE.md",
       "ownership": "user-init",

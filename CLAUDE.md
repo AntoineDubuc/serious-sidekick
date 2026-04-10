@@ -27,8 +27,9 @@
 
 ## Workflow Skills
 
-This project includes seven workflow skills for structured development:
+This project includes eight workflow skills for structured development:
 
+- **`/serious-youtube-tldr`** — Ingest YouTube videos via transcripts and produce structured summaries. Supports single videos or batch jobs with cross-video synthesis. Outputs to `Research/youtube/` as first-class research artifacts that feed into `/serious-research` or `/serious-conversation`. Requires `youtube-transcript-api` Python package. Pipeline order: 0.5 (ingestion, before conversation).
 - **`/serious-conversation`** — Think out loud with a panel of personas (hub-and-spoke model). Pick from 10 built-in personas or create custom ones. Each round: personas respond independently via sub-agents, Orchestrator synthesizes, user refines. Creates versioned artifacts in `Research/conversations/`.
 - **`/serious-research`** — Structured research with two modes (quick or deep). Creates a `Research/` folder with findings, evidence grading, and persona reviews. Use for bugs, features, or exploratory questions.
 - **`/serious-mock-ups`** — Generate UI mock-ups from research before planning. Three fidelity levels (wireframe, visual, interactive flow), iterative feedback with versioning, component inventory, and design decision log. Outputs feed directly into `/serious-scope`.
@@ -37,7 +38,7 @@ This project includes seven workflow skills for structured development:
 - **`/serious-review`** — Plan quality gate with adaptive persona pipeline. Reviews implementation plans before code execution. Uses anti-slop auditor and structural reviewer agents. Mandatory step between planning and coding.
 - **`/serious-code`** — Executes implementation plans from `/serious-plan`. Orchestrates parallel plan execution via git worktrees, manages TDD cycles through 5 Agent Teams agents (implementer, reviewer, test-runner, runtime-checker, qa), handles phase-by-phase verification, and generates evidence reports.
 
-**Typical workflow:** `/serious-conversation` → `/serious-research` → `/serious-mock-ups` → `/serious-scope` → `/serious-plan` → `/serious-review` → `/serious-code` → done
+**Typical workflow:** (`/serious-youtube-tldr` →) `/serious-conversation` → `/serious-research` → `/serious-mock-ups` → `/serious-scope` → `/serious-plan` → `/serious-review` → `/serious-code` → done
 
 ## Workflow Frontmatter Standard
 
@@ -72,7 +73,7 @@ created: 2026-03-08
 | `verified_source` | string | Path to the upstream artifact that was verified against. Set automatically by the verifier. |
 | `verified_hash` | string | First 8 characters of the SHA-256 hash of the upstream artifact's contract sections. Used for staleness detection. |
 
-**Pipeline order:** `conversation(1) → research(2) → mock-ups(3) → scope(4) → plan(5) → review(6) → code(7) → debug(8)`
+**Pipeline order:** `youtube-tldr(0.5) → conversation(1) → research(2) → mock-ups(3) → scope(4) → plan(5) → review(6) → code(7) → debug(8)`
 
 **Advancing vs branching:**
 - New skill order **>** active skill order = **advancing** (no prompt, normal behavior)
