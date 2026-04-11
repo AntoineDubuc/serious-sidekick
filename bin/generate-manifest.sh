@@ -92,6 +92,18 @@ if os.path.isdir(skills_dir):
                 skill_rel = os.path.relpath(full, os.path.join(repo_root, '.claude'))
                 add_file(rel, 'template', skill_rel)
 
+# 1b. Walk .claude/skills/_shared/ (shared utilities used by multiple skills)
+shared_dir = os.path.join(skills_dir, '_shared')
+if os.path.isdir(shared_dir):
+    for dirpath, dirnames, filenames in os.walk(shared_dir):
+        dirnames.sort()
+        for fname in sorted(filenames):
+            full = os.path.join(dirpath, fname)
+            rel = os.path.relpath(full, repo_root)
+            # dest is relative to .claude/ target
+            shared_rel = os.path.relpath(full, os.path.join(repo_root, '.claude'))
+            add_file(rel, 'template', shared_rel)
+
 # 2. Walk .claude/agents/serious-*.md
 agents_dir = os.path.join(repo_root, '.claude', 'agents')
 if os.path.isdir(agents_dir):

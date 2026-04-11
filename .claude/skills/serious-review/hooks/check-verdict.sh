@@ -7,6 +7,10 @@
 #   0 = allow exit (no active session, or verdict exists)
 #   2 = block exit (active session without verdict)
 
+# Source shared guard utility (stdin is consumed and cached in _STOP_HOOK_GUARD_INPUT)
+source "$(dirname "$0")/../../_shared/stop-hook-guard.sh" || exit 0
+guard_stop_hook_active
+
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 [ ! -d "$PROJECT_ROOT" ] && exit 0
 [ -f "$PROJECT_ROOT/.claude/settings.json" ] || echo "WARNING: CLAUDE_PROJECT_DIR may be incorrect: $PROJECT_ROOT" >&2
@@ -31,14 +35,10 @@ CHECKS_PASSED=false
 
 # Check for review_verdict.md
 if [ ! -f "${REVIEW_DIR}/review_verdict.md" ]; then
-  echo "REVIEW VERDICT WARNING" >&2
-  echo "" >&2
-  echo "Active review session at ${REVIEW_DIR} has no review_verdict.md." >&2
-  echo "The plan review started but never reached a verdict." >&2
-  echo "" >&2
-  echo "To fix: complete /serious-review to produce a verdict, or" >&2
-  echo "run /serious-abandon to abandon this review." >&2
-  exit 2
+  emit_block_then_exit_2 "REVIEW VERDICT WARNING
+
+Active review session at ${REVIEW_DIR} has no review_verdict.md.
+The plan review started but never reached a verdict."
 fi
 
 # --- Anti-rationalization strengthening (Layer 2) ---
@@ -50,15 +50,11 @@ if [ -f "${REVIEW_DIR}/review_verdict.md" ]; then
   VERDICT_LINE=$(echo "$VERDICT_CONTENT" | grep -i 'verdict:' | head -1)
   # Only flag if verdict says PASS but has zero specific references
   if echo "$VERDICT_LINE" | grep -qiE '\bpass\b' && [ "$HAS_REFS" -eq 0 ]; then
-    echo "REVIEW QUALITY WARNING" >&2
-    echo "" >&2
-    echo "Review verdict at ${REVIEW_DIR}/review_verdict.md passed but contains" >&2
-    echo "zero file:line references. A substantive review must cite specific" >&2
-    echo "locations in the plan, not just generic approval." >&2
-    echo "" >&2
-    echo "See Guardrail Block entry #1: 'Name at least one specific concern" >&2
-    echo "with file path and line number.'" >&2
-    exit 2
+    emit_block_then_exit_2 "REVIEW QUALITY WARNING
+
+Review verdict at ${REVIEW_DIR}/review_verdict.md passed but contains
+zero file:line references. A substantive review must cite specific
+locations in the plan, not just generic approval."
   fi
 fi
 
@@ -76,12 +72,11 @@ if [ -f "${REVIEW_DIR}/review_verdict.md" ]; then
   [ "$SECURITY" -eq 0 ] && MISSING_AGENTS="${MISSING_AGENTS}  - Security Mind\n"
 
   if [ -n "$MISSING_AGENTS" ]; then
-    echo "AGENT DISPATCH WARNING" >&2
-    echo "" >&2
-    echo "Review verdict at ${REVIEW_DIR}/review_verdict.md is missing reports from:" >&2
-    echo -e "$MISSING_AGENTS" >&2
-    echo "All 3 mandatory agents must produce reports before a verdict is accepted." >&2
-    exit 2
+    emit_block_then_exit_2 "AGENT DISPATCH WARNING
+
+Review verdict at ${REVIEW_DIR}/review_verdict.md is missing reports from:
+$(echo -e "$MISSING_AGENTS")
+All 3 mandatory agents must produce reports before a verdict is accepted."
   fi
 fi
 
@@ -89,7 +84,6 @@ CHECKS_PASSED=true
 
 # Final guard — if we never reached the pass marker, something failed silently
 if [ "$CHECKS_PASSED" != "true" ]; then
-  echo "ENFORCEMENT ERROR: check-verdict.sh did not complete all checks" >&2
-  exit 2
+  emit_block_then_exit_2 "ENFORCEMENT ERROR: check-verdict.sh did not complete all checks"
 fi
 exit 0

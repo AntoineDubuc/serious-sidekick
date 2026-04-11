@@ -16,6 +16,10 @@
 #   0 = allow exit (no active session, or all tasks verified)
 #   2 = block exit (unverified tasks exist)
 
+# Source shared guard utility (stdin is consumed and cached in _STOP_HOOK_GUARD_INPUT)
+source "$(dirname "$0")/../../_shared/stop-hook-guard.sh" || exit 0
+guard_stop_hook_active
+
 # Breadcrumb files are written by SKILL.md prompt instructions from the main
 # session (project root CWD). If skills are ever invoked from worktree agents,
 # the write side will need the same PROJECT_ROOT fix.
@@ -84,40 +88,32 @@ for task_dir in "${PLAN_DIR}/evidence"/task_*/; do
 done
 
 if [ -n "$MISSING" ]; then
-  echo "COMPLETION GATE BLOCK" >&2
-  echo "" >&2
-  echo "These tasks have evidence directories but no gate_passed.md:" >&2
-  echo -e "$MISSING" >&2
-  echo "The Completion Gate sub-agent (Step 2.5 in the plan) must independently" >&2
-  echo "verify ALL acceptance criteria before a task can be marked complete." >&2
-  echo "" >&2
-  echo "For each unverified task:" >&2
-  echo "  1. Dispatch the Completion Gate sub-agent (see Step 2.5)" >&2
-  echo "  2. If all ACs pass, the gate writes gate_passed.md" >&2
-  echo "  3. Then you may exit" >&2
-  exit 2
+  emit_block_then_exit_2 "COMPLETION GATE BLOCK
+
+These tasks have evidence directories but no gate_passed.md:
+$(echo -e "$MISSING")
+The Completion Gate sub-agent (Step 2.5 in the plan) must independently
+verify ALL acceptance criteria before a task can be marked complete."
 fi
 
 if [ -n "$MISSING_EVIDENCE" ]; then
-  echo "EVIDENCE FILE BLOCK" >&2
-  echo "" >&2
-  echo "These agent evidence files are missing:" >&2
-  echo -e "$MISSING_EVIDENCE" >&2
-  echo "All 5 agents (implementer, reviewer, test-runner, runtime-checker, qa)" >&2
-  echo "must produce their evidence files before the session can end." >&2
-  echo "" >&2
-  echo "Required files per task: implementation.md, review.md, tests.md, runtime.md, qa.md" >&2
-  exit 2
+  emit_block_then_exit_2 "EVIDENCE FILE BLOCK
+
+These agent evidence files are missing:
+$(echo -e "$MISSING_EVIDENCE")
+All 5 agents (implementer, reviewer, test-runner, runtime-checker, qa)
+must produce their evidence files before the session can end.
+
+Required files per task: implementation.md, review.md, tests.md, runtime.md, qa.md"
 fi
 
 if [ -n "$INVALID_GATE" ]; then
-  echo "GATE VERDICT BLOCK" >&2
-  echo "" >&2
-  echo "These gate files do not contain a PASS verdict:" >&2
-  echo -e "$INVALID_GATE" >&2
-  echo "The gate_passed.md file must contain 'PASS' to prove the Completion Gate" >&2
-  echo "sub-agent approved the task. A file without PASS is not a valid gate." >&2
-  exit 2
+  emit_block_then_exit_2 "GATE VERDICT BLOCK
+
+These gate files do not contain a PASS verdict:
+$(echo -e "$INVALID_GATE")
+The gate_passed.md file must contain 'PASS' to prove the Completion Gate
+sub-agent approved the task. A file without PASS is not a valid gate."
 fi
 
 # --- Anti-rationalization strengthening (Layer 2) ---
@@ -141,20 +137,17 @@ for task_dir in "${PLAN_DIR}/evidence"/task_*/; do
 done
 
 if [ -n "$WARNINGS" ]; then
-  echo "TODO/FIXME WARNING" >&2
-  echo "" >&2
-  echo "Placeholder comments found in implementation files:" >&2
-  echo -e "$WARNINGS" >&2
-  echo "Remove all TODO/FIXME/HACK/XXX before completing the session." >&2
-  echo "See Guardrail Block entry #6: 'The plan is the contract. Do not silently skip.'" >&2
-  exit 2
+  emit_block_then_exit_2 "TODO/FIXME WARNING
+
+Placeholder comments found in implementation files:
+$(echo -e "$WARNINGS")
+TODO/FIXME/HACK/XXX markers remain in implementation files."
 fi
 
 CHECKS_PASSED=true
 
 # Final guard — if we never reached the pass marker, something failed silently
 if [ "$CHECKS_PASSED" != "true" ]; then
-  echo "ENFORCEMENT ERROR: verify-completion-gate.sh did not complete all checks" >&2
-  exit 2
+  emit_block_then_exit_2 "ENFORCEMENT ERROR: verify-completion-gate.sh did not complete all checks"
 fi
 exit 0
