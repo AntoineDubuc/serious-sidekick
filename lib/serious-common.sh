@@ -171,6 +171,15 @@ for source_path, entry in sorted(data['files'].items()):
         print(f'ERROR: parse_manifest: entry {source_path} has invalid ownership: {entry[\"ownership\"]}', file=sys.stderr)
         sys.exit(1)
 
+    # Supply-chain hardening: settings.json must always be merge-tier with merge_key=hooks
+    if source_path == '.claude/settings.json':
+        if entry['ownership'] != 'merge':
+            print(f'ERROR: parse_manifest: .claude/settings.json MUST be merge-tier, got ownership={entry[\"ownership\"]}', file=sys.stderr)
+            sys.exit(1)
+        if entry.get('merge_key') != 'hooks':
+            print(f'ERROR: parse_manifest: .claude/settings.json MUST have merge_key=hooks, got {entry.get(\"merge_key\")}', file=sys.stderr)
+            sys.exit(1)
+
     sha256 = entry.get('sha256', '')
     merge_key = entry.get('merge_key', '')
     print(f'{source_path}\t{entry[\"ownership\"]}\t{entry[\"dest\"]}\t{sha256}\t{merge_key}')

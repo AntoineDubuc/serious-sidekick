@@ -1,0 +1,17 @@
+=== Test: parse_manifest ===
+
+  PASS: parse_manifest exits 0 on valid manifest
+  PASS: Fixture has required top-level fields
+  PASS: Fixture has all 3 ownership tiers in parse output
+  PASS: Can query template entry from parse output
+  PASS: Can query merge entry from parse output
+  PASS: Can query user-init entry from parse output
+  PASS: parse_manifest rejects missing version with error
+  PASS: parse_manifest rejects missing files with error
+  PASS: parse_manifest names offending entry in error
+  PASS: parse_manifest rejects entry missing dest
+  PASS: parse_manifest rejects nonexistent file
+  PASS: parse_manifest rejects invalid JSON
+
+=== parse_manifest Tests Complete: 0 error(s) ===
+Exit code: 0
