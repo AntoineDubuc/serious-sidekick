@@ -130,10 +130,13 @@ resolve_breadcrumb_path() {
   fi
 
   # --- 4. Reject control characters that tr didn't strip (belt & braces) ---
-  # Specifically: null byte (\x00) though bash strings truncate on \x00 anyway,
-  # plus \x01-\x08, \x0b, \x0c, \x0e, \x0f, \x7f.
+  # Note: $'\x00' (null byte) is NOT included in the case pattern because
+  # bash 3.2 expands it to an empty string, making *$'\x00'* equivalent to
+  # ** which matches everything. Bash already truncates strings at null bytes
+  # during read, so null injection is handled implicitly.
+  # Checked: \x01-\x08, \x0b, \x0c, \x0e, \x0f, \x7f.
   case "$raw" in
-    *$'\x00'*|*$'\x01'*|*$'\x02'*|*$'\x03'*|*$'\x04'*|*$'\x05'*|*$'\x06'*|*$'\x07'*|*$'\x08'*|*$'\x0b'*|*$'\x0c'*|*$'\x0e'*|*$'\x0f'*|*$'\x7f'*)
+    *$'\x01'*|*$'\x02'*|*$'\x03'*|*$'\x04'*|*$'\x05'*|*$'\x06'*|*$'\x07'*|*$'\x08'*|*$'\x0b'*|*$'\x0c'*|*$'\x0e'*|*$'\x0f'*|*$'\x7f'*)
       echo "resolve_breadcrumb_path: breadcrumb contains control character: $breadcrumb_file" >&2
       return 1
       ;;
