@@ -7,6 +7,7 @@
 #
 # Auto-discovered test files include:
 #   test_status_json.sh — status.json schema compliance (Plan 4a)
+#   test_status_line.sh — statusline-command.sh /serious-code segment (Plan 4b)
 
 set -euo pipefail
 
