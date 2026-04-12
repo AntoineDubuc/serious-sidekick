@@ -1,218 +1,415 @@
-# Serious Sidekick — Feature Roadmap
+# Serious Sidekick — Product Roadmap
 
-> Last updated: 2026-04-09 | Current version: v1.6.0 | Claude Code: v2.1.98
-
-## Status Legend
-
-| Tag | Meaning |
-|-----|---------|
-| DONE | Shipped and verified |
-| FREEBIE | Upstream fix/feature we get for free — no work needed |
-| RESEARCHED | Research complete, not yet implemented |
-| PLANNED | In a prior phase plan, ready to build |
-| NEW | Discovered in changelog, needs investigation |
-| BACKLOG | Lower priority, standalone improvement |
-| DROPPED | Investigated and rejected (reason noted) |
+> **Last updated:** 2026-04-12 · **Current version:** v1.6.0 · **Claude Code:** v2.1.101
 
 ---
 
-## 1. Mechanical Enforcement Gap (PRIORITY)
+## At a Glance
 
-**Principle:** "Mandatory" without a hook is just a suggestion.
-
-These are things the system calls mandatory but doesn't mechanically enforce today.
-
-| # | Gap | Current State | Proposed Fix | Status |
-|---|-----|--------------|--------------|--------|
-| 1.1 | Which review agents ran | `review_verdict.md` could say PASS without all agents running | Hook validates agent signatures in verdict file before accepting | DONE |
-| 1.2 | Whether `/serious-code` dispatched all 5 agent types per task | Could skip QA or runtime-checker | Hook validates dispatch log against required agent list | DONE |
-| 1.3 | Whether plan generator used `_extracted_items.md` | Stop hook only checks file exists, not that it was cross-referenced | Content-aware validation in hook script | DONE |
-| 1.4 | Cold-read principle followed | No enforcement that reviewer reads adjacent files | PreToolUse/Read hook to log reads, verify coverage | PLANNED |
-| 1.5 | Architect agent mandatory in review | Agent doesn't exist yet (see 2.1) | Must ship with hook enforcement from day one | PLANNED |
-
-**v1.4.0 (2026-03-29):** Gaps 1-3, 5, 7-9 closed via Stop hook extensions (zero new hook types). All 9 hooks converted to fail-closed. See `Research/features/mechanical-enforcement-gap/` for full research, plan, and evidence.
-
-**v1.6.0 (2026-04-05):** Breadcrumb 0-pre silence + staleness detection. Skills no longer narrate "No active breadcrumbs" during normal advancing workflows. Stale breadcrumbs from interrupted sessions auto-detected (by frontmatter status or file age > 4 hours). `debug(8)` added to all pipeline order definitions. See `Research/bugs/breadcrumb-not-found-on-advance/`.
-
-### New from Changelog (v2.1.85) — RESEARCHED
-
-- **Conditional `if` field for hooks** — RESEARCHED: Only works on 4 tool events (PreToolUse, PostToolUse, PreToolEdit, PostToolEdit), cannot scope Stop hooks. Useful for PreToolUse filtering only.
-- **`agent_id` and `agent_type` available in hooks** (v2.1.69) — RESEARCHED: Conditional (subagent context only). Not available in main-session Stop hooks.
-- **PreToolUse hooks can answer AskUserQuestion** (v2.1.85) — RESEARCHED: Validated, works as documented. Deferred to Phase 3.
+- **Just shipped (commit `5001774`, 2026-04-12):** Supply-chain hardening for `serious-update` + `/serious-init`. All 3 attack vectors from the live-status-line research are closed: manifest tier-swap blocked, SHA-256 hash verification activated (was decorative), `is_serious()` regex tightened, template key allowlist enforced. 32 new supply-chain tests + 16 existing tests all pass. Full `/serious-code` run — 6 tasks, all gates passed. Evidence at `Research/features/live-status-line/plans/serious-update-supply-chain-hardening/evidence/`.
+- **Also shipped (commit `1907ccb`, 2026-04-11):** Stop-hook-loop-pattern rollout sync — all 6 project hooks now have the loop guard.
+- **Resolved 2026-04-11 (T1 PASSED):** `disallowedTools` enforcement WORKS on subagents. Empirically verified.
+- **Resolved 2026-04-11 (T2 PASSED):** Monitor tool integration pattern verified — `stdbuf -oL tail -F evidence.log` works. Monitor watches shell scripts, not subagents.
+- **Resolved 2026-04-12 (T3 PASSED):** The supply-chain hardening `/serious-code` run was a full end-to-end exercise of the pipeline after the hook rollout sync. All 6 tasks dispatched, all 5 agent types ran per task, all gates passed. T3's "live smoke test" is satisfied.
+- **YouTube research sprint (2026-04-12):** 4 videos ingested via `/serious-youtube-tldr`. Key findings: Karpathy principles gap analysis, `context: fork` chaining, Excalidraw MCP, 5 durable web verticals. Research at `Research/youtube/`.
+- **Top feature when spikes are clear:** Dispatch audit trail — HOLD for 1-2 weeks, Anthropic may ship hook inheritance in v2.1.102/103.
+- **Latent bug class to watch:** Subagent inheritance. v2.1.101 fixed MCP tool inheritance and worktree file access. Hooks may be next.
 
 ---
 
-## 2. Architect Review Agent
+## Tier 0 — Blocking Spikes (cheap, do these first)
 
-| # | Item | Details | Status |
-|---|------|---------|--------|
-| 2.1 | 4th mandatory agent in `/serious-review` | SOLID, DRY, framework conventions, multi-tenancy, cross-boundary leaks | PLANNED |
-| 2.2 | Hook enforcement from day one | Verdict cannot pass without architect agent having run | PLANNED |
-| 2.3 | Big picture first, then implementation details | Review order: architecture decisions > code patterns > line-level | PLANNED |
+Small empirical tests that change downstream priorities. Each is under 30 minutes.
 
----
+| # | Spike | Why | Effort | Status |
+|---|-------|-----|:------:|:------:|
+| **T1** | **`disallowedTools` enforcement on subagents** | ~~Round 1 reviewer flagged this during the dispatch-hook research. Never tested empirically.~~<br>**RESOLVED 2026-04-11: PASSED.** Dispatched `serious-code-test-runner` (which has `disallowedTools: Edit, Write, NotebookEdit`) and asked it to attempt Write+Edit calls.<br>Agent reported Write/Edit/NotebookEdit are **not in its tool list at all** — filtered before dispatch, not runtime-blocked. Bash verification confirmed no file created. Our security claim is real. | XS | **DONE** |
+| **T2** | **Monitor tool feasibility for /serious-code orchestration** | ~~v2.1.101 fixed subagents in worktrees being denied file access.~~<br>**RESOLVED 2026-04-11: PASSED.** Also revealed that the original ROADMAP #2 framing was wrong — Monitor watches shell scripts, not subagents. The real integration pattern is `stdbuf -oL tail -F evidence.log`. Worktrees are irrelevant to Monitor (shell runs in main session context). v2.1.101 fix is unrelated. Integration pattern verified: events arrive as notifications; 200ms batching fine for /serious-code's pacing; **`stdbuf -oL` is mandatory** — plain `tail -F` block-buffers when piped into Monitor. | XS | **DONE** |
+| **T3** | **Verify the rollout sync didn't break anything** | ~~Live smoke test of `/serious-code` end-to-end after today's hook changes.~~<br>**RESOLVED 2026-04-12: PASSED.** The supply-chain hardening `/serious-code` run (6 tasks, all 5 agent types per task, 32+16 tests passing) was a full end-to-end exercise of the pipeline after the hook rollout sync. All gates passed. Original Task 6 is satisfied. | S | **DONE** |
 
-## 3. Claude Code Feature Adoption (RESEARCHED)
-
-Research complete at `Research/features/claude-code-feature-adoption/research.md` (2026-03-26).
-
-### Phase 1 — Quick Wins
-
-| # | Feature | Details | Risk | Status |
-|---|---------|---------|------|--------|
-| 3.1 | `paths:` globs for skills | Scope skill loading to relevant file patterns. YAML list format. Test on ONE auto-loader first — `paths:` + `description` interaction is unknown and could break all 18 auto-loaders if destructive. | MEDIUM | RESEARCHED |
-| 3.2 | `ENV_SCRUB` | Set `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` to strip credentials from subprocess environments. One line in `/serious-init`. | LOW | RESEARCHED |
-
-**Dropped from Phase 1:**
-- ~~`initialPrompt`~~ — Only works for main session agents, not subagents. All 8 of our agents are subagents. Zero effect. (DROPPED)
-- ~~`TaskOutput` audit~~ — Tool was fully removed in v2.1.84. Zero operational references in our codebase. (DROPPED)
-
-### Phase 2 — Hook-Based Enforcement
-
-| # | Feature | Details | Risk | Status |
-|---|---------|---------|------|--------|
-| 3.3 | `FileChanged` hooks | Fires when files are modified. Pipe-separated basename matchers. **Notification-only** — cannot block writes, only warn during session. Use `jq -r` for JSON parsing (injection protection). | LOW | RESEARCHED |
-| 3.4 | `PreToolUse/Agent` hook | Intercepts every Agent tool call before dispatch. Can validate agent parameters, enforce required agent types, block unauthorized spawns. Replaces the originally-planned `TaskCreated` hook approach. | MEDIUM | RESEARCHED |
-
-### Phase 3 — Directory Awareness
-
-| # | Feature | Details | Risk | Status |
-|---|---------|---------|------|--------|
-| 3.5 | `CwdChanged` hooks | Fires on every directory change. No matcher support. Receives `old_cwd` and `new_cwd`. Useful for worktree validation during multi-plan execution. | LOW | RESEARCHED |
-
-### New from Changelog — Research Corrections
-
-| # | Finding | Details | Impact |
-|---|---------|---------|--------|
-| 3.6 | `TaskCreated` hook now EXISTS | v2.1.84 added `TaskCreated` hook that fires when task created via `TaskCreate`. Our research (same day) said it didn't exist. **Re-evaluate:** may be useful alongside `PreToolUse/Agent` for different enforcement purposes. | NEEDS RE-EVALUATION |
-| 3.7 | Conditional `if` on hooks | v2.1.85 added `if` field using permission rule syntax. Our FileChanged and PreToolUse hooks can now be scoped conditionally — e.g., only fire during `/serious-code` runs, not during casual editing. Reduces false positives significantly. | ENHANCES 3.3, 3.4 |
-| 3.8 | `paths:` fix for files outside project root | v2.1.86 fixed Write/Edit/Read failing on files outside project root with conditional skills. If we hit errors during `paths:` testing, this fix may have resolved them. | REDUCES RISK for 3.1 |
-| 3.9 | Unnecessary config disk writes fixed | v2.1.86 fixed config disk writes on every skill invocation. Reduces I/O overhead for our 29 skills. | FREEBIE |
+**All Tier 0 spikes resolved.** Feature work is unblocked.
 
 ---
 
-## 4. Agent Control Levers
+## Top Priorities — Ranked Features
 
-Features from v2.1.69–v2.1.98 that give us finer control over subagent behavior.
+The eight things that matter most after the spikes clear, in order. Effort is informational, not the ranking driver.
 
-| # | Feature | Version | Details | Potential Use | Status |
-|---|---------|---------|---------|---------------|--------|
-| 4.1 | `effort` frontmatter for agents | v2.1.78 | Set effort level (low/medium/high) per agent in frontmatter | high (6 agents), medium (runtime-checker), low (test-runner) | DONE |
-| 4.3 | `disallowedTools` frontmatter for agents | v2.1.78 | Block specific tools from being used by an agent | 7 of 8 agents blocked from Edit/Write/NotebookEdit. Implementer keeps full access. | DONE |
-| 4.11 | Default effort now HIGH | v2.1.94 | Default effort changed from medium to high for API-key, Bedrock/Vertex, Team, Enterprise users | Our agents already set effort explicitly via frontmatter — verify no drift if user overrides via `/effort` | FREEBIE |
-| 4.12 | Agent team permission inheritance fix | v2.1.98 | Agent team members now correctly inherit leader's `--dangerously-skip-permissions` | Critical for `/serious-code` — agents no longer silently downgraded to restrictive mode | FREEBIE |
-| 4.13 | Background subagent partial progress on failure | v2.1.98 | Failed background subagents now report partial progress to parent instead of silent failure | Better error recovery in `/serious-code` orchestrator when an agent crashes mid-task | FREEBIE |
-| 4.15 | `/agents` Running tab with instance count | v2.1.97 | Tabbed layout: Running tab shows live subagents, Library tab adds Run/View actions; `● N running` badge | Better UX for monitoring agent teams during `/serious-code` multi-plan execution | FREEBIE |
-| 4.16 | 429 rate-limit surfacing fix | v2.1.94 | Agents no longer appear stuck after 429 with long Retry-After — error surfaces immediately | Long `/serious-code` runs hit rate limits; agents now fail fast instead of silent hang | FREEBIE |
-| 4.4 | `model` parameter on Agent tool | v2.1.72 | Override model per agent spawn | Cheap model for extraction, capable model for review/QA | NEW |
-| 4.5 | `StopFailure` hook | v2.1.78 | Fires on API errors during agent execution | Detect and handle agent failures gracefully | NEW |
-| 4.6 | `SendMessage` auto-resumes stopped agents | v2.1.77 | No need to manually resume — just send a message | Simplifies retry logic in orchestrators | NEW |
-| 4.7 | `PermissionDenied` hook | v2.1.90 | Fires after auto-mode denials, supports `{retry: true}` | Recover from denials in unattended `/serious-code` runs | NEW |
-| 4.8 | `defer` permission decision for PreToolUse | v2.1.90 | Headless sessions can pause and resume on tool approval | Enables unattended `/serious-code` with human-in-the-loop on sensitive ops | NEW |
-| 4.9 | Named subagents in `@` typeahead | v2.1.90 | Mention running agents by name in conversation | Better orchestration UX for agent teams | NEW |
-| 4.14 | Monitor tool for background scripts | v2.1.98 | Stream events from background processes in real time | Replace sleep-poll loops in `/serious-code` with event-driven monitoring of worktree agents | NEW |
-| 4.2 | `maxTurns` frontmatter for agents | v2.1.78 | Cap the number of turns an agent can take | Deferred — need turn count data from real workflows first | BACKLOG |
+| Rank | Feature | Why it matters | Impact | Effort | CC version | Status |
+|-----:|---------|----------------|:------:|:------:|:----------:|:------:|
+| **1** | **Dispatch audit trail** (§A) | Research done (`Research/features/pretooluse-agent-hook/`).<br>The original Stop-hook design was killed (would repeat April 7 incident). Replaced by audit-only logging.<br>**HOLD 1-2 weeks** to see if v2.1.102/103 ships hook inheritance — would unlock real enforcement. | High | M | v2.1.84 | **HOLD** |
+| **2** | **Monitor tool integration** (§B) | Replaces brittle `sleep`-poll in `/serious-code` with event-driven monitoring via `stdbuf -oL tail -F` on evidence files.<br>T2 resolved the integration pattern — Monitor watches shell scripts (not subagents) and gets line-buffered tail output via `stdbuf -oL`.<br>Events arrive as conversation notifications; 200ms batching fits `/serious-code`'s natural pacing. | High | M | v2.1.98 | **PLANNED** |
+| **3** | **Cold-read enforcement in /serious-review** (§C) | The "cold read" principle is documented but not enforced. Reviewers can open research/conversation context.<br>A PreToolUse/Read hook can log opens and fail the verdict on violations.<br>Safe by design — PreToolUse blocks are one-shot, not loop-prone. | High | M | — | **PLANNED** |
+| **4** | **Live status line during `/serious-code`** (§D) | `/serious-code` progress now displays as a second line in the terminal footer: `[serious-code · Phase 2/4 · Task 3/5 · implementer: running]`.<br>Integrated into existing `~/.claude/statusline-command.sh`. All 4 prerequisite plans + Plan 4b shipped. 18 tests pass. Sanitization, path validation, env scrubbing all in place. | Medium | S | v2.1.97 | **DONE** |
+| **5** | **`defer` + `PermissionDenied` hooks** (§E) | Together unlock unattended `/serious-code` runs with human-in-the-loop on sensitive ops.<br>`defer` pauses on dangerous tool calls; `PermissionDenied` auto-retries safe denials.<br>Critical for CI/headless and enterprise adoption. | Med-High | M | v2.1.89/90 | **NEW** |
+| **6** | **`paths:` globs for skill auto-loading** (§F) | Our 18 auto-loader skills load via description matching — every skill adds context tokens.<br>Scoping to file patterns (`paths: ["*.ts"]`) cuts context cost during normal editing.<br>Quick win, but MEDIUM risk: `paths:` + `description` interaction is untested in production. | Medium | S | v2.1.86 | **RESEARCHED** |
+| **7** | **`FileChanged` hooks for drift detection** (§G) | If a file changes between `/serious-plan` and `/serious-code`, the plan silently goes stale.<br>A `FileChanged` hook warns when upstream artifacts drift mid-pipeline.<br>Notification-only, but catches a real failure mode. | Medium | S | v2.1.80+ | **RESEARCHED** |
+| **8** | **Auto-detection skill invocation** (§H) | Skills fire contextually without slash commands (mention "bug in auth" → `/serious-research`).<br>Biggest single DX improvement but XL effort and depends on session-start hook upstream feature.<br>Backlog until upstream lands. | High | XL | — | **BACKLOG** |
+| **9** | **Karpathy principles enforcement in subagents** (§I) | "Simplicity First" is entirely missing from subagent briefings — implementer can over-engineer freely and no verification agent checks for minimality. Scope enforcement (only touch files in Key Components) is documented but not mechanically enforced. Ambiguity flagging (flag BLOCKED instead of guessing) absent from implementer dispatch prompt.<br>Research: `Research/youtube/karpathy-coding-agent-principles/`. Source: [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills). | High | S | — | **NEW** |
+| **10** | **Compound "quick skills" via `context: fork` chaining** (§J) | Lightweight pipelines for operational work that doesn't need the full serious pipeline. Orchestrator skill with `context: fork` frontmatter invokes `/skill-name` commands sequentially, each step reads prior output. 5 candidates identified: `/quick-ingest` (youtube→conversation), `/quick-audit` (breadcrumb + artifact health), `/quick-brief` (cross-artifact synthesis), `/quick-changelog` (fetch + diff + summarize releases), `/quick-skill-lint` (validate skill consistency).<br>Research: `Research/youtube/chaining-claude-code-skills/`. | Med-High | M | v2.1.69+ | **NEW** |
+| **11** | **Excalidraw MCP integration for workflow diagrams** (§K) | Third-party Excalidraw MCP server (not the official one) provides live canvas + iterative visual refinement via screenshots. Claude draws, takes screenshot, self-assesses, iterates. Complements `/serious-bananas` (static Gemini images) with interactive, editable diagrams. Use cases: architecture diagrams in `/serious-research`, flow diagrams in `/serious-plan`, progress visualizations in `/serious-code`.<br>Research: `Research/youtube/claude-excalidraw-mcp-diagrams/`. | Medium | S | — | **NEW** |
+
+**Legend:** Impact = user value at launch. Effort = S (≤2 days), M (week), L (2-4 weeks), XL (month+). Status = HOLD (waiting on upstream) / BLOCKED (depends on a spike) / PLANNED (specced) / RESEARCHED (unknowns resolved) / NEW (needs spec) / BACKLOG (deferred).
 
 ---
 
-## 5. Worktree & Execution Improvements
+## Recently Shipped
 
-**v1.5.0 (2026-03-31):** Worktree breadcrumb path fix shipped. All 15 hooks now resolve paths via `$CLAUDE_PROJECT_DIR`. 8 pre-existing bugs fixed. 10 test suites, 96 assertions, 0 failures. See `Research/bugs/worktree-breadcrumb-paths/`.
-
-| # | Feature | Version | Details | Potential Use | Status |
-|---|---------|---------|---------|---------------|--------|
-| 5.0 | Worktree-safe hooks | v1.5.0 | All 15 hooks use `PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"` + path validation + 8 bug fixes | Unblocks multi-plan parallel execution in `/serious-code` | DONE |
-| 5.8 | Subagent worktree cwd leak fix | v2.1.97 | Subagents with worktree isolation or `cwd:` override no longer leak their working directory back to parent session's Bash tool | Critical fix — parent session was inheriting worktree cwd, causing file operations in wrong directory | FREEBIE |
-| 5.9 | Stale worktree cleanup safety | v2.1.98 | Stale subagent worktree cleanup no longer removes worktrees containing untracked files | Prevents data loss during `/serious-code` — generated but uncommitted code in worktrees is now preserved | FREEBIE |
-| 5.10 | `--resume` from other worktrees | v2.1.94 | `--resume` now resumes sessions from other worktrees of the same repo directly (no more `cd` command) | Smoother UX when resuming `/serious-code` sessions that ran in worktrees | FREEBIE |
-| 5.12 | Compaction transcript dedup fix | v2.1.97 | Compaction no longer writes duplicate multi-MB subagent transcript files on prompt-too-long retries | Prevents session bloat during long `/serious-code` runs with many agent spawns | FREEBIE |
-| 5.1 | `ExitWorktree` tool | v2.1.72 | Programmatically exit a worktree | Cleaner worktree lifecycle in `/serious-code` | NEW |
-| 5.2 | `WorktreeCreate` / `WorktreeRemove` hooks | v2.1.50 | Fire when worktrees are created or removed | Validate worktree setup, cleanup tracking | NEW |
-| 5.3 | `WorktreeCreate` supports `type: "http"` | v2.1.84 | HTTP-based hooks for worktree creation | Remote validation or logging | NEW |
-| 5.4 | `worktree.sparsePaths` setting | v2.1.76 | Sparse checkout for large monorepos | Performance for template users with large repos | NEW |
-| 5.5 | `worktree` field in statusline commands | v2.1.69 | Statusline scripts know which worktree is active | Better status display during multi-plan execution | NEW |
-| 5.6 | `PostCompact` hook | v2.1.76 | Fires after context compaction | Re-inject critical instructions after compaction | NEW |
-| 5.7 | Prompt cache expiry hint | v2.1.92 | Pro users see uncached token count when returning to stale sessions | Know when to start fresh vs resume | NEW |
-| 5.11 | `workspace.git_worktree` in status line | v2.1.97 | Status line JSON input now includes `workspace.git_worktree` when inside a linked git worktree | Enables worktree-aware status line during multi-plan execution (show which plan/branch is active) | NEW |
+| Version / Commit | Date | What shipped |
+|:----------------|:-----|:-------------|
+| *(unstaged)* | 2026-04-12 | **Live status line for `/serious-code`.** Second footer line shows `[serious-code · Phase N/M · Task N/M · agent: state]` during active runs. Integrated into existing `~/.claude/statusline-command.sh`. 5 plans total (3 security prereqs + schema + integration). 18 status-line tests + 32 supply-chain tests + 16 existing tests all pass. Secret env vars scrubbed, terminal injection sanitized, path validation via `resolve_breadcrumb_path`. |
+| **`5001774`** | 2026-04-12 | **Supply-chain hardening for `serious-update` + `/serious-init`.** 3 attack vectors closed: manifest tier-swap blocked in `parse_manifest`, SHA-256 hash verification activated (was decorative), `is_serious()` regex end-anchored, template key allowlist enforced on fresh-install. 32 new supply-chain tests. Full `/serious-code` run — 6 tasks, all gates passed. Also serves as T3 live smoke test. |
+| *(unstaged)* | 2026-04-12 | **YouTube research sprint.** 4 videos ingested via `/serious-youtube-tldr`: Karpathy principles, Excalidraw MCP, 5 durable web verticals, `context: fork` chaining. 3 new roadmap items (#9-#11). |
+| **`1907ccb`** | 2026-04-11 | **Stop-hook-loop-pattern rollout sync.** All 6 project hooks now source `_shared/stop-hook-guard.sh`. `bin/generate-manifest.sh` now walks `_shared/`. `manifest.json` includes the previously-untracked `_shared/handoff-verifier.md` plus the 3 new guard files. 15/15 unit tests pass; all 6 hooks pass susceptibility test. Discovered while researching ROADMAP item #1. |
+| **`b792fde`** | 2026-04-09 | `/serious-youtube-tldr` skill, `CLAUDE_CODE_CHANGELOG.md` initial publish, ROADMAP augmented with v2.1.94–v2.1.98 items. |
+| **v1.6.0** | 2026-04-05 | Breadcrumb 0-pre silence + staleness detection. Skills no longer narrate "No active breadcrumbs" during advancing workflows. Stale breadcrumbs auto-detected by frontmatter status or file age > 4 hours. `debug(8)` added to pipeline order. |
+| **v1.5.0** | 2026-03-31 | **Worktree-safe hooks.** All 15 hooks resolve paths via `$CLAUDE_PROJECT_DIR`. 8 pre-existing path-handling bugs fixed. 10 test suites, 96 assertions. Unblocks multi-plan parallel execution. |
+| **v1.4.0** | 2026-03-29 | **Mechanical enforcement gap closed.** Gaps 1–3, 5, 7–9 shipped via Stop hook extensions. All 9 hooks converted to fail-closed. Dispatch log validates all 5 code agents ran. |
+| **v1.3.0** | — | **Agent control levers.** `effort: high/medium/low` set for all 8 agents. `disallowedTools` blocks 7 of 8 agents from Edit/Write — only Implementer can write code. **(See T1 — never empirically verified.)** |
+| **v1.2.0** | 2026-03-22 | **Superpowers A-tier:** Anti-rationalization tables, Agent Teams integration, verification-before-completion in `/serious-code`. |
 
 ---
 
-## 6. Observability & Context
+## Detailed Rationale — Top Priorities
 
-| # | Feature | Version | Details | Potential Use | Status |
-|---|---------|---------|---------|---------------|--------|
-| 6.3 | Read tool deduplicates re-reads | v2.1.86 | Compact format, skips unchanged content on re-read | Token savings across all skills | FREEBIE |
-| 6.4 | Prompt cache improvements | v2.1.86 | Better hit rate for Bedrock/Vertex/Foundry | Cost savings for enterprise template users | FREEBIE |
-| 6.19 | Plugin skills use frontmatter `name` | v2.1.94 | Skills declared via `"skills": ["./"]` use frontmatter `name` for invocation, not directory basename | Stable skill names across install methods — relevant if we distribute as a plugin | FREEBIE |
-| 6.20 | `Bash(cmd:*)` wildcard spacing fix | v2.1.98 | Wildcard permission rules now match commands with extra spaces or tabs | Our `Bash(git commit *)` and similar rules now work reliably | FREEBIE |
-| 6.21 | Hook stderr in transcript | v2.1.98 | Hook errors in transcript now include first line of stderr for self-diagnosis | Debug hook failures without `--debug` flag — useful for our 15+ hooks | FREEBIE |
-| 6.1 | `InstructionsLoaded` hook | v2.1.69 | Fires when CLAUDE.md / skill instructions load | Verify correct instructions loaded for active workflow | NEW |
-| 6.2 | `${CLAUDE_SKILL_DIR}` variable | v2.1.69 | Resolves to the directory containing the current skill | Skill-relative paths in hook scripts | NEW |
-| 6.5 | `autoMemoryDirectory` setting | v2.1.74 | Custom directory for auto-memory | Organize memory per-project or per-workflow | NEW |
-| 6.6 | Skills sort alphabetically + 250-char cap | v2.1.86 | `/skills` listing now sorted, descriptions capped | Review our 29 skill descriptions for truncation | NEW |
-| 6.7 | `effort` frontmatter for skills | v2.1.80 | Set effort level per skill | Match effort to skill complexity | NEW |
-| 6.8 | MCP tool result persistence up to 500K chars | v2.1.91 | Large results pass through without truncation via `_meta["anthropic/maxResultSizeChars"]` | Large DB schemas, big grep results no longer cut off | NEW |
-| 6.9 | Per-model cost breakdown in `/cost` | v2.1.92 | See token spend by model for subscription users | Optimize which agents use which models | NEW |
-| 6.10 | `disableSkillShellExecution` setting | v2.1.91 | Lock down inline shell execution in skills/plugins | Security hardening for enterprise users | NEW |
-| 6.11 | Plugin executables in `bin/` | v2.1.91 | Plugins can ship executables and invoke them as bare Bash commands | Package verification scripts, custom tools | NEW |
-| 6.12 | `/powerup` interactive lessons | v2.1.90 | Animated demos teaching Claude Code features | Onboarding for new template users | NEW |
-| 6.13 | `refreshInterval` status line setting | v2.1.97 | Re-run status line command every N seconds | Show live `/serious-code` progress (phase, task count, pass/fail) with auto-refresh in footer | NEW |
-| 6.14 | `hookSpecificOutput.sessionTitle` | v2.1.94 | `UserPromptSubmit` hooks can set session title via `hookSpecificOutput` | Auto-name sessions after active workflow slug (e.g., "serious-code: auth-token-expiry") | NEW |
-| 6.15 | Focus view toggle (`Ctrl+O`) | v2.1.97 | In `NO_FLICKER` mode: shows prompt, one-line tool summary with edit diffstats, and final response | Cleaner view during long `/serious-code` runs — cuts noise from intermediate tool calls | NEW |
-| 6.16 | OTEL `TRACEPARENT` in Bash subprocesses | v2.1.98 | W3C `TRACEPARENT` env var propagated to Bash tool subprocesses when OTEL tracing is enabled | End-to-end trace trees across `/serious-code` orchestrator → agent → subprocess | NEW |
-| 6.17 | `--exclude-dynamic-system-prompt-sections` | v2.1.98 | Print mode flag for improved cross-user prompt caching | Headless `/serious-code` runs can cache prompts across users (enterprise/CI use case) | NEW |
-| 6.18 | `keep-coding-instructions` frontmatter | v2.1.94 | Plugin output style field that preserves coding instructions through style changes | Ensure workflow instructions survive output style switches during long sessions | NEW |
+### A. Dispatch audit trail (#1)
+
+**Status: HOLD 1-2 weeks. Research complete at `Research/features/pretooluse-agent-hook/`.**
+
+**The gap.** `verify-completion-gate.sh` checks that 5 evidence files exist per task. It does NOT check that 5 agents actually dispatched. A buggy or rogue orchestrator can write 5 fake evidence files and pass the gate.
+
+**Original design (killed).** Stop hook validates a dispatch log at session end. Block if any task has fewer than 5 distinct agent dispatches.
+
+**Why killed.** This is **Category C** by the past `Research/bugs/stop-hook-loop-pattern/` taxonomy — cross-agent precondition requiring sub-agent dispatches to fix. Same architectural class as `check-extraction.sh` which caused an ~80-turn infinite loop on April 7. Adding a Category C check to `verify-completion-gate.sh` (already loop-prone in the project repo until today's commit) would have repeated the incident.
+
+**Replacement design — observability only.** `PreToolUse/Agent` hook logs every dispatch to `dispatch_log.md`. Always exits 0. Completion report surfaces a "Dispatch Audit" section that warns if a task has fewer than 5 distinct types — but doesn't block the session. Closes ~80% of the fabrication threat by making cheating detectable post-hoc.
+
+**Why HOLD.** v2.1.101 fixed two related subagent inheritance bugs (MCP tools, worktree file access). The broader hook inheritance fix may land in v2.1.102 or v2.1.103. If it does, the original mechanical-enforcement design works cleanly without the loop risk — and the audit trail becomes a strict downgrade. Wait 1-2 weeks. If no upstream fix, ship the audit trail.
+
+**Optional Phase 2 (after audit trail is stable).** PreToolUse metadata validation: exit 2 if a dispatch is missing its `TASK_ID` tag or uses an unapproved `subagent_type`. Safe because PreToolUse blocks are one-shot (verified empirically in the research). Not loop-prone.
+
+**Effort if we ship the audit trail:** Small-Medium (~2-3 days).
+
+### B. Monitor tool integration (#2)
+
+**Status: PLANNED. T2 resolved the integration pattern on 2026-04-11.**
+
+**Problem.** `/serious-code` currently polls evidence directories via `while sleep 5; do check; done` to detect when verification agents have finished. This burns API calls, misses state transitions shorter than the poll interval, and doesn't handle agent crashes gracefully.
+
+**Original framing (wrong).** The previous version of this roadmap said "subscribe to background agent events." That's conceptually wrong — Monitor is a shell-script watcher, not a subagent-output streamer. The integration path is different.
+
+**Correct integration pattern (verified in T2).**
+
+1. When `/serious-code` starts, the orchestrator launches a Monitor watching a tail of the active plan's dispatch log:
+   ```
+   Monitor({
+     command: "stdbuf -oL tail -F {PLAN_DIR}/evidence/dispatch_log.md",
+     description: "agent dispatches for {plan_slug}",
+     timeout_ms: 3600000,  // or persistent: true for long runs
+     persistent: false
+   })
+   ```
+
+2. As verification agents complete and append to the log, each line becomes a notification in the conversation stream. The orchestrator reacts to events instead of polling.
+
+3. `stdbuf -oL` is **mandatory** — without it, `tail -F` block-buffers its stdout when piped into Monitor's capture, delaying events by 5+ seconds. T2 verified this empirically.
+
+4. Events within 200ms are batched into a single notification. Not a problem for `/serious-code`'s pacing (agents run sequentially with multi-second gaps).
+
+**Why it's #2.** Removes the sleep-poll (which is brittle and wastes tokens) without requiring any new upstream features. Pairs naturally with the dispatch audit trail (#1) if/when that ships — same evidence file, same tail mechanism.
+
+**Dependencies.** Requires the dispatch audit trail (#1) to be shipped first, because Monitor needs a file to tail. Without #1, there's no per-dispatch log to watch. This means #2 effectively HOLDs on #1 — which is currently on HOLD waiting for upstream. If #1 stays blocked, an alternative `evidence_index.log` could be added independently.
+
+**Open items for the plan phase.**
+- Where exactly does the dispatch log live? (`{PLAN_DIR}/evidence/dispatch_log.md` is the current proposal from the hook research.)
+- What's the timeout strategy? `persistent: true` for long runs, or a fixed 1-hour timeout with re-arming?
+- How does the orchestrator handle Monitor timeout/stream-end mid-run?
+- Does Monitor output need any processing (grep, jq) before it becomes useful, or is raw tail enough?
+
+### C. Cold-read enforcement (#3)
+
+**Problem.** `/serious-review` agents are supposed to read the plan cold — no research context, no author notes, no implementer drafts. Today nothing stops them. The cold-read principle is a guideline.
+
+**Solution.** PreToolUse/Read hook scoped to `/serious-review` sessions. Logs which files the reviewer opens. If anything outside the plan itself (research.md, conversation summary, completed code) is opened, the verdict is automatically marked "cold-read violated" and the round restarts.
+
+**Why safe.** PreToolUse blocks are one-shot. Verified empirically in the dispatch hook research. Even if Claude misinterprets the block reason and retries the exact same Read, the loop exits naturally — there's no infinite feedback structure like Stop hooks have.
+
+**Why it's #3, not #1.** Review theater is the most subtle form of enforcement gap. Real but lower frequency than the dispatch fabrication threat — and safer to build than the audit trail because it doesn't depend on unresolved upstream questions.
+
+### D. Live status line during `/serious-code` (#4)
+
+**Promoted from #7 in the previous ranking.** Effort is small, value is high, no upstream dependencies.
+
+**Problem.** A `/serious-code` run takes 30+ minutes with silent agent spawns in between. Output IS streaming (verified empirically) but there's no aggregated progress indicator — just a scrolling log. Users can't glance at the terminal and know "where am I in the plan?"
+
+**Solution.** `refreshInterval` (v2.1.97) re-runs a status line script every N seconds. Script reads the active evidence directory and shows: `Phase 2/4 · Task 5/11 · runtime: passing · qa: pending`. Combined with `workspace.git_worktree` (v2.1.97), shows which worktree/plan is active.
+
+**Why it's #4.** Smallest effort on the list, highest perceived quality improvement, no blockers, and v2.1.101 improved focus mode in ways that pair well with this. Likely the first thing to ship after T1 clears.
+
+### E. `defer` + `PermissionDenied` hooks (#5)
+
+**Problem.** Running `/serious-code` in headless mode is all-or-nothing today. Either you allow everything (dangerous) or the session blocks on the first permission prompt. Long unattended runs don't work.
+
+**Solution.** Two hook types together:
+- `defer`: PreToolUse can return "defer" instead of allow/deny. Session pauses, can resume with `-p --resume` after user approval. For dangerous ops (writing to protected dirs, pushing remote).
+- `PermissionDenied`: Fires after auto-mode classifier denials. Can return `{retry: true}` to tell the model it can retry. For over-cautious denials.
+
+**Why #5.** Critical for CI/headless and enterprise adoption — but lower priority than #1-4 because most users today run interactively. Bumps to higher priority once enterprise demand materializes.
+
+**v2.1.101 note.** v2.1.101 fixed `permissions.deny` rules being downgraded to "ask" by PreToolUse hooks — tightens the security model around any future use of these features.
+
+### F. `paths:` globs for skill auto-loading (#6)
+
+**Problem.** 18 auto-loader skills (hooks, MCP, subagents, worktrees, etc.) load based on description matching. Every skill adds context tokens on relevant sessions. When editing TypeScript, the worktrees skill is often loaded but irrelevant.
+
+**Solution.** Add `paths:` frontmatter to scope skill loading to file patterns. TypeScript skills only for `*.ts`. Worktree skills only when in a worktree.
+
+**Why #6.** Quick win (Small effort), but **Medium risk** because the `paths:` + `description` interaction is untested in production. Must test on ONE auto-loader before applying to all 18 — if destructive, breaks everything. Safer to do after the more deterministic items above.
+
+**Open question (#4 below):** Can `paths:` match on directory state, not just file patterns? Some of our skills want "load when inside a worktree" not "load for `*.foo` files."
+
+### G. `FileChanged` hooks for drift detection (#7)
+
+**Problem.** Sessions span days. User writes research.md Monday, runs `/serious-plan` Tuesday, runs `/serious-code` Wednesday. Between Monday and Wednesday someone edits research.md. The plan is now based on stale research. Nothing catches this.
+
+**Solution.** `FileChanged` hooks fire when upstream artifacts are modified during an active session. Warns when research.md changes while a plan is active. Notification-only.
+
+**Why #7.** Real failure mode but rare in solo workflows. Higher value for team workflows — bumps up if the user reports drift incidents in practice.
+
+### H. Auto-detection skill invocation (#8)
+
+**Problem.** Users have to remember skill names and type slash commands. New users don't know which skill fits their problem.
+
+**Solution.** Session-start hook injects invocation cues based on intent classification. "There's a bug in auth" → offer `/serious-research`. "I know what to build" → offer `/serious-plan`.
+
+**Why backlog.** XL effort, classification is hard, false positives are worse than no automation, AND session-start hooks don't exist as a Claude Code feature yet. Parked until the rest of the top 7 ship and the upstream feature lands.
+
+### I. Karpathy principles enforcement in subagents (#9)
+
+**Status: NEW. Gap analysis complete. Research at `Research/youtube/karpathy-coding-agent-principles/`.**
+
+**The gap.** Andrej Karpathy's "skills" repo identifies 4 behavioral principles for AI coding agents. Our CLAUDE.md covers 3 of 4 at the session level. But subagents running inside `/serious-code` don't inherit most of them — they get the plan and acceptance criteria but no behavioral constraints beyond "follow TDD."
+
+**Principle-by-principle analysis:**
+
+| Principle | Session-level (CLAUDE.md) | Subagent-level (serious-code) | Gap |
+|-----------|:-------------------------:|:-----------------------------:|:---:|
+| Think before coding | CLAUDE.md #4, #9 | Missing from implementer briefing | Implementer guesses instead of flagging BLOCKED on ambiguous ACs |
+| Simplicity first | **Not present anywhere** | **Not present anywhere** | Biggest gap — no constraint on minimum code, no reviewer check for over-engineering |
+| Surgical changes | CLAUDE.md #5 | Plan lists Key Components but doesn't enforce "ONLY these files" | No post-implementation scope check |
+| Goal-driven execution | CLAUDE.md #7 | TDD + QA + Completion Gate | Well-covered, no meaningful gap |
+
+**Proposed changes (6 locations, all Small effort):**
+
+1. **serious-code SKILL.md, implementer briefing** — Add: "Write the minimum code to satisfy the acceptance criteria. No additional abstractions, helpers, or error handling beyond what the criteria require. If 200 lines could be 50, rewrite."
+2. **serious-code SKILL.md, implementer briefing** — Add: "If any acceptance criterion is ambiguous or has multiple valid interpretations, flag the task as BLOCKED. Do not guess."
+3. **serious-code SKILL.md, guardrail table** — Add row #8: "This needs a helper/abstraction to be clean" → "Write inline first. Only extract if the plan requires reuse."
+4. **serious-code SKILL.md, after Step 1.25** — Add Step 1.3 "Scope Check": compare files modified vs. Key Components. Flag unlisted files as scope violations.
+5. **Plan template v6, Agent A (Code Review)** — Add "Simplicity" and "Scope" check sections.
+6. **CLAUDE.md** — Add "Simplicity First" principle (the only Karpathy principle not present at session level).
+
+**Why #9.** High impact (every `/serious-code` run benefits), Small effort (text changes to existing prompts), no upstream dependencies. Ranked below #1-8 because it's an incremental quality improvement rather than a capability gap — but could easily move to #5-6 if over-engineering becomes a recurring problem in evidence reports.
+
+**Source:** [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills) — analyzed via YouTube TLDR + direct GitHub fetch.
+
+### J. Compound "quick skills" via `context: fork` chaining (#10)
+
+**Status: NEW. Pattern documented. Research at `Research/youtube/chaining-claude-code-skills/`.**
+
+**The insight.** The serious pipeline (research → scope → plan → review → code) is heavy by design — TDD, 5 verification agents, evidence, worktrees. But there's a category of operational work that needs 2-3 skills chained together without any of that overhead. Claude Code's `context: fork` frontmatter field runs an orchestrator skill in its own context window, enabling sequential `/command` invocations where each step reads the previous step's output.
+
+**The pattern:**
+- Serious-skills are for **building** things (implementation, verification, evidence)
+- Quick-skills are for **understanding**, **maintaining**, and **preparing** things (the operational work between and around the serious pipeline)
+
+**5 candidate quick-skills identified:**
+
+| Skill | Chain | Use case |
+|-------|-------|----------|
+| `/quick-ingest` | `/serious-youtube-tldr` → `/serious-conversation` | Ingest a video and immediately discuss findings. Done manually today — Karpathy video then gap analysis. |
+| `/quick-audit` | scan breadcrumbs → scan incomplete artifacts → produce report | Proactive health check. Today we discovered stale reviews reactively via stop hook warnings. |
+| `/quick-brief` | scan Research/ for topic matches → extract findings → synthesize | Pre-planning digest from multiple research artifacts. Today: 4 videos ingested, synthesis was manual. |
+| `/quick-changelog` | fetch GitHub releases → diff against local changelog → summarize delta | Monitor Claude Code releases. Done manually at the start of this session. |
+| `/quick-skill-lint` | scan SKILL.md files → check hooks registration → check settings.json → lint report | Validate skill consistency. Would have caught the missing `debug(8)` pipeline order issue. |
+
+**Implementation approach:**
+1. Each quick-skill is an orchestrator SKILL.md with `context: fork` in frontmatter
+2. Body lists steps as sequential `/command` invocations
+3. Each step writes output to a predictable file; next step reads it
+4. Final instruction specifies what to bring back to parent context
+5. Optional `allowed-tools:` restricts tool access per skill
+
+**Why #10.** Med-High impact (every session has operational work), Medium effort (5 new skills, each simple), no upstream dependencies beyond `context: fork` which already exists. Ranked below enforcement items because it's DX convenience, not correctness. But could be the highest-leverage "feels different" improvement for daily use.
+
+### K. Excalidraw MCP integration (#11)
+
+**Status: NEW. Research at `Research/youtube/claude-excalidraw-mcp-diagrams/`.**
+
+**Problem.** `/serious-bananas` generates static images via Gemini. Useful for one-shot diagrams but not iterative — you can't edit the output, and Claude can't self-assess what it drew.
+
+**Solution.** Third-party Excalidraw MCP server (not the official Excalidraw MCP) provides:
+- Persistent live canvas syncing in real-time (localhost:3000)
+- Claude draws on canvas, takes screenshot, visually assesses, iterates
+- Exportable as PNG, SVG, or .excalidraw files for manual editing
+- "3 variations then pick" workflow for creative output
+
+**Use cases in serious-skills:**
+- Architecture diagrams during `/serious-research` (iterative refinement based on findings)
+- Flow diagrams in `/serious-plan` (visualize task dependencies and data flow)
+- Progress visualizations in `/serious-code` (live dashboard of phase/task status)
+- Workflow diagrams in `/serious-scope` (scope boundaries and dependencies)
+
+**Why #11.** Medium impact (diagrams are nice-to-have, not blocking), Small effort (install MCP server + write a skill), but lowest priority because `/serious-bananas` covers 80% of diagram needs and the interactive canvas requires a browser open. Ships when someone wants it.
+
+**Key insight from the video:** After iterating on diagrams you like, have Claude update the skill itself with your design preferences (colors, language level, layout). Self-improving skills — applicable beyond just Excalidraw.
+
+**Problem.** Users have to remember skill names and type slash commands. New users don't know which skill fits their problem.
+
+**Solution.** Session-start hook injects invocation cues based on intent classification. "There's a bug in auth" → offer `/serious-research`. "I know what to build" → offer `/serious-plan`.
+
+**Why backlog.** XL effort, classification is hard, false positives are worse than no automation, AND session-start hooks don't exist as a Claude Code feature yet. Parked until the rest of the top 7 ship and the upstream feature lands.
 
 ---
 
-## 7. Superpowers Backlog (B+ Tier)
+## Operations (do alongside features)
 
-From competitive analysis of [obra/superpowers](https://github.com/obra/superpowers) (2026-03-22). A-tier items shipped in v1.2.0.
+These are housekeeping/cleanup items from this session's discoveries. They don't compete with feature ranks — they just need doing.
 
-| # | Feature | Details | Effort | Status |
-|---|---------|---------|--------|--------|
-| 7.1 | Auto-detection skill invocation | Skills fire contextually without slash commands (session-start hook injection) | HIGH | BACKLOG |
-| 7.2 | Implementer status protocol | Formal status codes: DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED | LOW | BACKLOG |
-| 7.3 | Verification-before-completion everywhere | Currently only in `/serious-code`. Should be in ALL skills. | MEDIUM | BACKLOG |
-| 7.4 | SUBAGENT-STOP gate | Prevents recursive skill loading in sub-agents | LOW | BACKLOG |
-| 7.5 | Model selection guidance | Different models for different sub-agent tasks | MEDIUM | BACKLOG |
-| 7.6 | Persuasion research backing | Cialdini principles in skill preambles | LOW | BACKLOG |
-| 7.7 | DOT flowcharts as executable specs | Models follow diagrams more reliably than prose | MEDIUM | BACKLOG |
-| 7.8 | Pressure testing skills on subagents | Simulate sunk-cost/time/authority pressures | MEDIUM | BACKLOG |
+| # | Item | Why | Effort |
+|---|------|-----|:------:|
+| O1 | **Audit other VS Code instances + old project directories** for stale `.claude/skills/` | Today's fix covered the 3 user profiles + this repo. Existing project directories with their own `.claude/skills/` from old `/serious-init` runs are still frozen at the pre-rollout version. Build a sweep script that walks parent dirs and reports which need `serious-update`. | S |
+| O2 | **Commit unstaged in-conversation edits** (`CLAUDE.md`, `CLAUDE_CODE_CHANGELOG.md`, `ROADMAP.md`) | Three files have been sitting unstaged for a while. Bundle them in their own commit. CLAUDE.md is `user-init` tier in the manifest — committing it pushes the rule to all installs. Decide whether the "brief summary" rule belongs in the template or just personal config. | XS |
+| O3 | **Update `lessons.md`** with two new lessons from this session | (1) "Empirical trumps secondhand" — first draft of dispatch hook research relied on stale GitHub issues and almost shipped a wrong conclusion. (2) "Grep `Research/bugs/` before proposing changes to systems with bug history" — second draft missed the architectural risk from the April 7 incident. | XS |
+| O4 | **Update `/serious-research` skill** with mandatory empirical-test step in Phase 0 | When a research topic's feasibility hinges on observable behavior, "I searched the docs" is not sufficient evidence. Add a "smoke-test the claim" step before writing the feasibility verdict. | S |
+| O5 | **Update `/serious-plan` skill** with mandatory `Research/bugs/` grep in Phase 0 | Before proposing changes to any system the project has a bug history with, grep `Research/bugs/` for related keywords. If a past incident is found, the plan must reference its findings. | S |
 
 ---
 
-## 8. Process Improvements (From v1.4.0 Lessons)
+## Backlog
 
-Four pipeline blind spots identified during hook hardening implementation (2026-03-29).
+**Strategic positioning research** (from YouTube research sprint 2026-04-12):
 
-| # | Gap | What Happened | Fix | Status |
-|---|-----|---------------|-----|--------|
-| 8.1 | Review agents check plans, not code | grep patterns with logic bugs passed plan review | Post-code alignment check in /serious-code | BACKLOG |
-| 8.2 | Test fixtures too clean | Real directories have extra files that interact unexpectedly | Messy fixture test requirement in v6 template | BACKLOG |
-| 8.3 | Parallel subagents don't cross-reference siblings | Task 5 missed the source: gating pattern used by sibling tasks | Exhaustively specific ACs for multi-agent execution | BACKLOG |
-| 8.4 | Ad-hoc fixes during e2e skip review | Inline fix swung from "check PASS" to "check not FAIL" — missed empty file case | Require ad-hoc fixes to have their own ACs and tests | BACKLOG |
+The "5 durable web verticals" video (`Research/youtube/five-durable-web-verticals/`) identifies that AI commoditizes production — the companies that survive own structural assets the model providers can't replicate. The 5 verticals: **Trust** (verification layers), **Context** (proprietary data + permissioning), **Distribution** (curation when supply is infinite), **Taste** (orchestration quality — the human editorial decisions that make agent systems work), **Liability** (accountability guarantors).
+
+**Relevance to Serious Sidekick:** The project lives squarely in the **Taste** vertical. The video's quote — "the winning agent systems are the ones where a human with domain expertise has carefully tuned the prompts, designed the workflows, chosen the right tools, and made a thousand small editorial decisions about how the agent should behave" — is literally the value proposition of the serious-skills pipeline. The litmus test from the video: *"What do I own that still matters if AI gets 10x better?"* Answer: the workflow design, the guardrail tables, the verification architecture, the failure evidence. Better models make the pipeline more valuable, not obsolete.
+
+**Superpowers B-tier** (from obra/superpowers analysis 2026-03-22):
+
+| # | Feature | Effort | Why deferred |
+|---|---------|:------:|--------------|
+| L1 | Verification-before-completion in ALL skills (not just `/serious-code`) | M | Big refactor. Current coverage in `/serious-code` catches 80% of cases. |
+| L2 | SUBAGENT-STOP gate (prevent recursive skill loading) | S | Low frequency bug. Pair with #1 (audit trail) when it ships. |
+| L3 | Model selection guidance | M | Needs cost data from `/cost` breakdown (v2.1.92) first. |
+| L4 | Persuasion research backing (Cialdini principles in skill preambles) | S | Needs A/B test data to justify. |
+| L5 | DOT flowcharts as executable specs | M | Experimental. Try on ONE skill first. |
+| L6 | Pressure testing skills on subagents | M | Tooling doesn't exist yet. |
+
+**Process improvements** (from v1.4.0 lessons):
+
+| # | Gap | Fix | Status |
+|---|-----|-----|:------:|
+| P1 | Review agents check plans, not code (grep patterns with logic bugs passed plan review) | Post-code alignment check in `/serious-code` | BACKLOG |
+| P2 | Test fixtures too clean (real dirs have extra files that interact unexpectedly) | Messy fixture test requirement in v6 template | BACKLOG |
+| P3 | Parallel subagents don't cross-reference siblings | Exhaustively specific ACs for multi-agent execution | BACKLOG |
+| P4 | Ad-hoc fixes during e2e skip review | Require ad-hoc fixes to have their own ACs and tests | BACKLOG |
+
+**Claude Code features researched but parked:**
+
+- `InstructionsLoaded` hook (v2.1.69) — verify correct skill instructions loaded at startup
+- `${CLAUDE_SKILL_DIR}` variable (v2.1.69) — skill-relative paths in hook scripts
+- `autoMemoryDirectory` setting (v2.1.74) — per-workflow memory organization
+- `effort` frontmatter for skills (v2.1.80) — match effort to skill complexity
+- `PostCompact` hook (v2.1.76) — re-inject critical instructions after compaction
+- Plugin executables in `bin/` (v2.1.91) — package hook scripts as distributable plugins
+- `disableSkillShellExecution` (v2.1.91) — enterprise hardening
+- `/powerup` interactive lessons (v2.1.90) — onboarding
+- `keep-coding-instructions` frontmatter (v2.1.94) — preserve instructions across output style changes
+- `/team-onboarding` command (v2.1.101) — generates teammate ramp-up guide; investigate whether it picks up serious-* skills
+- OS CA certificate trust by default (v2.1.101) — note for `/serious-init` enterprise checklist
+- `hookSpecificOutput.sessionTitle` (v2.1.94) — auto-name sessions after active workflow slug
+- `ENV_SCRUB` in `/serious-init` (`CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1`) — strip credentials from subprocess env
+- `CwdChanged` hooks (v2.1.??) — validate cwd stays inside expected worktree during multi-plan
+- `maxTurns` frontmatter for runaway agents — needs turn count data from real workflows first
+- Self-improving skills pattern (from Excalidraw video) — after iterative refinement, have Claude update the skill itself with learned preferences (colors, language level, layout). Applicable to any skill with creative output. Research at `Research/youtube/claude-excalidraw-mcp-diagrams/`
+- "3 variations then pick" workflow for creative/visual output — generate multiple options, user picks direction, refine. Demonstrated with Excalidraw but applicable to `/serious-mock-ups`, `/serious-bananas`, and any skill producing design artifacts
 
 ---
 
-## Cross-References
+## Killed (do not revisit without new evidence)
 
-| Section | Synergies |
-|---------|-----------|
-| 1.1–1.2 (enforcement gap) | Enabled by 3.4 (PreToolUse/Agent), 3.7 (conditional `if`), 4.6 (`agent_id` in hooks) |
-| 1.5 (architect enforcement) | Depends on 2.1 (architect agent exists first) |
-| 3.1 (paths: globs) | De-risked by 3.8 (v2.1.86 fix), 3.9 (config write fix) |
-| 3.4 (PreToolUse/Agent) | Powers 1.1, 1.2; enhanced by 3.7 (conditional scope) |
-| 4.1–4.3 (agent frontmatter) | Directly applicable to all 8 agents in `.claude/agents/` |
-| 4.4 (model override) | Enables 7.5 (model selection guidance); pairs with 6.9 (cost breakdown) for data-driven model choices |
-| 4.7-4.8 (PermissionDenied + defer) | Together enable unattended `/serious-code` with pause/resume on sensitive ops |
-| 4.14 (Monitor tool) | Replaces sleep-poll in `/serious-code`; pairs with 6.13 (refreshInterval) for live progress |
-| 5.6 (PostCompact) | Enables 7.3 (verification-before-completion — re-inject checklist after compaction) |
-| 5.8-5.9 (worktree fixes) | Unblock reliable multi-plan execution; 5.8 (cwd leak) was a silent corruption vector |
-| 5.11 + 6.13 (worktree status + refresh) | Together enable a live status line showing active worktree branch + progress with auto-refresh |
-| 6.11 (plugin executables) | Could package hook scripts, verification tools as distributable plugins |
-| 6.14 (session title hook) | Pairs with all `/serious-*` skills — each skill can auto-title the session on startup |
-| 6.15 (focus view) | Requires `NO_FLICKER` mode (v2.1.89); best paired with 6.13 (refreshInterval) for minimal-noise monitoring |
-| 7.2 (status protocol) | Low effort, pairs well with 1.2 (dispatch validation) |
-| 7.4 (SUBAGENT-STOP) | Low effort, pairs well with 3.4 (PreToolUse/Agent can detect recursion) |
-| 8.1-8.4 (process improvements) | Improvements to the pipeline itself, not to hooks or agents |
+- **Architect Review Agent** — killed by `/serious-conversation` panel on 2026-04-10 (6 personas, unanimous KILL). The category is incoherent for cold LLM review (SOLID/DRY/multi-tenancy/coupling are 4 different things), no user has reported a missed architectural bug, and 20 years of architectural fitness function tools have failed in the same way (NDepend, ArchUnit, Sonargraph). The fix is updating the README to say "3 mandatory review agents covering correctness, structure, security" — not building a 4th agent. See `Research/conversations/architecture-review-agent/`.
+
+---
+
+## Free Wins — Already In Our Codebase
+
+These shipped upstream and benefit us automatically. No work needed, just tracking what we got.
+
+**Claude Code v2.1.101 (April 10, 2026) — directly relevant fixes:**
+
+- **Subagents in isolated worktrees can now Read/Edit files inside their own worktree** — Critical for `/serious-code` multi-plan execution. Likely fixes silent failures we hadn't pinned down.
+- **Subagents now inherit MCP tools from dynamically-injected servers** — Same family as the hook inheritance bugs from yesterday's research. Suggests Anthropic is actively fixing subagent inheritance — broader hook fix may be coming, which is why ROADMAP #1 is on HOLD.
+- **`permissions.deny` rules now override PreToolUse hook `permissionDecision: "ask"`** — Real security fix. Buggy hooks can no longer downgrade explicit deny rules into prompts.
+- **Settings resilience: unrecognized hook event names no longer disable all hooks** — Previously a typo in any hook event silently disabled the entire `settings.json` hooks block. Major safety improvement.
+- **Plugin hooks force-enabled by managed settings work with `allowManagedHooksOnly`** — Enterprise hardening.
+- **OTEL tracing honors `OTEL_LOG_USER_PROMPTS`, `OTEL_LOG_TOOL_DETAILS`, `OTEL_LOG_TOOL_CONTENT`** — Sensitive span data is opt-in. Relevant if we ever wire OTEL tracing into `/serious-code`.
+- **`--resume` chain recovery fixes** — Multiple fixes for losing context, bridging into wrong subagent conversations, and crashes on missing `file_path`. Affects long `/serious-code` sessions that get resumed.
+- **5-minute hardcoded request timeout fix** — Previously aborted slow backends regardless of `API_TIMEOUT_MS`. Affects long verification agent runs.
+- **Memory leak fix for long sessions** — Virtual scroller no longer retains historical message-list copies. Helps marathon `/serious-code` runs.
+- **Sandboxed Bash `mktemp` fix, Bedrock SigV4 + auth header conflict fix, numeric env var crash fix** — Reliability improvements.
+
+**Claude Code v2.1.94–v2.1.98:**
+
+- **Agent team permission inheritance fix** (v2.1.98) — `--dangerously-skip-permissions` now correctly propagates to team members.
+- **Subagent worktree cwd leak fix** (v2.1.97) — Subagents no longer leak cwd back to parent. Was a silent corruption vector.
+- **Stale worktree cleanup safety** (v2.1.98) — Worktrees with untracked files preserved during cleanup.
+- **Background subagent partial progress on failure** (v2.1.98) — Failed agents report progress instead of silent failure.
+- **Compaction transcript dedup fix** (v2.1.97) — No more multi-MB duplicate transcripts in long sessions.
+- **429 rate-limit surfacing fix** (v2.1.94) — Agents fail fast instead of silent hangs.
+- **`Bash(cmd:*)` wildcard spacing fix** (v2.1.98) — `Bash(git commit *)` rules now match reliably.
+- **`--resume` from other worktrees** (v2.1.94) — Smoother UX resuming worktree sessions.
+- **Hook stderr in transcript** (v2.1.98) — Debug hook failures without `--debug` flag.
+- **Read tool deduplicates re-reads** (v2.1.86) — Token savings across all skills.
+- **Prompt cache improvements** (v2.1.86) — Cost savings on Bedrock/Vertex/Foundry.
+- **Default effort now HIGH** (v2.1.94) — Floor raise for user `/effort` overrides.
+- **Plugin skills use frontmatter `name`** (v2.1.94) — Stable naming if we distribute as a plugin.
+
+---
+
+## Open Questions
+
+1. ~~**Does `disallowedTools` actually enforce on subagents?**~~ **RESOLVED (T1 PASSED 2026-04-11).** Yes — tools filtered before dispatch, not runtime-blocked.
+2. ~~**Does Monitor tool work with worktree subagents in v2.1.101?**~~ **RESOLVED (T2 PASSED 2026-04-11).** Yes, but original framing was wrong — Monitor watches shell scripts via `stdbuf -oL tail -F`, not subagent events directly.
+3. **Will Anthropic ship hook inheritance fix in v2.1.102 or v2.1.103?** Watch issues #27661, #21460, #18392, #17688. If shipped, ROADMAP #1's mechanical-enforcement design becomes viable; if not, ship the audit trail.
+4. **Can `paths:` scope match on directory state, not just file patterns?** Affects feature #6 viability. Some skills want "when inside a worktree" not "for `*.foo` files."
+5. **How often does upstream drift actually happen in `/serious-code` runs?** Affects feature #7 priority. Could be lower than estimated in solo workflows.
+6. **What `if:` field syntax scopes a hook to "only when `.active-code` exists"?** Implementation detail for any new PreToolUse hook. Resolved during planning, not blocking ranking.
+7. **Is multi-plan `/serious-code` actually exercised in practice?** SKILL.md describes plan-agent orchestration that may not physically work given subagent tool restrictions. Worth verifying before optimizing it.
+
+---
+
+## Process Lessons (April 2026)
+
+Captured here so they're visible during planning. Should also live in `lessons.md`.
+
+1. **Empirical testing > secondhand sources for feasibility claims.** First draft of the dispatch hook research relied on closed GitHub issues to claim "feasibility NEGATIVE." Two persona reviews flagged this. A 15-minute test proved the issues were stale and the original design works. Always run the test when feasibility hinges on observable behavior.
+
+2. **Grep `Research/bugs/` before proposing changes to systems with bug history.** Second draft of the dispatch hook research correctly verified feasibility but missed the architectural risk from the April 7 stop-hook-loop incident. The past research had explicitly flagged `verify-completion-gate.sh` as Category C — extending it would have repeated the incident. Always check whether a system has past incidents before adding to it.
+
+3. **Hardening rollouts must verify deployment everywhere, not just the location of the fix.** The April 7-8 fix was applied to `~/.claude/skills/` and the rollout was marked "Tasks 0-5 complete, Task 6 (live smoke test) pending" — and then never finished. The project repo, `~/.claude-work/`, and `~/.claude-alex/` all stayed broken for ~3 days. Discovered by accident while researching a different feature.
+
+4. **Stop hook Category C checks are loop-prone — never add new `exit 2` paths to existing Stop hooks.** Use PreToolUse for new enforcement. PreToolUse blocks are one-shot (Claude sees error, fixes the tool call, retries — single-turn fix). Stop hook blocks have an infinite feedback loop structure (Claude responds, Stop fires again, same state, same block).
+
+5. **Stop hook stderr text must be declarative.** Imperative phrases ("Run X", "Do Y") can self-trigger Claude continuation independently of exit codes. Use observational phrasing ("X has not run", "Y is missing"). Documented in `Research/bugs/stop-hook-loop-pattern/research.md` Finding 15.
+
+---
+
+## Principles (How We Prioritize)
+
+1. **Reliability before features.** Closing enforcement gaps ranks higher than new capabilities. A system that's "mandatory" but not enforced is a lie.
+2. **Verification before building.** Cheap empirical tests (Tier 0 spikes) come before any feature work that depends on their answers.
+3. **Impact over effort.** Effort affects timing, not order. A High-impact L-effort item beats a Low-impact S-effort item.
+4. **Free wins don't get ranked.** If upstream shipped it, we get it for free. Track it, don't prioritize it.
+5. **Synergies matter.** When two items together unlock a capability neither can alone, they rank as a unit.
+6. **Past incidents are contracts.** If `Research/bugs/` has a record of why something fails, treat the analysis as binding for any future work in that area. Ignoring it = repeating the incident.
+7. **Hold for upstream when the wait is short and the alternative is throwaway code.** If a planned workaround would be obsoleted by an upstream fix that's likely to land in 1-2 weeks, wait. Cheap to wait, expensive to ship-and-rip.

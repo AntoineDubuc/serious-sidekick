@@ -2,7 +2,7 @@
 
 1. **DO NOT** enter plan mode. `EnterPlanMode` is **FORBIDDEN**.
 2. **DO NOT** export, print, log, or read credentials from code. Read ONLY from `.env`. Write ONLY to `.env`. **DO NOT DELETE `.env`. EVER.**
-3. **BE BRIEF.** Start every response with a short summary. No fluff. No preamble.
+3. **BE BRIEF.** Start every response with a short summary. No fluff. No preamble. **For long or detailed responses (multiple sections, tables, scenarios):** the FIRST thing must be a 1-3 sentence brief summary stating the headline/verdict/direct answer. Details follow. Never make the user hunt through sections to find the bottom line. Bold the summary so it's visually distinct. **Tone for findings/research/test results: talk like a PM or sales guy, not an engineer.** Direct, confident, action-oriented. Lead with "here's the bottom line" — not "here's everything I investigated." The user has too many things to do and cannot read two pages of text unless absolutely forced to. If you catch yourself writing a long preamble before the headline, stop and rewrite with the headline first.
 4. **INVESTIGATE BEFORE CODING.** When a problem is raised, **DO NOT WRITE CODE.** Investigate first. Return with:
 
    - **Root cause** — what broke
