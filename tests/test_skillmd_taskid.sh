@@ -55,7 +55,10 @@ else
 fi
 
 # --- AC4: Phase 2 completion report contains Dispatch Audit section ---
-phase2_content=$(sed -n '/^## Phase 2: Completion/,/^## [A-Z]/p' "$SKILLMD")
+# Extract the completion report template section (### 2a) which contains the code block
+# with the Dispatch Audit section. Using ### 2a to ### 2b as boundaries avoids sed
+# matching ## headers inside the markdown code block.
+phase2_content=$(sed -n '/^### 2a\. Generate/,/^### 2b\./p' "$SKILLMD")
 if echo "$phase2_content" | grep -q 'Dispatch Audit'; then
   assert "AC4: Phase 2 completion report contains Dispatch Audit section" 0
 else
@@ -91,7 +94,9 @@ else
 fi
 
 # --- Negative: No new Stop hook logic or exit 2 paths added ---
-dispatch_audit_section=$(sed -n '/### .*Dispatch Audit/,/^###\|^## /p' "$SKILLMD" 2>/dev/null || true)
+# The Dispatch Audit section is inside a code block in section 2a. Extract it from
+# "## Dispatch Audit" to the end of the code block (```).
+dispatch_audit_section=$(sed -n '/^## Dispatch Audit/,/^```/p' "$SKILLMD" 2>/dev/null || true)
 if [ -n "$dispatch_audit_section" ]; then
   if echo "$dispatch_audit_section" | grep -q 'exit 2'; then
     assert "NEG1: Dispatch Audit section does NOT contain exit 2" 1

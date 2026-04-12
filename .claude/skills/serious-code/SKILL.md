@@ -364,6 +364,7 @@ Spawn the `serious-code-implementer` agent with:
 - The task description from the plan (acceptance criteria, key components, expected behavior)
 - The working directory
 - Instruction to follow TDD: write failing test FIRST, then implement, then make test pass
+- Include `TASK_ID: task_{NN}` on its own line near the top of every Agent dispatch prompt (where `{NN}` is the zero-padded task number from the plan's Master Checklist). This tag is consumed by the dispatch audit hook for traceability.
 
 The implementer:
 1. Reads the task's acceptance criteria
@@ -405,7 +406,9 @@ After the implementer completes and all unit tests pass, but **before** running 
 
 ### Step 2: Verify (4 agents in parallel)
 
-After the implementer completes AND the smoke test passes, spawn all four verification agents in parallel:
+After the implementer completes AND the smoke test passes, spawn all four verification agents in parallel.
+
+Include `TASK_ID: task_{NN}` on its own line near the top of every Agent dispatch prompt for each verification agent (where `{NN}` is the zero-padded task number). This tag is consumed by the dispatch audit hook for traceability.
 
 **serious-code-reviewer:**
 - Reads the diff of all files changed by the implementer
@@ -431,9 +434,12 @@ After the implementer completes AND the smoke test passes, spawn all four verifi
 
 > **Why this exists:** Implementing agents will build the easy parts, skip the hard parts, and self-report "done." This gate catches that. A stop hook enforces it — the session physically cannot exit without gate_passed.md for every task.
 
-After the 4 verification agents return (Step 2), but BEFORE marking the task complete, dispatch an independent **Completion Gate sub-agent**:
+After the 4 verification agents return (Step 2), but BEFORE marking the task complete, dispatch an independent **Completion Gate sub-agent**.
+
+Include `TASK_ID: task_{NN}` on its own line near the top of the Completion Gate Agent dispatch prompt (where `{NN}` is the zero-padded task number). This tag is consumed by the dispatch audit hook for traceability.
 
 ```
+TASK_ID: task_{NN}
 COMPLETION GATE — Task {task_id}: {task_name}
 
 You are an independent verifier. You did NOT implement this code.
@@ -574,6 +580,17 @@ After all phases complete successfully:
 - Total verification agents run: {N}
 - Phases: {N}
 - Worktree merges: {N} (conflicts: {N})
+
+## Dispatch Audit
+{Read `dispatch_log.md` from the plan's evidence directory. Summarize per-task dispatch counts
+and list distinct agent types dispatched for each task. If any task has fewer than 5 distinct
+agent types, emit a warning. This section is advisory — warnings do not block completion.}
+
+| Task | Dispatch Count | Distinct Agent Types | Warning |
+|------|---------------|---------------------|---------|
+| task_01 | {N} | {list} | {if < 5 distinct types: "WARN: fewer than 5 distinct agent types"} |
+| task_02 | {N} | {list} | |
+| ... | | | |
 ```
 
 ### 2b. Upstream Traceability Verification
