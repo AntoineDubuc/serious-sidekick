@@ -50,6 +50,21 @@
       "ownership": "template",
       "sha256": "108322e5c3cba934be4d353d0c3fd8686c92a54c5f247071a32754a852d54ead"
     },
+    ".claude/skills/_shared/path-resolve.sh": {
+      "dest": "skills/_shared/path-resolve.sh",
+      "ownership": "template",
+      "sha256": "af70028e1ba1334bcb885bb0ec5b612f930178e136356d55cb86da89c8516624"
+    },
+    ".claude/skills/_shared/path-resolve.test.sh": {
+      "dest": "skills/_shared/path-resolve.test.sh",
+      "ownership": "template",
+      "sha256": "50d0961fe8f31da1af6ec8f1d4a1a4ddfa602548dccb2a845c9464671f9727a9"
+    },
+    ".claude/skills/_shared/status-schema.md": {
+      "dest": "skills/_shared/status-schema.md",
+      "ownership": "template",
+      "sha256": "a22e8c94257dbd134ede714c30e14f24a5b09a7e5ba3a762496584b2c7e8b4d5"
+    },
     ".claude/skills/_shared/stop-hook-guard.sh": {
       "dest": "skills/_shared/stop-hook-guard.sh",
       "ownership": "template",
@@ -78,7 +93,12 @@
     ".claude/skills/serious-code/SKILL.md": {
       "dest": "skills/serious-code/SKILL.md",
       "ownership": "template",
-      "sha256": "0de8273d8e39703ad0270fbe08160776cbee39162adb35155f4cf8eb6726fd91"
+      "sha256": "c04d44964b258d26c3b5cdf19a117fd6cd25b9f41bfe880ca659177dc0f7e41e"
+    },
+    ".claude/skills/serious-code/hooks/log-dispatch.sh": {
+      "dest": "skills/serious-code/hooks/log-dispatch.sh",
+      "ownership": "template",
+      "sha256": "f92df02262af21a7cb584aee1de02f17e229afaf2dfe3ed4c541e7b976988f8c"
     },
     ".claude/skills/serious-code/hooks/tdd-gate.sh": {
       "dest": "skills/serious-code/hooks/tdd-gate.sh",
@@ -88,7 +108,7 @@
     ".claude/skills/serious-code/hooks/verify-completion-gate.sh": {
       "dest": "skills/serious-code/hooks/verify-completion-gate.sh",
       "ownership": "template",
-      "sha256": "631299e623b8291de74978582ebd592484d73ca71b54cd5695abaf1baf2df9af"
+      "sha256": "75fa9432c044c77af50179dd931c9a0a1c8b614c5231239536a3b520387dd4c9"
     },
     ".claude/skills/serious-conversation/SKILL.md": {
       "dest": "skills/serious-conversation/SKILL.md",
@@ -98,7 +118,7 @@
     ".claude/skills/serious-conversation/hooks/capture-conversation.sh": {
       "dest": "skills/serious-conversation/hooks/capture-conversation.sh",
       "ownership": "template",
-      "sha256": "fcfaabc1264b9d145925fc638d87984a0c4147fc060f42512128594c29a4819a"
+      "sha256": "cbc4d85b8efa5751856e619ef3d661753c921c5d9867ea78f922a4b3b076cca2"
     },
     ".claude/skills/serious-conversation/personas/architect.md": {
       "dest": "skills/serious-conversation/personas/architect.md",
@@ -203,7 +223,7 @@
     ".claude/skills/serious-init/SKILL.md": {
       "dest": "skills/serious-init/SKILL.md",
       "ownership": "template",
-      "sha256": "c3588ad31aa84afc96e1cb1cb5ec45597418cd57b616e89e176a9142923e44b0"
+      "sha256": "f18198314d3bd2165cb02aeb7058c68cd7019f447f83608a5ad3178b64ac41ac"
     },
     ".claude/skills/serious-mock-ups/SKILL.md": {
       "dest": "skills/serious-mock-ups/SKILL.md",
@@ -218,7 +238,7 @@
     ".claude/skills/serious-plan/hooks/check-extraction.sh": {
       "dest": "skills/serious-plan/hooks/check-extraction.sh",
       "ownership": "template",
-      "sha256": "649f80692e69d1fa215ad02cf82774ea432c1177c6933dd392803514df6f788b"
+      "sha256": "b0445534fbe2bedc8a1118e29ecde631cd902283e6814702036aca11383c97c9"
     },
     ".claude/skills/serious-plan/hooks/hedge-language-gate.sh": {
       "dest": "skills/serious-plan/hooks/hedge-language-gate.sh",
@@ -233,7 +253,7 @@
     ".claude/skills/serious-research/hooks/capture-research.sh": {
       "dest": "skills/serious-research/hooks/capture-research.sh",
       "ownership": "template",
-      "sha256": "b778253d7437707e69ec6ea66119195b2751a5200ef5f29de00f6fbda1f9be4b"
+      "sha256": "15788f339ae56316228c439b0c3a63d6149e1d003de4cab642a35b1a3a190177"
     },
     ".claude/skills/serious-review/SKILL.md": {
       "dest": "skills/serious-review/SKILL.md",
@@ -248,7 +268,7 @@
     ".claude/skills/serious-review/hooks/check-verdict.sh": {
       "dest": "skills/serious-review/hooks/check-verdict.sh",
       "ownership": "template",
-      "sha256": "de27078087bd2a3826e6f766c127bcbe8dd70bcdb23913466ede1bf638b7ee81"
+      "sha256": "b5d0f32226a20652afc84374bfad58dc06e9f0fbeaafc26bde685f4d7010dd59"
     },
     ".claude/skills/serious-review/hooks/review-theater-gate.sh": {
       "dest": "skills/serious-review/hooks/review-theater-gate.sh",
@@ -263,7 +283,7 @@
     ".claude/skills/serious-scope/hooks/check-manifest.sh": {
       "dest": "skills/serious-scope/hooks/check-manifest.sh",
       "ownership": "template",
-      "sha256": "cd432c892a6498e24e9e411f06fc50982fbe4faabdf02ab066a8ab565fbe198c"
+      "sha256": "cd382cb3529fd84a690f4125bdb9b575b92a55da58848d16a81611a3609168b1"
     },
     ".claude/skills/serious-status/SKILL.md": {
       "dest": "skills/serious-status/SKILL.md",
@@ -278,7 +298,7 @@
     "CLAUDE.md": {
       "dest": "CLAUDE.md",
       "ownership": "user-init",
-      "sha256": "de3cb40bafb25c936e08a56c70aad07452f8a3d3e5afd649611bef89d90f8fe5"
+      "sha256": "414da689bbfe77305091cbbb19c5b1bae3a1f348258ba18b3f248d1335869e33"
     },
     "_anti-rationalization-core.md": {
       "dest": "../_anti-rationalization-core.md",
@@ -291,6 +311,6 @@
       "sha256": "c65b3acedb85cee57151957f0ace6e9261a81f693e5cc17466032693a95f139d"
     }
   },
-  "generated_from_commit": "b792fde3fc8f2d11f0a488690a2997ad127187d3",
+  "generated_from_commit": "1e6766f2fff4ecc4ceea77b88546967f99f0c0a0",
   "version": 1
 }

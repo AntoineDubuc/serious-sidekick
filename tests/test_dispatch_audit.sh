@@ -275,16 +275,24 @@ else
 fi
 
 # AC: Missing jq → exit 0
-# Test by using a PATH that doesn't include jq
+# Test by creating a temp dir with only essential binaries (no jq)
 run_hook_no_jq() {
   local project_dir="$TMP_DIR/project-nojq"
-  rm -rf "$project_dir"
+  local fake_bin="$TMP_DIR/fake-bin"
+  rm -rf "$project_dir" "$fake_bin"
   mkdir -p "$project_dir/test-plan/evidence"
+  mkdir -p "$fake_bin"
   echo "test-plan" > "$project_dir/.active-code"
+
+  # Symlink essential commands but NOT jq
+  for cmd in bash cat date grep head sed tr cut printf; do
+    CMD_PATH=$(command -v "$cmd" 2>/dev/null) || true
+    [ -n "$CMD_PATH" ] && ln -sf "$CMD_PATH" "$fake_bin/$cmd"
+  done
 
   local exit_code=0
   local stderr_output
-  stderr_output=$(PATH="/usr/bin/doesnotexist" CLAUDE_PROJECT_DIR="$project_dir" bash "$HOOK_SCRIPT" < "$FIXTURES_DIR/valid_dispatch.json" 2>&1 >/dev/null) || exit_code=$?
+  stderr_output=$(PATH="$fake_bin" CLAUDE_PROJECT_DIR="$project_dir" bash "$HOOK_SCRIPT" < "$FIXTURES_DIR/valid_dispatch.json" 2>&1 >/dev/null) || exit_code=$?
 
   HOOK_EXIT=$exit_code
   HOOK_STDERR="$stderr_output"
