@@ -1,0 +1,1 @@
+{"session_id":"abc-123","hook_event_name":"PreToolUse","tool_name":"Agent","tool_input":{"description":"Some agent","prompt":"You are an agent...","subagent_type":"serious-code-reviewer"},"tool_use_id":"toolu_abc"}
