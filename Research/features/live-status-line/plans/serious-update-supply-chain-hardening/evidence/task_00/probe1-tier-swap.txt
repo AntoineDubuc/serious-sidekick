@@ -1,0 +1,3 @@
+=== Probe 1: Tier-swap manifest ===
+RESULT: parse_manifest ACCEPTED the tier-swap manifest (exit 0)
+VULNERABILITY CONFIRMED: settings.json can be flipped from merge to template
