@@ -1,0 +1,25 @@
+=== Test: merge_settings ===
+
+<string>:26: SyntaxWarning: "\." is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\."? A raw string is also an option.
+  PASS: merge_settings exits 0
+  PASS: Merged output is valid JSON
+  PASS: Backup was created
+  PASS: Non-hook keys preserved
+  PASS: User's say command Stop hook preserved
+  PASS: User's PostToolUse hook preserved
+  PASS: All 32 PreToolUse hooks from template present
+  PASS: All 6 serious Stop hooks from template present
+  PASS: Total Stop hooks = 7 (6 serious + 1 user)
+  PASS: Merge is idempotent (two merges = same result)
+  PASS: Serious hooks removed from template are removed from installed
+  PASS: Nonexistent installed file exits non-zero
+  PASS: Nonexistent template file exits non-zero
+  PASS: Invalid installed JSON exits non-zero
+  PASS: Invalid installed JSON does NOT create backup
+  PASS: Invalid template does NOT modify or backup installed
+  PASS: Invalid template error says 'invalid template'
+  PASS: Empty template hooks preserves installed hooks
+  PASS: Fresh install gets template hooks + preserves non-hook keys
+  PASS: Pre-readonly merge succeeds
+
+=== merge_settings Tests Complete: 0 error(s) ===

@@ -1,0 +1,5 @@
+=== Probe 3: Dead hash verification ===
+sha256 variable references in bin/serious-update: 2
+sha256 used in comparison/verification: 0
+0
+VULNERABILITY CONFIRMED: sha256 is read into variable at line 190 but never compared against actual file hash - dead code

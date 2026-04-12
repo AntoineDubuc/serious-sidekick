@@ -1,0 +1,2 @@
+ERROR: parse_manifest: .claude/settings.json MUST be merge-tier, got ownership=template
+Exit code: 1

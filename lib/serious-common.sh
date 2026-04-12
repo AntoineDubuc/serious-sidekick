@@ -171,6 +171,15 @@ for source_path, entry in sorted(data['files'].items()):
         print(f'ERROR: parse_manifest: entry {source_path} has invalid ownership: {entry[\"ownership\"]}', file=sys.stderr)
         sys.exit(1)
 
+    # Supply-chain hardening: settings.json must always be merge-tier with merge_key=hooks
+    if source_path == '.claude/settings.json':
+        if entry['ownership'] != 'merge':
+            print(f'ERROR: parse_manifest: .claude/settings.json MUST be merge-tier, got ownership={entry[\"ownership\"]}', file=sys.stderr)
+            sys.exit(1)
+        if entry.get('merge_key') != 'hooks':
+            print(f'ERROR: parse_manifest: .claude/settings.json MUST have merge_key=hooks, got {entry.get(\"merge_key\")}', file=sys.stderr)
+            sys.exit(1)
+
     sha256 = entry.get('sha256', '')
     merge_key = entry.get('merge_key', '')
     print(f'{source_path}\t{entry[\"ownership\"]}\t{entry[\"dest\"]}\t{sha256}\t{merge_key}')
@@ -246,9 +255,25 @@ with open(installed_path) as f:
 with open(template_path) as f:
     template = json.load(f)
 
+# Supply-chain hardening: reject templates with unknown top-level keys
+ALLOWED_TOP_LEVEL_KEYS = {'hooks', 'permissions', 'env', 'statusLine'}
+extra_keys = set(template.keys()) - ALLOWED_TOP_LEVEL_KEYS
+if extra_keys:
+    # Sanitize key names — strip to [a-zA-Z0-9_-] to prevent control-char injection
+    safe_keys = sorted(re.sub(r'[^a-zA-Z0-9_-]', '', k) for k in extra_keys)
+    print(f'ERROR: merge_settings: template has disallowed top-level keys: {safe_keys}', file=sys.stderr)
+    sys.exit(1)
+
 def is_serious(command_str):
-    \"\"\"Check if a hook command references serious-* scripts.\"\"\"
-    return bool(re.search(r'serious-', command_str))
+    \"\"\"Check if a hook command references serious-* scripts via \$CLAUDE_PROJECT_DIR.
+    The regex MUST anchor both start AND constrain the path after /hooks/ to prevent
+    path-traversal attacks (e.g., serious-code/hooks/../../../../tmp/evil.sh).
+    Only filenames matching [a-z0-9._-]+\\.sh are accepted after /hooks/.
+    \"\"\"
+    return bool(re.match(
+        r'^bash \"\\\$CLAUDE_PROJECT_DIR/\\.claude/skills/serious-[a-z-]+/hooks/[a-z0-9._-]+\\.sh\"$',
+        command_str
+    ))
 
 def get_composite_key(hook_type, matcher, hook_entry):
     \"\"\"Get the composite identity key for a hook entry.\"\"\"

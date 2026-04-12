@@ -1,0 +1,72 @@
+=== Test: serious-update ===
+
+--- Task 1: Script skeleton + argument parsing ---
+
+  PASS: AC1.1: bin/serious-update exists and is executable
+  PASS: AC1.2: Script sources lib/serious-common.sh
+  PASS: AC1.3: --help prints usage and exits 0
+  PASS: NT1.1: Unknown flag exits non-zero
+  PASS: NT1.2: Missing SIDEKICK_HOME exits non-zero
+branch 'main' set up to track 'origin/main'.
+  PASS: AC1.11: Exit code 2 for nothing to update
+
+--- Task 2: Git pull + manifest reading ---
+
+branch 'main' set up to track 'origin/main'.
+  PASS: AC2.5: Corrupt manifest.json exits 1
+branch 'main' set up to track 'origin/main'.
+  PASS: NT2.1: Missing manifest.json exits 1
+
+--- Task 3: File distribution engine ---
+
+branch 'main' set up to track 'origin/main'.
+  PASS: AC3.1: Template-owned files copied to target dir
+  PASS: AC3.2: Merge-owned file (settings.json) skipped for global dir
+  PASS: AC3.3: User-init file (CLAUDE.md) copied on first install
+  PASS: AC3.7: State file written after distribution
+  PASS: AC3.7: State file is valid JSON
+  PASS: AC3.9: All 3 target dirs have state files
+  PASS: AC3.10: Whitelist invariant — user file untouched after update
+  PASS: AC3.3: User-init file (CLAUDE.md) skipped on subsequent update
+
+--- Task 4: --check flag ---
+
+branch 'main' set up to track 'origin/main'.
+  PASS: AC4.3: staleness.json written
+  PASS: AC4.4: staleness.json has all required fields
+  PASS: AC4.5: --check exits 0
+  PASS: AC4.6: Audit log has CHECK entry
+
+--- Task 5: --diff flag ---
+
+branch 'main' set up to track 'origin/main'.
+  PASS: AC5.1: --diff shows file categorization
+  PASS: AC5.2: --diff does NOT write files
+  PASS: AC5.3: --diff does NOT write state files
+  PASS: AC5.5: --diff output shows NEW category
+
+--- Task 6: --rollback flag ---
+
+branch 'main' set up to track 'origin/main'.
+  PASS: Pre-rollback: state has correct previous_commit
+  PASS: AC6.2+AC6.3: --rollback succeeds
+  PASS: AC6.4: After rollback, installed = v1 commit
+  PASS: AC6.4: After rollback, previous = v2 commit
+  PASS: NT6.1: No state file → exit 1
+
+--- Task 7: Audit log + completion receipt ---
+
+branch 'main' set up to track 'origin/main'.
+  PASS: AC7.1: Audit log written
+  PASS: AC7.3: UPDATE entry has correct format
+  PASS: AC7.5: Receipt shows commit SHA change
+  PASS: AC7.7: Receipt shows audit log path
+  PASS: AC7.2: Audit log is append-only (multiple entries)
+
+--- Task 8: --no-global flag ---
+
+branch 'main' set up to track 'origin/main'.
+  PASS: AC8.5: --no-global skips global dirs (no files written)
+
+=== serious-update Tests Complete: 0 error(s) ===
+Exit: 0

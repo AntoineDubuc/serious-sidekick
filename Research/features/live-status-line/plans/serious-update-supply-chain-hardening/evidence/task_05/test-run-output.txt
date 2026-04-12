@@ -1,0 +1,44 @@
+=== Test: supply-chain hardening ===
+
+--- Task 1: parse_manifest ownership pinning ---
+  PASS: parse_manifest rejects ownership=template for settings.json
+  PASS: Rejection error contains 'must be merge-tier'
+  PASS: parse_manifest rejects empty merge_key for settings.json
+  PASS: parse_manifest accepts merge+hooks for settings.json
+  PASS: Real project manifest still parses successfully
+  PASS: Negative: other files' ownership NOT pinned (template accepted)
+--- Task 2: SHA-256 hash verification ---
+  PASS: Hash mismatch produces HASH MISMATCH error
+  PASS: Tampered file NOT copied on hash mismatch
+  PASS: Empty hash: file IS copied (backward compat)
+  PASS: Hash mismatch error shows truncated hashes
+--- Task 3: is_serious() regex tightening ---
+  PASS: is_serious rejects rogue /tmp/serious-evil path
+  PASS: is_serious accepts legit serious-code hook
+  PASS: is_serious rejects path-traversal after /hooks/
+  PASS: is_serious rejects command chaining
+  PASS: is_serious rejects non-bash prefix
+  PASS: is_serious rejects /usr/local/bin path
+--- Task 3: Real hook commands validation ---
+  PASS: All real hook commands pass tightened is_serious()
+--- Task 3: merge_settings template key allowlist ---
+  PASS: merge_settings rejects template with unknown keys
+  PASS: Error message mentions disallowed top-level keys
+  PASS: merge_settings accepts template with only allowlisted keys
+  PASS: statusLine is in ALLOWED_TOP_LEVEL_KEYS
+  PASS: ALLOWED_TOP_LEVEL_KEYS defined in lib/serious-common.sh
+  PASS: Allowlist governance: exactly {hooks, permissions, env, statusLine}
+<string>:3: SyntaxWarning: "\." is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\."? A raw string is also an option.
+  PASS: Error sanitization: no raw ANSI escapes in output
+  PASS: Fewer keys than allowlist still accepted (upper bound)
+--- Task 4: SKILL.md + docs/security.md ---
+  PASS: SKILL.md references allowlist validation for fresh install
+  PASS: SKILL.md references lib/serious-common.sh as allowlist source
+  PASS: docs/security.md exists
+  PASS: docs/security.md documents trust model boundary
+  PASS: docs/security.md lists allowlisted keys
+  PASS: Negative: SKILL.md preserves merge_settings for upgrade path
+  PASS: Negative: security doc disclaims in-repo hash protection
+
+Supply-chain test errors: 0
+Exit code: 0
