@@ -18,6 +18,8 @@
 
 # Source shared guard utility (stdin is consumed and cached in _STOP_HOOK_GUARD_INPUT)
 source "$(dirname "$0")/../../_shared/stop-hook-guard.sh" || exit 0
+# Source the canonical path helper (shared by all Stop hooks that read breadcrumb contents)
+source "$(dirname "$0")/../../_shared/path-resolve.sh" || exit 0
 guard_stop_hook_active
 
 # Breadcrumb files are written by SKILL.md prompt instructions from the main
@@ -30,14 +32,8 @@ PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 # No active code session? Allow exit.
 [ ! -f "${PROJECT_ROOT}/.active-code" ] && exit 0
 
-BREADCRUMB_CONTENT=$(cat "${PROJECT_ROOT}/.active-code" | tr -d '[:space:]')
-# Reject path traversal and absolute paths
-case "$BREADCRUMB_CONTENT" in
-  /* | *..* )
-    echo "WARNING: breadcrumb content rejected (path traversal or absolute path)" >&2
-    exit 0 ;;
-esac
-PLAN_DIR="${PROJECT_ROOT}/${BREADCRUMB_CONTENT}"
+PLAN_DIR=$(resolve_breadcrumb_path "${PROJECT_ROOT}/.active-code" "$PROJECT_ROOT") || exit 0
+[ -L "$PLAN_DIR" ] && exit 0
 
 # No plan directory? Allow exit.
 [ ! -d "$PLAN_DIR" ] && exit 0
