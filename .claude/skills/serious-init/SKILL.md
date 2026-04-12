@@ -126,8 +126,11 @@ For each entry in `MANIFEST_ENTRIES` (tab-separated: `source_path\townership\tde
 
 **Merge-owned files** (`ownership=merge`):
 - Currently: `.claude/settings.json` only
-- If `$PROJECT/.claude/settings.json` does NOT exist: copy from `$SIDEKICK_HOME/.claude/settings.json`
-- If it DOES exist: run `merge_settings "$PROJECT/.claude/settings.json" "$SIDEKICK_HOME/.claude/settings.json"`
+- If `$PROJECT/.claude/settings.json` does NOT exist (fresh install):
+  - **Before copying, validate that the template's top-level JSON keys are all in `ALLOWED_TOP_LEVEL_KEYS` (defined in `lib/serious-common.sh`).** If unknown keys exist, ABORT with an error -- do NOT copy the template. This prevents a tampered upstream template from injecting malicious keys into a fresh install.
+  - If all keys are allowlisted, proceed with the copy from `$SIDEKICK_HOME/.claude/settings.json`
+- If it DOES exist (upgrade): run `merge_settings "$PROJECT/.claude/settings.json" "$SIDEKICK_HOME/.claude/settings.json"`
+  - `merge_settings` has its own `ALLOWED_TOP_LEVEL_KEYS` check and will reject templates with unknown keys
 - This preserves the user's non-hook settings while updating all serious-owned hook entries
 
 **User-init files** (`ownership=user-init`):
