@@ -164,7 +164,7 @@ do_read_manifest() {
 # --- File distribution engine ---
 
 # distribute_to_dir <target_dir> <manifest_entries> <dry_run>
-# Returns: "updated=N new=N current=N skipped=N errors=N"
+# Returns: "updated=N new=N current=N skipped=N errors=N hash_mismatches=N"
 distribute_to_dir() {
   local target_dir="$1"
   local manifest_entries="$2"
@@ -177,6 +177,7 @@ distribute_to_dir() {
   local current=0
   local skipped=0
   local errors=0
+  local hash_mismatches=0
   local file_hashes="{}"
 
   if [ ! -d "$target_dir" ]; then
@@ -234,6 +235,17 @@ distribute_to_dir() {
           errors=$((errors + 1))
           continue
         }
+
+        # SHA-256 verification (supply-chain hardening — research.md Finding 7)
+        if [ -n "$sha256" ]; then
+          local actual_hash
+          actual_hash=$(hash_file "$source_path" 2>/dev/null || echo "")
+          if [ -n "$actual_hash" ] && [ "$actual_hash" != "$sha256" ]; then
+            echo "  HASH MISMATCH: $dest (expected: ${sha256:0:16}…, got: ${actual_hash:0:16}…)" >&2
+            hash_mismatches=$((hash_mismatches + 1))
+            continue
+          fi
+        fi
 
         # Check if file already current
         if [ -f "$dest_path" ]; then
@@ -346,7 +358,7 @@ print(json.dumps(h))
     }
   fi
 
-  echo "updated=$updated new=$new_count current=$current skipped=$skipped errors=$errors"
+  echo "updated=$updated new=$new_count current=$current skipped=$skipped errors=$errors hash_mismatches=$hash_mismatches"
 }
 
 # --- --check implementation ---
