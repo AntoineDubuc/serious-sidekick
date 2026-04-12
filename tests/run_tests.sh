@@ -2,7 +2,7 @@
 # run_tests.sh — Test runner that auto-detects bats-core or falls back to plain bash
 #
 # Usage: bash tests/run_tests.sh [test_file_or_pattern]
-#   No args: runs all tests/test_*.sh files
+#   No args: runs all tests/test_*.sh files (includes test_supply_chain.sh)
 #   With arg: runs only the specified test file(s)
 
 set -euo pipefail
