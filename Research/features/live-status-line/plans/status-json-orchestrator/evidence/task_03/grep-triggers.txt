@@ -1,0 +1,1 @@
+Write `$PLAN_DIR/status.json` on every state transition: phase change, task start, task complete, agent start, agent complete. This file is the data contract consumed by the status line (Plan 4b).

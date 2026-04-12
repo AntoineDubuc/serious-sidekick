@@ -1,0 +1,8 @@
+   sanitized=$(printf '%s' "$raw_value" | LC_ALL=C tr -d '\000-\037\177')
+   sanitized=$(printf '%s' "$sanitized" | sed 's/[\xe2\x80\x8b-\xe2\x80\x8f]//g; s/[\xe2\x80\xaa-\xe2\x80\xae]//g; s/[\xe2\x81\xa6-\xe2\x81\xa9]//g')
+   sanitized=$(printf '%s' "$sanitized" | head -c 200)
+4. **Serialize via JSON library** — use `python3 json.dumps()` or `jq --arg`. NEVER string-interpolate values into a JSON template, because unescaped `"` or `\` in agent strings would break JSON structure:
+       'plan_name': '''$sanitized_plan_name''',
+   print(json.dumps(d))
+   jq -n --arg plan_name "$sanitized_plan_name" ... '{version: 1, plan_name: $plan_name, ...}'
+  "plan_name": "<sanitized plan name>",

@@ -1,0 +1,6 @@
+Write `status.json.tmp` with mode 0600. The `mv` preserves mode.
+# ... write to status.json.tmp ...
+Write to `$PLAN_DIR/status.json.tmp`, then `mv` to `$PLAN_DIR/status.json`. This ensures the reader never sees partial JSON.
+python3 -c "import json; ..." > "$PLAN_DIR/status.json.tmp"
+chmod 0600 "$PLAN_DIR/status.json.tmp"
+mv "$PLAN_DIR/status.json.tmp" "$PLAN_DIR/status.json"
