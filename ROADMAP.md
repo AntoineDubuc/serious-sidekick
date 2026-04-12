@@ -1,55 +1,52 @@
 # Serious Sidekick — Product Roadmap
 
-> **Last updated:** 2026-04-12 · **Current version:** v1.6.0 · **Claude Code:** v2.1.101
+> **Last updated:** 2026-04-12 · **Current version:** v1.7.0 · **Claude Code:** v2.1.104 (npm) / v2.1.101 (GitHub)
 
 ---
 
-## At a Glance
+## What's Next — 10 Features, Ranked
 
-- **Just shipped (commit `5001774`, 2026-04-12):** Supply-chain hardening for `serious-update` + `/serious-init`. All 3 attack vectors from the live-status-line research are closed: manifest tier-swap blocked, SHA-256 hash verification activated (was decorative), `is_serious()` regex tightened, template key allowlist enforced. 32 new supply-chain tests + 16 existing tests all pass. Full `/serious-code` run — 6 tasks, all gates passed. Evidence at `Research/features/live-status-line/plans/serious-update-supply-chain-hardening/evidence/`.
-- **Also shipped (commit `1907ccb`, 2026-04-11):** Stop-hook-loop-pattern rollout sync — all 6 project hooks now have the loop guard.
-- **Resolved 2026-04-11 (T1 PASSED):** `disallowedTools` enforcement WORKS on subagents. Empirically verified.
-- **Resolved 2026-04-11 (T2 PASSED):** Monitor tool integration pattern verified — `stdbuf -oL tail -F evidence.log` works. Monitor watches shell scripts, not subagents.
-- **Resolved 2026-04-12 (T3 PASSED):** The supply-chain hardening `/serious-code` run was a full end-to-end exercise of the pipeline after the hook rollout sync. All 6 tasks dispatched, all 5 agent types ran per task, all gates passed. T3's "live smoke test" is satisfied.
-- **YouTube research sprint (2026-04-12):** 4 videos ingested via `/serious-youtube-tldr`. Key findings: Karpathy principles gap analysis, `context: fork` chaining, Excalidraw MCP, 5 durable web verticals. Research at `Research/youtube/`.
-- **Top feature when spikes are clear:** Dispatch audit trail — HOLD for 1-2 weeks, Anthropic may ship hook inheritance in v2.1.102/103.
-- **Latent bug class to watch:** Subagent inheritance. v2.1.101 fixed MCP tool inheritance and worktree file access. Hooks may be next.
+| # | Feature | Why it matters | Impact | Effort | Status |
+|--:|---------|----------------|:------:|:------:|:------:|
+| **1** | **Karpathy principles in subagents** | "Simplicity First" is missing from every subagent briefing. Implementers over-engineer freely, no reviewer checks for minimality, and ambiguity gets guessed instead of flagged BLOCKED. 6 text changes to existing prompts — highest ROI on the list. | High | S | **NEW** |
+| **2** | **Dispatch audit trail** | A buggy orchestrator can write fake evidence files and pass the completion gate. PreToolUse/Agent hook logs every dispatch. Audit-only (no blocking) until Anthropic ships hook inheritance. Research done. | High | M | **HOLD** |
+| **3** | **Monitor tool integration** | `/serious-code` polls evidence dirs with `sleep 5`. Monitor + `stdbuf -oL tail -F` replaces this with event-driven updates. Integration pattern verified (T2 spike). | High | M | **PLANNED** |
+| **4** | **Cold-read enforcement** | `/serious-review` agents are supposed to read plans cold — no research context. Nothing stops them today. PreToolUse/Read hook logs opens and fails the verdict on violations. Safe by design (one-shot, not loop-prone). | High | M | **PLANNED** |
+| **5** | **Compound "quick skills"** | The serious pipeline is heavy by design. But operational work (ingest a video, audit artifacts, lint skills) needs 2-3 chained commands without TDD overhead. `context: fork` enables lightweight orchestrator skills. 5 candidates identified. | Med-High | M | **NEW** |
+| **6** | **`defer` + `PermissionDenied` hooks** | Unlocks unattended `/serious-code` runs. `defer` pauses on dangerous ops; `PermissionDenied` auto-retries safe denials. Critical for CI/headless and enterprise. | Med-High | M | **NEW** |
+| **7** | **`paths:` globs for skill auto-loading** | 18 auto-loader skills load via description matching. Scoping to file patterns (`paths: ["*.ts"]`) cuts context cost. Quick win, medium risk — needs empirical test on one skill first. | Medium | S | **RESEARCHED** |
+| **8** | **`FileChanged` hooks for drift detection** | If research.md changes between `/serious-plan` and `/serious-code`, the plan silently goes stale. Notification-only hook catches this. | Medium | S | **RESEARCHED** |
+| **9** | **Excalidraw MCP for workflow diagrams** | Interactive diagrams via MCP server. Claude draws, screenshots, self-assesses, iterates. Complements `/serious-bananas` (static images) with editable output. | Medium | S | **NEW** |
+| **10** | **Auto-detection skill invocation** | Skills fire contextually without slash commands ("bug in auth" → `/serious-research`). Biggest DX improvement but XL effort. Blocked on session-start hook upstream. | High | XL | **BACKLOG** |
 
----
-
-## Tier 0 — Blocking Spikes (cheap, do these first)
-
-Small empirical tests that change downstream priorities. Each is under 30 minutes.
-
-| # | Spike | Why | Effort | Status |
-|---|-------|-----|:------:|:------:|
-| **T1** | **`disallowedTools` enforcement on subagents** | ~~Round 1 reviewer flagged this during the dispatch-hook research. Never tested empirically.~~<br>**RESOLVED 2026-04-11: PASSED.** Dispatched `serious-code-test-runner` (which has `disallowedTools: Edit, Write, NotebookEdit`) and asked it to attempt Write+Edit calls.<br>Agent reported Write/Edit/NotebookEdit are **not in its tool list at all** — filtered before dispatch, not runtime-blocked. Bash verification confirmed no file created. Our security claim is real. | XS | **DONE** |
-| **T2** | **Monitor tool feasibility for /serious-code orchestration** | ~~v2.1.101 fixed subagents in worktrees being denied file access.~~<br>**RESOLVED 2026-04-11: PASSED.** Also revealed that the original ROADMAP #2 framing was wrong — Monitor watches shell scripts, not subagents. The real integration pattern is `stdbuf -oL tail -F evidence.log`. Worktrees are irrelevant to Monitor (shell runs in main session context). v2.1.101 fix is unrelated. Integration pattern verified: events arrive as notifications; 200ms batching fine for /serious-code's pacing; **`stdbuf -oL` is mandatory** — plain `tail -F` block-buffers when piped into Monitor. | XS | **DONE** |
-| **T3** | **Verify the rollout sync didn't break anything** | ~~Live smoke test of `/serious-code` end-to-end after today's hook changes.~~<br>**RESOLVED 2026-04-12: PASSED.** The supply-chain hardening `/serious-code` run (6 tasks, all 5 agent types per task, 32+16 tests passing) was a full end-to-end exercise of the pipeline after the hook rollout sync. All gates passed. Original Task 6 is satisfied. | S | **DONE** |
-
-**All Tier 0 spikes resolved.** Feature work is unblocked.
+**Legend:** S = ≤2 days, M = week, XL = month+. Detailed rationale for each feature in §A–§K below.
 
 ---
 
-## Top Priorities — Ranked Features
+## Recently Shipped
 
-The eight things that matter most after the spikes clear, in order. Effort is informational, not the ranking driver.
+| Version / Commit | Date | What shipped |
+|:----------------|:-----|:-------------|
+| *(unstaged)* | 2026-04-12 | **Live status line for `/serious-code`.** Second footer line shows `[serious-code · Phase N/M · Task N/M · agent: state]` during active runs. Integrated into existing `~/.claude/statusline-command.sh`. 5 plans total (3 security prereqs + schema + integration). 18 status-line tests + 32 supply-chain tests + 16 existing tests all pass. Secret env vars scrubbed, terminal injection sanitized, path validation via `resolve_breadcrumb_path`. |
+| *(unstaged)* | 2026-04-12 | **YouTube research sprint.** 4 videos ingested via `/serious-youtube-tldr`: Karpathy principles, Excalidraw MCP, 5 durable web verticals, `context: fork` chaining. 3 new roadmap items (#9-#11). |
+| **`5001774`** | 2026-04-12 | **Supply-chain hardening for `serious-update` + `/serious-init`.** 3 attack vectors closed: manifest tier-swap blocked in `parse_manifest`, SHA-256 hash verification activated (was decorative), `is_serious()` regex end-anchored, template key allowlist enforced on fresh-install. 32 new supply-chain tests. Full `/serious-code` run — 6 tasks, all gates passed. Also serves as T3 live smoke test. |
+| **`1907ccb`** | 2026-04-11 | **Stop-hook-loop-pattern rollout sync.** All 6 project hooks now source `_shared/stop-hook-guard.sh`. |
+| **`b792fde`** | 2026-04-09 | `/serious-youtube-tldr` skill, `CLAUDE_CODE_CHANGELOG.md` initial publish, ROADMAP augmented with v2.1.94–v2.1.98 items. |
+| **v1.6.0** | 2026-04-05 | Breadcrumb 0-pre silence + staleness detection. |
+| **v1.5.0** | 2026-03-31 | Worktree-safe hooks. 8 path-handling bugs fixed. 96 assertions. |
+| **v1.4.0** | 2026-03-29 | Mechanical enforcement gap closed. All 9 hooks fail-closed. |
+| **v1.3.0** | — | Agent control levers. `disallowedTools` blocks 7/8 agents from Edit/Write. |
+| **v1.2.0** | 2026-03-22 | Superpowers A-tier. Anti-rationalization tables, Agent Teams, verification-before-completion. |
 
-| Rank | Feature | Why it matters | Impact | Effort | CC version | Status |
-|-----:|---------|----------------|:------:|:------:|:----------:|:------:|
-| **1** | **Dispatch audit trail** (§A) | Research done (`Research/features/pretooluse-agent-hook/`).<br>The original Stop-hook design was killed (would repeat April 7 incident). Replaced by audit-only logging.<br>**HOLD 1-2 weeks** to see if v2.1.102/103 ships hook inheritance — would unlock real enforcement. | High | M | v2.1.84 | **HOLD** |
-| **2** | **Monitor tool integration** (§B) | Replaces brittle `sleep`-poll in `/serious-code` with event-driven monitoring via `stdbuf -oL tail -F` on evidence files.<br>T2 resolved the integration pattern — Monitor watches shell scripts (not subagents) and gets line-buffered tail output via `stdbuf -oL`.<br>Events arrive as conversation notifications; 200ms batching fits `/serious-code`'s natural pacing. | High | M | v2.1.98 | **PLANNED** |
-| **3** | **Cold-read enforcement in /serious-review** (§C) | The "cold read" principle is documented but not enforced. Reviewers can open research/conversation context.<br>A PreToolUse/Read hook can log opens and fail the verdict on violations.<br>Safe by design — PreToolUse blocks are one-shot, not loop-prone. | High | M | — | **PLANNED** |
-| **4** | **Live status line during `/serious-code`** (§D) | `/serious-code` progress now displays as a second line in the terminal footer: `[serious-code · Phase 2/4 · Task 3/5 · implementer: running]`.<br>Integrated into existing `~/.claude/statusline-command.sh`. All 4 prerequisite plans + Plan 4b shipped. 18 tests pass. Sanitization, path validation, env scrubbing all in place. | Medium | S | v2.1.97 | **DONE** |
-| **5** | **`defer` + `PermissionDenied` hooks** (§E) | Together unlock unattended `/serious-code` runs with human-in-the-loop on sensitive ops.<br>`defer` pauses on dangerous tool calls; `PermissionDenied` auto-retries safe denials.<br>Critical for CI/headless and enterprise adoption. | Med-High | M | v2.1.89/90 | **NEW** |
-| **6** | **`paths:` globs for skill auto-loading** (§F) | Our 18 auto-loader skills load via description matching — every skill adds context tokens.<br>Scoping to file patterns (`paths: ["*.ts"]`) cuts context cost during normal editing.<br>Quick win, but MEDIUM risk: `paths:` + `description` interaction is untested in production. | Medium | S | v2.1.86 | **RESEARCHED** |
-| **7** | **`FileChanged` hooks for drift detection** (§G) | If a file changes between `/serious-plan` and `/serious-code`, the plan silently goes stale.<br>A `FileChanged` hook warns when upstream artifacts drift mid-pipeline.<br>Notification-only, but catches a real failure mode. | Medium | S | v2.1.80+ | **RESEARCHED** |
-| **8** | **Auto-detection skill invocation** (§H) | Skills fire contextually without slash commands (mention "bug in auth" → `/serious-research`).<br>Biggest single DX improvement but XL effort and depends on session-start hook upstream feature.<br>Backlog until upstream lands. | High | XL | — | **BACKLOG** |
-| **9** | **Karpathy principles enforcement in subagents** (§I) | "Simplicity First" is entirely missing from subagent briefings — implementer can over-engineer freely and no verification agent checks for minimality. Scope enforcement (only touch files in Key Components) is documented but not mechanically enforced. Ambiguity flagging (flag BLOCKED instead of guessing) absent from implementer dispatch prompt.<br>Research: `Research/youtube/karpathy-coding-agent-principles/`. Source: [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills). | High | S | — | **NEW** |
-| **10** | **Compound "quick skills" via `context: fork` chaining** (§J) | Lightweight pipelines for operational work that doesn't need the full serious pipeline. Orchestrator skill with `context: fork` frontmatter invokes `/skill-name` commands sequentially, each step reads prior output. 5 candidates identified: `/quick-ingest` (youtube→conversation), `/quick-audit` (breadcrumb + artifact health), `/quick-brief` (cross-artifact synthesis), `/quick-changelog` (fetch + diff + summarize releases), `/quick-skill-lint` (validate skill consistency).<br>Research: `Research/youtube/chaining-claude-code-skills/`. | Med-High | M | v2.1.69+ | **NEW** |
-| **11** | **Excalidraw MCP integration for workflow diagrams** (§K) | Third-party Excalidraw MCP server (not the official one) provides live canvas + iterative visual refinement via screenshots. Claude draws, takes screenshot, self-assesses, iterates. Complements `/serious-bananas` (static Gemini images) with interactive, editable diagrams. Use cases: architecture diagrams in `/serious-research`, flow diagrams in `/serious-plan`, progress visualizations in `/serious-code`.<br>Research: `Research/youtube/claude-excalidraw-mcp-diagrams/`. | Medium | S | — | **NEW** |
+---
 
-**Legend:** Impact = user value at launch. Effort = S (≤2 days), M (week), L (2-4 weeks), XL (month+). Status = HOLD (waiting on upstream) / BLOCKED (depends on a spike) / PLANNED (specced) / RESEARCHED (unknowns resolved) / NEW (needs spec) / BACKLOG (deferred).
+## Resolved Spikes
+
+All 3 Tier 0 spikes are resolved. Feature work is unblocked.
+
+- **T1 (2026-04-11):** `disallowedTools` enforcement WORKS on subagents — tools filtered before dispatch, not runtime-blocked.
+- **T2 (2026-04-11):** Monitor tool integration pattern verified — `stdbuf -oL tail -F evidence.log` works. Monitor watches shell scripts, not subagents.
+- **T3 (2026-04-12):** Supply-chain hardening `/serious-code` run = full end-to-end smoke test after hook rollout sync. All gates passed.
 
 ---
 

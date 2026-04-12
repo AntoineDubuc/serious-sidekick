@@ -6,7 +6,7 @@
 
 Shell-level gates for Claude Code — deterministic checks the AI can't reason around, skip, or hallucinate through. You stop re-doing AI work. You ship with evidence, not hope.
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.7.0-blue?style=flat-square)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/requires-Claude_Code-purple?style=flat-square)](https://docs.anthropic.com/en/docs/claude-code/overview)
 
