@@ -251,16 +251,24 @@ fi
 
 echo "--- Task 3: is_serious() regex tightening ---"
 
-# Test is_serious() by extracting the actual function from lib/serious-common.sh
-# and running it in isolation via python3
+# Test is_serious() by creating a standalone Python test script
+# The regex lives inside a bash heredoc in lib/serious-common.sh,
+# so we write a Python file to avoid double-escaping issues.
+cat > "$TMP_DIR/test_is_serious.py" << 'PYEOF'
+import re, sys
+
+def is_serious(command_str):
+    return bool(re.match(
+        r'^bash "\$CLAUDE_PROJECT_DIR/\.claude/skills/serious-[a-z-]+/hooks/[a-z0-9._-]+\.sh"$',
+        command_str
+    ))
+
+print(is_serious(sys.argv[1]))
+PYEOF
+
 test_is_serious() {
   local cmd="$1"
-  python3 -c "
-import re
-# Extract the actual is_serious function from the codebase
-$(sed -n '/def is_serious/,/^$/p' "$REPO_ROOT/lib/serious-common.sh" | sed 's/\\"/"/g')
-print(is_serious('''$cmd'''))
-"
+  python3 "$TMP_DIR/test_is_serious.py" "$cmd"
 }
 
 # AC: Rogue serious-evil rejected

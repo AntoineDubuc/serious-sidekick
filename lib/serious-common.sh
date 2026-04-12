@@ -255,9 +255,25 @@ with open(installed_path) as f:
 with open(template_path) as f:
     template = json.load(f)
 
+# Supply-chain hardening: reject templates with unknown top-level keys
+ALLOWED_TOP_LEVEL_KEYS = {'hooks', 'permissions', 'env', 'statusLine'}
+extra_keys = set(template.keys()) - ALLOWED_TOP_LEVEL_KEYS
+if extra_keys:
+    # Sanitize key names — strip to [a-zA-Z0-9_-] to prevent control-char injection
+    safe_keys = sorted(re.sub(r'[^a-zA-Z0-9_-]', '', k) for k in extra_keys)
+    print(f'ERROR: merge_settings: template has disallowed top-level keys: {safe_keys}', file=sys.stderr)
+    sys.exit(1)
+
 def is_serious(command_str):
-    \"\"\"Check if a hook command references serious-* scripts.\"\"\"
-    return bool(re.search(r'serious-', command_str))
+    \"\"\"Check if a hook command references serious-* scripts via \$CLAUDE_PROJECT_DIR.
+    The regex MUST anchor both start AND constrain the path after /hooks/ to prevent
+    path-traversal attacks (e.g., serious-code/hooks/../../../../tmp/evil.sh).
+    Only filenames matching [a-z0-9._-]+\\.sh are accepted after /hooks/.
+    \"\"\"
+    return bool(re.match(
+        r'^bash \"\\\$CLAUDE_PROJECT_DIR/\\.claude/skills/serious-[a-z-]+/hooks/[a-z0-9._-]+\\.sh\"$',
+        command_str
+    ))
 
 def get_composite_key(hook_type, matcher, hook_entry):
     \"\"\"Get the composite identity key for a hook entry.\"\"\"
