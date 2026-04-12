@@ -12,7 +12,9 @@
 #   2 = block exit (status is "done" but no summary — skill claimed to finish without delivering)
 
 # Source shared guard utility (stdin is consumed and cached in _STOP_HOOK_GUARD_INPUT)
-source "$(dirname "$0")/../../_shared/stop-hook-guard.sh"
+source "$(dirname "$0")/../../_shared/stop-hook-guard.sh" || exit 0
+# Source the canonical path helper (shared by all Stop hooks that read breadcrumb contents)
+source "$(dirname "$0")/../../_shared/path-resolve.sh" || exit 0
 guard_stop_hook_active
 
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
@@ -22,13 +24,8 @@ PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 # No active conversation session? Allow exit.
 [ ! -f "${PROJECT_ROOT}/.active-conversation" ] && exit 0
 
-BREADCRUMB_CONTENT=$(cat "${PROJECT_ROOT}/.active-conversation" | tr -d '[:space:]')
-case "$BREADCRUMB_CONTENT" in
-  /* | *..* )
-    echo "WARNING: breadcrumb content rejected (path traversal or absolute path)" >&2
-    exit 0 ;;
-esac
-CONV_DIR="${PROJECT_ROOT}/${BREADCRUMB_CONTENT}"
+CONV_DIR=$(resolve_breadcrumb_path "${PROJECT_ROOT}/.active-conversation" "$PROJECT_ROOT") || exit 0
+[ -L "$CONV_DIR" ] && exit 0
 
 # No conversation directory? Allow exit.
 [ ! -d "$CONV_DIR" ] && exit 0

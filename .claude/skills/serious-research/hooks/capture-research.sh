@@ -9,6 +9,8 @@
 
 # Source shared guard utility (stdin is consumed and cached in _STOP_HOOK_GUARD_INPUT)
 source "$(dirname "$0")/../../_shared/stop-hook-guard.sh" || exit 0
+# Source the canonical path helper (shared by all Stop hooks that read breadcrumb contents)
+source "$(dirname "$0")/../../_shared/path-resolve.sh" || exit 0
 guard_stop_hook_active
 
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
@@ -18,13 +20,8 @@ PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 # No active research session? Allow exit.
 [ ! -f "${PROJECT_ROOT}/.active-research" ] && exit 0
 
-BREADCRUMB_CONTENT=$(cat "${PROJECT_ROOT}/.active-research" | tr -d '[:space:]')
-case "$BREADCRUMB_CONTENT" in
-  /* | *..* )
-    echo "WARNING: breadcrumb content rejected (path traversal or absolute path)" >&2
-    exit 0 ;;
-esac
-RESEARCH_DIR="${PROJECT_ROOT}/${BREADCRUMB_CONTENT}"
+RESEARCH_DIR=$(resolve_breadcrumb_path "${PROJECT_ROOT}/.active-research" "$PROJECT_ROOT") || exit 0
+[ -L "$RESEARCH_DIR" ] && exit 0
 
 # No research directory? Allow exit.
 [ ! -d "$RESEARCH_DIR" ] && exit 0
