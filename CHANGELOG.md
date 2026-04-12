@@ -6,6 +6,67 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ---
 
+## [1.7.0] — 2026-04-12
+
+### Live status line, dispatch audit trail, supply-chain hardening
+
+Three features shipped in one weekend, built on top of a security hardening prerequisite that closed 3 attack vectors.
+
+#### Added
+
+- **Live status line for `/serious-code`** — Terminal footer shows a second line during active runs: `[serious-code · Phase 2/4 · Task 3/5 · implementer: running]`. Reads `status.json` written by the orchestrator (Plan 4a). Integrated into the existing `~/.claude/statusline-command.sh`. 18 tests. All output sanitized (terminal injection, bidi overrides, control chars). Secret env vars scrubbed at script start.
+
+- **Dispatch audit trail** — `PreToolUse/Agent` hook logs every agent dispatch to `dispatch_log.md` with task ID, agent type, and timestamp. The completion report warns if any task dispatched fewer than 5 agents. Always exits 0 — never blocks, never loops. Input sanitized, file mode 0600. 47 tests. End-to-end verified with live agent dispatch.
+
+- **Status JSON orchestrator** — `/serious-code` SKILL.md updated to write `status.json` on every state transition (phase change, task start, agent dispatch). Schema at `.claude/skills/_shared/status-schema.md`. Sanitization at write time. Atomic write via `.tmp` + `mv`.
+
+- **TASK_ID tagging** — `/serious-code` SKILL.md updated to include `TASK_ID: task_{NN}` in every agent dispatch prompt. The dispatch audit hook parses this to attribute log entries to tasks.
+
+- **Dispatch Audit section in completion report** — Reads `dispatch_log.md` and summarizes per-task dispatch counts. Advisory warning if fewer than 5 distinct agent types.
+
+#### Fixed
+
+- **Supply-chain hardening** — 3 attack vectors in `serious-update` and `/serious-init` closed:
+  - Manifest tier-swap: `parse_manifest` now rejects `.claude/settings.json` with ownership other than `merge`
+  - Dead hash verification: SHA-256 hashes in manifest were read but never compared. Now enforced.
+  - Loose regex: `is_serious()` end-anchored to prevent `serious-evil/` bypass. Template key allowlist enforced on fresh install.
+  - 32 new supply-chain tests covering 7 attack probes.
+
+- **Path canonicalization** — 6 Stop hooks updated to use `resolve_breadcrumb_path` from `_shared/path-resolve.sh`. Replaces glob-pattern rejection with `cd -P && pwd -P` + trust-root prefix check. TOCTOU mitigation via symlink re-check. CI lint blocks new glob-pattern usage. 18 attack-vector tests.
+
+---
+
+## [1.6.0] — 2026-04-05
+
+### Breadcrumb silence + staleness detection
+
+#### Changed
+
+- **Skills no longer narrate "No active breadcrumbs"** during normal advancing workflows. This was noise — the previous skill completed and cleaned up its breadcrumb. Normal state, no output needed.
+
+- **Stale breadcrumbs auto-detected** — If a breadcrumb's target file has `status: done` or `abandoned`, the breadcrumb is removed silently. If the breadcrumb file is older than 4 hours and status is `active`, the user is prompted.
+
+- **`debug(8)` added to pipeline order** in all 9 skill files and CLAUDE.md. Pipeline is now: `youtube-tldr(0.5) → conversation(1) → research(2) → mock-ups(3) → scope(4) → plan(5) → review(6) → code(7) → debug(8)`.
+
+---
+
+## [1.4.0] — 2026-03-29
+
+### Mechanical enforcement gap closed
+
+9 enforcement gaps identified by `/serious-research` — things the system called "mandatory" but didn't mechanically enforce.
+
+#### Fixed
+
+- **Gaps 1-3, 5, 7-9 closed** via Stop hook extensions (zero new hook types):
+  - Review agent verification: verdict must contain all mandatory agent signatures
+  - Dispatch log validation: `/serious-code` must dispatch all 5 agent types per task
+  - Upstream extraction check: plan must cross-reference `_extracted_items.md`
+  
+- **All 9 hooks converted to fail-closed** — Unexpected errors block instead of silently passing. `exit 1` on unknown state replaced with `exit 2` (block) across all hooks.
+
+---
+
 ## [1.5.0] — 2026-03-31
 
 ### Worktree-safe hooks + pre-existing bug sweep
@@ -182,6 +243,10 @@ A sequence of skills that take you from "I have an idea" to "it's built and veri
 
 ---
 
+[1.7.0]: https://github.com/AntoineDubuc/serious-sidekick/compare/v1.6.0...v1.7.0
+[1.6.0]: https://github.com/AntoineDubuc/serious-sidekick/compare/v1.5.0...v1.6.0
+[1.5.0]: https://github.com/AntoineDubuc/serious-sidekick/compare/v1.4.0...v1.5.0
+[1.4.0]: https://github.com/AntoineDubuc/serious-sidekick/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/AntoineDubuc/serious-sidekick/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/AntoineDubuc/serious-sidekick/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/AntoineDubuc/serious-sidekick/compare/v1.0.0...v1.1.0

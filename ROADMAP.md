@@ -4,22 +4,20 @@
 
 ---
 
-## What's Next — 10 Features, Ranked
+## What's Next — 8 Features, Ranked
 
 | # | Feature | Why it matters | Impact | Effort | Status |
 |--:|---------|----------------|:------:|:------:|:------:|
-| **1** | **Karpathy principles in subagents** | "Simplicity First" is missing from every subagent briefing. Implementers over-engineer freely, no reviewer checks for minimality, and ambiguity gets guessed instead of flagged BLOCKED. 6 text changes to existing prompts — highest ROI on the list. | High | S | **NEW** |
-| **2** | **Dispatch audit trail** | A buggy orchestrator can write fake evidence files and pass the completion gate. PreToolUse/Agent hook logs every dispatch. Audit-only (no blocking) until Anthropic ships hook inheritance. Research done. | High | M | **HOLD** |
-| **3** | **Monitor tool integration** | `/serious-code` polls evidence dirs with `sleep 5`. Monitor + `stdbuf -oL tail -F` replaces this with event-driven updates. Integration pattern verified (T2 spike). | High | M | **PLANNED** |
-| **4** | **Cold-read enforcement** | `/serious-review` agents are supposed to read plans cold — no research context. Nothing stops them today. PreToolUse/Read hook logs opens and fails the verdict on violations. Safe by design (one-shot, not loop-prone). | High | M | **PLANNED** |
-| **5** | **Compound "quick skills"** | The serious pipeline is heavy by design. But operational work (ingest a video, audit artifacts, lint skills) needs 2-3 chained commands without TDD overhead. `context: fork` enables lightweight orchestrator skills. 5 candidates identified. | Med-High | M | **NEW** |
-| **6** | **`defer` + `PermissionDenied` hooks** | Unlocks unattended `/serious-code` runs. `defer` pauses on dangerous ops; `PermissionDenied` auto-retries safe denials. Critical for CI/headless and enterprise. | Med-High | M | **NEW** |
-| **7** | **`paths:` globs for skill auto-loading** | 18 auto-loader skills load via description matching. Scoping to file patterns (`paths: ["*.ts"]`) cuts context cost. Quick win, medium risk — needs empirical test on one skill first. | Medium | S | **RESEARCHED** |
-| **8** | **`FileChanged` hooks for drift detection** | If research.md changes between `/serious-plan` and `/serious-code`, the plan silently goes stale. Notification-only hook catches this. | Medium | S | **RESEARCHED** |
-| **9** | **Excalidraw MCP for workflow diagrams** | Interactive diagrams via MCP server. Claude draws, screenshots, self-assesses, iterates. Complements `/serious-bananas` (static images) with editable output. | Medium | S | **NEW** |
-| **10** | **Auto-detection skill invocation** | Skills fire contextually without slash commands ("bug in auth" → `/serious-research`). Biggest DX improvement but XL effort. Blocked on session-start hook upstream. | High | XL | **BACKLOG** |
+| **1** | **Monitor tool integration** | `/serious-code` polls evidence dirs with `sleep 5`. Monitor + `stdbuf -oL tail -F` replaces this with event-driven updates. Integration pattern verified (T2 spike). | High | M | **PLANNED** |
+| **2** | **Cold-read enforcement** | `/serious-review` agents are supposed to read plans cold — no research context. Nothing stops them today. PreToolUse/Read hook logs opens and fails the verdict on violations. Safe by design (one-shot, not loop-prone). | High | M | **PLANNED** |
+| **3** | **Compound "quick skills"** | The serious pipeline is heavy by design. But operational work (ingest a video, audit artifacts, lint skills) needs 2-3 chained commands without TDD overhead. `context: fork` enables lightweight orchestrator skills. 5 candidates identified. | Med-High | M | **NEW** |
+| **4** | **`defer` + `PermissionDenied` hooks** | Unlocks unattended `/serious-code` runs. `defer` pauses on dangerous ops; `PermissionDenied` auto-retries safe denials. Critical for CI/headless and enterprise. | Med-High | M | **NEW** |
+| **5** | **`paths:` globs for skill auto-loading** | 18 auto-loader skills load via description matching. Scoping to file patterns (`paths: ["*.ts"]`) cuts context cost. Quick win, medium risk — needs empirical test on one skill first. | Medium | S | **RESEARCHED** |
+| **6** | **`FileChanged` hooks for drift detection** | If research.md changes between `/serious-plan` and `/serious-code`, the plan silently goes stale. Notification-only hook catches this. | Medium | S | **RESEARCHED** |
+| **7** | **Excalidraw MCP for workflow diagrams** | Interactive diagrams via MCP server. Claude draws, screenshots, self-assesses, iterates. Complements `/serious-bananas` (static images) with editable output. | Medium | S | **NEW** |
+| **8** | **Auto-detection skill invocation** | Skills fire contextually without slash commands ("bug in auth" → `/serious-research`). Biggest DX improvement but XL effort. Blocked on session-start hook upstream. | High | XL | **BACKLOG** |
 
-**Legend:** S = ≤2 days, M = week, XL = month+. Detailed rationale for each feature in §A–§K below.
+**Legend:** S = ≤2 days, M = week, XL = month+. Detailed rationale for each feature in §B–§K below.
 
 ---
 
@@ -27,8 +25,10 @@
 
 | Version / Commit | Date | What shipped |
 |:----------------|:-----|:-------------|
-| *(unstaged)* | 2026-04-12 | **Live status line for `/serious-code`.** Second footer line shows `[serious-code · Phase N/M · Task N/M · agent: state]` during active runs. Integrated into existing `~/.claude/statusline-command.sh`. 5 plans total (3 security prereqs + schema + integration). 18 status-line tests + 32 supply-chain tests + 16 existing tests all pass. Secret env vars scrubbed, terminal injection sanitized, path validation via `resolve_breadcrumb_path`. |
-| *(unstaged)* | 2026-04-12 | **YouTube research sprint.** 4 videos ingested via `/serious-youtube-tldr`: Karpathy principles, Excalidraw MCP, 5 durable web verticals, `context: fork` chaining. 3 new roadmap items (#9-#11). |
+| *(unstaged)* | 2026-04-12 | **Dispatch audit trail.** PreToolUse/Agent hook logs every agent dispatch to `dispatch_log.md`. Completion report warns if any task dispatched fewer than 5 agents. 47 tests. Input sanitized, file mode 0600. End-to-end verified. |
+| *(unstaged)* | 2026-04-12 | **Karpathy principles — KILLED.** `/serious-conversation` panel (4 personas, 2 rounds, unanimous). Audience mismatch: principles target bare-CLAUDE.md projects, redundant with our mechanical enforcement. Two tactical fixes survived as one-line edits. |
+| *(unstaged)* | 2026-04-12 | **Live status line for `/serious-code`.** Second footer line: `[serious-code · Phase N/M · Task N/M · agent: state]`. Integrated into `~/.claude/statusline-command.sh`. 18 status-line tests. |
+| *(unstaged)* | 2026-04-12 | **YouTube research sprint.** 4 videos ingested. 3 new roadmap items. |
 | **`5001774`** | 2026-04-12 | **Supply-chain hardening for `serious-update` + `/serious-init`.** 3 attack vectors closed: manifest tier-swap blocked in `parse_manifest`, SHA-256 hash verification activated (was decorative), `is_serious()` regex end-anchored, template key allowlist enforced on fresh-install. 32 new supply-chain tests. Full `/serious-code` run — 6 tasks, all gates passed. Also serves as T3 live smoke test. |
 | **`1907ccb`** | 2026-04-11 | **Stop-hook-loop-pattern rollout sync.** All 6 project hooks now source `_shared/stop-hook-guard.sh`. |
 | **`b792fde`** | 2026-04-09 | `/serious-youtube-tldr` skill, `CLAUDE_CODE_CHANGELOG.md` initial publish, ROADMAP augmented with v2.1.94–v2.1.98 items. |

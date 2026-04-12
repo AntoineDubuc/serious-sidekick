@@ -30,7 +30,7 @@ This clones the repo, symlinks `serious-update` to your PATH, sets up a daily st
 /serious-init
 ```
 
-That's it. You get 12 slash commands, 7 enforcement hooks, 8 specialized agents, and templates for plans, research, and scope manifests.
+That's it. You get 13 slash commands, 8 enforcement hooks, 8 specialized agents, and templates for plans, research, and scope manifests.
 
 **Already installed? Stay current:**
 
@@ -142,7 +142,7 @@ Seven core pipeline steps, plus an optional ingestion step. Each produces artifa
 
 ## What You Get
 
-### 12 Workflow Commands
+### 13 Workflow Commands
 
 | Command | Purpose |
 |:--------|:--------|
@@ -159,7 +159,7 @@ Seven core pipeline steps, plus an optional ingestion step. Each produces artifa
 | `/serious-status` | View active and completed workflows |
 | `/serious-abandon` | Abandon a sub-workflow and restore parent context |
 
-### 7 Enforcement Hooks
+### 8 Enforcement Hooks
 
 | Hook | Skill | What it blocks |
 |:-----|:------|:---------------|
@@ -170,6 +170,7 @@ Seven core pipeline steps, plus an optional ingestion step. Each produces artifa
 | Verdict Check | `/serious-review` | Missing verdict, review theater (PASS with no specifics), missing agent reports |
 | Conversation Capture | `/serious-conversation` | Status "done" without summary |
 | Research Capture | `/serious-research` | Active research abandoned without completion |
+| Dispatch Audit | `/serious-code` | Logs every agent dispatch to `dispatch_log.md` — forensic trail for detecting fabricated evidence |
 
 All hooks use a **fail-closed pattern** — unexpected errors block instead of silently passing. All are **worktree-safe** — they resolve paths via `$CLAUDE_PROJECT_DIR` and validate against path traversal.
 
@@ -177,13 +178,14 @@ All hooks use a **fail-closed pattern** — unexpected errors block instead of s
   <img src="images/readme/hook_enforcement.png" alt="Hook enforcement dashboard: 6 Stop hooks with content-aware checks, fail-closed pattern" />
 </div>
 
-### 3 PreToolUse Gates
+### 4 PreToolUse Gates
 
 | Gate | Trigger | What it catches |
 |:-----|:--------|:----------------|
 | TDD Gate | `Write(*.ts)` | Implementation files written before their tests exist |
 | Hedge Language Gate | `Write(*implementation_plan*)` | Vague language in plans ("consider whether", "as appropriate") |
 | Review Theater Gate | `Write(*verdict*)` | Generic approval without specific file:line references |
+| Dispatch Audit Gate | `Agent` | Logs every agent dispatch with task ID, agent type, timestamp — never blocks |
 
 ### 8 Specialized Agents
 
