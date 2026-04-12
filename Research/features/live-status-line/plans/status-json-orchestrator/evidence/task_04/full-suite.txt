@@ -1,0 +1,23 @@
+Running 16 test file(s)...
+
+(Using plain bash runner)
+
+  PASS  test_backup_restore.sh
+  PASS  test_generate_manifest.sh
+  PASS  test_hash_file.sh
+  PASS  test_install.sh
+  PASS  test_integration.sh
+  PASS  test_json_backend.sh
+  PASS  test_merge_settings.sh
+  PASS  test_migration.sh
+  PASS  test_parse_manifest.sh
+  PASS  test_serious_update.sh
+  PASS  test_smoke_baseline.sh
+  PASS  test_staleness_cron.sh
+  PASS  test_staleness_hook.sh
+  PASS  test_status_json.sh
+  PASS  test_update_state.sh
+  PASS  test_validate_json.sh
+
+Results: 16 passed, 0 failed, 16 total
+EXIT: 

@@ -4,6 +4,9 @@
 # Usage: bash tests/run_tests.sh [test_file_or_pattern]
 #   No args: runs all tests/test_*.sh files
 #   With arg: runs only the specified test file(s)
+#
+# Auto-discovered test files include:
+#   test_status_json.sh — status.json schema compliance (Plan 4a)
 
 set -euo pipefail
 
