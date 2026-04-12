@@ -1,0 +1,2 @@
+ERROR: control character U+001B found in plan_name at position 4
+ERROR: control character U+001B found in plan_name at position 8
