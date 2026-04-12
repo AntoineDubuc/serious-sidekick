@@ -487,6 +487,59 @@ else
   assert "Fewer keys than allowlist still accepted (upper bound)" "fail" "Exit: $MERGE_MINIMAL_EXIT"
 fi
 
+# ─── Task 4: /serious-init SKILL.md + docs/security.md ──────────────────────
+
+echo "--- Task 4: SKILL.md + docs/security.md ---"
+
+# AC: SKILL.md references allowlist validation for fresh install
+if grep -qi 'ALLOWED_TOP_LEVEL_KEYS\|reject.*unknown.*keys\|abort.*unknown' "$REPO_ROOT/.claude/skills/serious-init/SKILL.md"; then
+  assert "SKILL.md references allowlist validation for fresh install" "pass"
+else
+  assert "SKILL.md references allowlist validation for fresh install" "fail"
+fi
+
+# AC: SKILL.md references lib/serious-common.sh as allowlist source
+if grep -q 'lib/serious-common.sh' "$REPO_ROOT/.claude/skills/serious-init/SKILL.md"; then
+  assert "SKILL.md references lib/serious-common.sh as allowlist source" "pass"
+else
+  assert "SKILL.md references lib/serious-common.sh as allowlist source" "fail"
+fi
+
+# AC: docs/security.md exists
+if [ -f "$REPO_ROOT/docs/security.md" ]; then
+  assert "docs/security.md exists" "pass"
+else
+  assert "docs/security.md exists" "fail"
+fi
+
+# AC: docs/security.md documents trust model boundary
+if grep -q 'out-of-band trust anchor\|repo-level tampering' "$REPO_ROOT/docs/security.md" 2>/dev/null; then
+  assert "docs/security.md documents trust model boundary" "pass"
+else
+  assert "docs/security.md documents trust model boundary" "fail"
+fi
+
+# AC: docs/security.md lists the allowlist and explains each key
+if grep -q 'hooks.*permissions.*env.*statusLine\|statusLine' "$REPO_ROOT/docs/security.md" 2>/dev/null; then
+  assert "docs/security.md lists allowlisted keys" "pass"
+else
+  assert "docs/security.md lists allowlisted keys" "fail"
+fi
+
+# Negative: SKILL.md still has merge_settings call for upgrade path
+if grep -q 'merge_settings' "$REPO_ROOT/.claude/skills/serious-init/SKILL.md"; then
+  assert "Negative: SKILL.md preserves merge_settings for upgrade path" "pass"
+else
+  assert "Negative: SKILL.md preserves merge_settings for upgrade path" "fail"
+fi
+
+# Negative: docs/security.md does NOT claim hashes protect against malicious commits
+if grep -qi 'do not protect\|does not protect\|cannot defend\|cannot protect' "$REPO_ROOT/docs/security.md" 2>/dev/null; then
+  assert "Negative: security doc disclaims in-repo hash protection" "pass"
+else
+  assert "Negative: security doc disclaims in-repo hash protection" "fail"
+fi
+
 echo ""
 echo "Supply-chain test errors: $ERRORS"
 [ "$ERRORS" -eq 0 ] || exit 1
