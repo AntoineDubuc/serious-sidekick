@@ -1,6 +1,6 @@
 # Serious Sidekick — Product Roadmap
 
-> **Last updated:** 2026-04-14 · **Current version:** v1.8.0 · **Claude Code:** v2.1.107 (local) / v2.1.105 is the substantive release since v2.1.101
+> **Last updated:** 2026-04-14 · **Current version:** v1.8.0 · **Claude Code:** v2.1.108 (latest) / substantive releases: v2.1.105 (PreCompact hook, monitors manifest key, skill desc cap 250→1536) and v2.1.108 (built-in slash commands via Skill tool, /recap, 1-hour prompt caching)
 
 ---
 
@@ -15,7 +15,7 @@
 | **5** | **`paths:` globs for skill auto-loading** | 18 auto-loader skills load via description matching. Scoping to file patterns (`paths: ["*.ts"]`) cuts context cost. Quick win, medium risk — needs empirical test on one skill first. | Medium | S | **RESEARCHED** |
 | **6** | **`FileChanged` hooks for drift detection** | If research.md changes between `/serious-plan` and `/serious-code`, the plan silently goes stale. Notification-only hook catches this. | Medium | S | **RESEARCHED** |
 | **7** | **Excalidraw MCP for workflow diagrams** | Interactive diagrams via MCP server. Claude draws, screenshots, self-assesses, iterates. Complements `/serious-bananas` (static images) with editable output. | Medium | S | **NEW** |
-| **8** | **Auto-detection skill invocation** | Skills fire contextually without slash commands ("bug in auth" → `/serious-research`). Biggest DX improvement but XL effort. Blocked on session-start hook upstream. | High | XL | **BACKLOG** |
+| **8** | **Auto-detection skill invocation** | Skills fire contextually without slash commands ("bug in auth" → `/serious-research`). **⚠️ Upstream unblocked in v2.1.108:** model can now discover and invoke built-in slash commands via the Skill tool. User-defined slash commands (our `/serious-*` family) are likely the next expansion. Effort drops from XL to M. | High | M | **RESEARCH** |
 
 **Legend:** S = ≤2 days, M = week, XL = month+. Detailed rationale for each feature in §B–§K below.
 

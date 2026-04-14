@@ -1,8 +1,41 @@
-# Claude Code Changelog (v2.1.87 — v2.1.107)
+# Claude Code Changelog (v2.1.87 — v2.1.108)
 
-> Covers 13 releases over ~17 days (March 29 — April 14, 2026).
+> Covers 14 releases over ~17 days (March 29 — April 14, 2026).
 > Skipped/internal builds: v2.1.88, v2.1.93, v2.1.95, v2.1.99, v2.1.100 (empty republish), v2.1.102, v2.1.103, v2.1.104, v2.1.106.
-> v2.1.105 is the substantive release since v2.1.101 (PreCompact hook, `monitors` manifest key, skill description cap raised 250→1536).
+> Big releases in this window: v2.1.105 (PreCompact hook, `monitors` manifest key, skill description cap 250→1536) and v2.1.108 (`/recap`, built-in slash commands via Skill tool, 1-hour prompt caching).
+
+---
+
+## v2.1.108 — April 14, 2026
+
+### Added
+- `ENABLE_PROMPT_CACHING_1H` env var to opt into 1-hour prompt cache TTL on API key, Bedrock, Vertex, and Foundry (`ENABLE_PROMPT_CACHING_1H_BEDROCK` is deprecated but still honored); `FORCE_PROMPT_CACHING_5M` to force 5-minute TTL
+- Recap feature to provide context when returning to a session, configurable in `/config` and manually invocable with `/recap`; force with `CLAUDE_CODE_ENABLE_AWAY_SUMMARY` if telemetry disabled
+- **The model can now discover and invoke built-in slash commands like `/init`, `/review`, and `/security-review` via the Skill tool**
+- `/undo` is now an alias for `/rewind`
+
+### Improved
+- `/model` warns before switching models mid-conversation, since the next response re-reads the full history uncached
+- `/resume` picker defaults to sessions from the current directory; press `Ctrl+A` to show all projects
+- Error messages: server rate limits distinguished from plan usage limits; 5xx/529 errors show a link to status.claude.com; unknown slash commands suggest the closest match
+- Reduced memory footprint for file reads, edits, and syntax highlighting by loading language grammars on demand
+- Added "verbose" indicator when viewing the detailed transcript (`Ctrl+O`)
+- Warning at startup when prompt caching is disabled via `DISABLE_PROMPT_CACHING*` env vars
+
+### Fixed (selected highlights — 12 fixes total)
+- Paste not working in the `/login` code prompt (regression in 2.1.105)
+- Subscribers who set `DISABLE_TELEMETRY` falling back to 5-min prompt cache TTL instead of 1 hour
+- Agent tool prompting for permission in auto mode when the safety classifier's transcript exceeded its context window
+- `claude --resume <session-id>` losing the session's custom name and color set via `/rename`
+- Transcript write failures (e.g., disk full) being silently dropped instead of logged
+- Policy-managed plugins never auto-updating when running from a different project than where they were first installed
+
+### Impact on Serious Sidekick
+
+- **Built-in slash commands via Skill tool is a big deal for ROADMAP #8.** Auto-detection skill invocation ("bug in auth" → `/serious-research` without typing the slash command) was XL effort blocked on infrastructure. v2.1.108 ships that infrastructure for BUILT-IN commands. User-defined slash commands (our `/serious-*` family) are likely the next expansion. Status: **BACKLOG → RESEARCH**.
+- **`/recap` overlaps with our `context.md`.** Not a replacement — our `context.md` is persistent cross-session, `/recap` is session-return oriented. But the feature suggests upstream is thinking about the same problem. Worth checking if `/recap` telemetry can feed into our next-session context load.
+- **1-hour prompt caching (`ENABLE_PROMPT_CACHING_1H`)** — long `/serious-code` runs can benefit from 1-hour TTL on the prompt cache. Cost savings + speed. Consider adding to `/serious-init` environment setup.
+- **Transcript write failures now logged** — closes a silent-failure class; no action needed on our side.
 
 ---
 
