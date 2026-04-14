@@ -1,6 +1,6 @@
 # Serious Sidekick — Product Roadmap
 
-> **Last updated:** 2026-04-12 · **Current version:** v1.7.0 · **Claude Code:** v2.1.104 (npm) / v2.1.101 (GitHub)
+> **Last updated:** 2026-04-14 · **Current version:** v1.8.0 · **Claude Code:** v2.1.104 (npm) / v2.1.101 (GitHub)
 
 ---
 
@@ -9,7 +9,7 @@
 | # | Feature | Why it matters | Impact | Effort | Status |
 |--:|---------|----------------|:------:|:------:|:------:|
 | **1** | **Monitor tool integration** | `/serious-code` polls evidence dirs with `sleep 5`. Monitor + `stdbuf -oL tail -F` replaces this with event-driven updates. Integration pattern verified (T2 spike). | High | M | **PLANNED** |
-| **2** | **Cold-read enforcement** | `/serious-review` agents are supposed to read plans cold — no research context. Nothing stops them today. PreToolUse/Read hook logs opens and fails the verdict on violations. Safe by design (one-shot, not loop-prone). | High | M | **PLANNED** |
+| **2** | **Cold-read enforcement** | ~~PreToolUse/Read hook logs opens and fails the verdict on violations.~~ **ABANDONED 2026-04-14.** Plan failed `/serious-review` twice with identical pattern. Panel-endorsed decision to revisit only if observability log shows cold-read violations actually happen. See `Research/features/cold-read-enforcement/` (status: abandoned). | — | — | **ABANDONED** |
 | **3** | **Compound "quick skills"** | The serious pipeline is heavy by design. But operational work (ingest a video, audit artifacts, lint skills) needs 2-3 chained commands without TDD overhead. `context: fork` enables lightweight orchestrator skills. 5 candidates identified. | Med-High | M | **NEW** |
 | **4** | **`defer` + `PermissionDenied` hooks** | Unlocks unattended `/serious-code` runs. `defer` pauses on dangerous ops; `PermissionDenied` auto-retries safe denials. Critical for CI/headless and enterprise. | Med-High | M | **NEW** |
 | **5** | **`paths:` globs for skill auto-loading** | 18 auto-loader skills load via description matching. Scoping to file patterns (`paths: ["*.ts"]`) cuts context cost. Quick win, medium risk — needs empirical test on one skill first. | Medium | S | **RESEARCHED** |
@@ -25,6 +25,7 @@
 
 | Version / Commit | Date | What shipped |
 |:----------------|:-----|:-------------|
+| v1.8.0 · `2137748` | 2026-04-14 | **Observability spike — silent-pass becomes visible.** `_log_outcome` helper + all 5 hooks instrumented at every exit site. TSV log at `.claude/logs/outcomes.log`. 14 tests. Diagnostic only (NOT a security control). Shipped as spike after panel converged on "measure first, harden later." 9-plan observability roadmap abandoned; follow-on plans will be written from real log data, not research speculation. |
 | *(unstaged)* | 2026-04-12 | **Dispatch audit trail.** PreToolUse/Agent hook logs every agent dispatch to `dispatch_log.md`. Completion report warns if any task dispatched fewer than 5 agents. 47 tests. Input sanitized, file mode 0600. End-to-end verified. |
 | *(unstaged)* | 2026-04-12 | **Karpathy principles — KILLED.** `/serious-conversation` panel (4 personas, 2 rounds, unanimous). Audience mismatch: principles target bare-CLAUDE.md projects, redundant with our mechanical enforcement. Two tactical fixes survived as one-line edits. |
 | *(unstaged)* | 2026-04-12 | **Live status line for `/serious-code`.** Second footer line: `[serious-code · Phase N/M · Task N/M · agent: state]`. Integrated into `~/.claude/statusline-command.sh`. 18 status-line tests. |

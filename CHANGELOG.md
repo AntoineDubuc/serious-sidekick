@@ -6,6 +6,41 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ---
 
+## [1.8.0] — 2026-04-14
+
+### Observability spike — silent-pass events become visible
+
+Shipped as a panel-endorsed spike, not a plan. The 9-plan observability roadmap (`enforcement-theater-meta-failure` research) was abandoned when the P1 plan failed review twice with the exact pathology the research catalogued. A 5-persona `/serious-conversation` panel converged on: ship the smallest thing that produces data, adopt process reforms after the log justifies them.
+
+#### Added
+
+- **`_log_outcome` helper at `.claude/skills/_shared/log-outcome.sh`** — 50-line shell function. Every hook that sources it can log TSV records to `.claude/logs/outcomes.log`. 7 fields: `ts_utc`, `hook`, `verdict`, `file_path`, `reason`, `pid`, `duration_ms`. Verdict enum: `SKIP | ALLOW | BLOCK | PASS | ERROR`. Newlines/tabs stripped from attacker-controllable strings. Diagnostic only — NOT a security control (banner expires on first automated consumer).
+
+- **All 5 enforcement hooks instrumented** — `tdd-gate`, `hedge-language-gate`, `review-theater-gate`, `verify-completion-gate`, `check-verdict` now call `_log_outcome` at every exit site. Silent-pass paths (empty tool input, missing content field, non-matching filename, missing breadcrumb) now produce `SKIP` records with specific reasons instead of exiting 0 invisibly.
+
+- **Test suite** — `tests/hooks/test_log_outcome_spike.sh`. 14 assertions covering the helper unit-tested, injection defense (newlines/tabs in reason), enum guard, concurrent invocation, and per-hook end-to-end. All green. Standalone invocation only (not in `run_tests.sh` glob — intentional, prove standalone first).
+
+- **`.gitignore`** — excludes `.claude/logs/*.log*` so diagnostic logs don't commit.
+
+#### What this closes and what it doesn't
+
+Closes: the "silent-pass is invisible" problem the upstream research documented. Every future analysis has empirical data about which hooks fire, which verdicts, and on what file paths.
+
+Does NOT close: log tampering, concurrent-write corruption, cross-tenant isolation, forensic attribution. Those are explicitly left for a follow-on plan — but only after real log data justifies the scope (panel rule: spike first, harden later).
+
+#### Process changes (decided, not yet shipped)
+
+- **200-line threshold rule** — fixes under 200 lines / ≤3 files / no cross-session contracts ship as single commits, skipping scope/plan/review. Documented in `Research/conversations/quality-in-planning/summary.md`.
+- **Paste-before-claim discipline** — every technical claim in a plan must include pasted command output. Adopt after log data justifies the overhead.
+- **Threat Model Block** — for enforcement-adjacent plans only. Defer until next enforcement-adjacent plan.
+
+#### Abandoned
+
+- **Cold-read-enforcement plan** (`Research/features/cold-read-enforcement/`) — status set to `abandoned`. Failed review twice with identical meta-pattern. The feature idea may return after observability data shows whether cold-read violations actually happen.
+- **P1 obs-foundation plan** (`Research/bugs/enforcement-theater-meta-failure/plans/p1-obs-foundation/`) — status set to `abandoned`. Specified `flock`, `jq -cn`, rotation, 16-hex hashes, file modes — all explicitly out of scope for the spike.
+
+---
+
 ## [1.7.0] — 2026-04-12
 
 ### Live status line, dispatch audit trail, supply-chain hardening
