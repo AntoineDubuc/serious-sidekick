@@ -26,3 +26,7 @@ context.md
 
 # Research artifacts (generated per-project, not part of the template)
 Research/
+
+# Diagnostic outcome logs (not a security control — see _shared/log-outcome.sh)
+.claude/logs/*.log
+.claude/logs/*.log.*

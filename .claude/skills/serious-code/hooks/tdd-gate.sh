@@ -15,8 +15,12 @@ PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 [ ! -d "$PROJECT_ROOT" ] && exit 0
 [ -f "$PROJECT_ROOT/.claude/settings.json" ] || echo "WARNING: CLAUDE_PROJECT_DIR may be incorrect: $PROJECT_ROOT" >&2
 
-# No active code session? Allow.
+# No active code session? Allow (not logged — PreToolUse fires too often to log inactive sessions).
 [ ! -f "${PROJECT_ROOT}/.active-code" ] && exit 0
+
+# Source observability helper (diagnostic only — not a security control).
+# shellcheck source=/dev/null
+source "$(dirname "$0")/../../_shared/log-outcome.sh" 2>/dev/null || true
 
 # --- CHECKS_PASSED fail-closed pattern ---
 # All grep -c invocations MUST use || true (returns exit 1 on zero matches)
@@ -25,20 +29,38 @@ CHECKS_PASSED=false
 # Parse file path from tool input
 FILE_PATH=$(echo "$CLAUDE_TOOL_INPUT" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"file_path"[[:space:]]*:[[:space:]]*"//' | sed 's/"$//')
 
-[ -z "$FILE_PATH" ] && exit 0
+if [ -z "$FILE_PATH" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome SKIP "no-file-path"
+  exit 0
+fi
 
 BASENAME=$(basename "$FILE_PATH")
 
 # Allow test files through unconditionally
-echo "$BASENAME" | grep -qiE '\.(test|spec)\.' && exit 0
-echo "$BASENAME" | grep -qiE '^test_|_test\.' && exit 0
-echo "$FILE_PATH" | grep -qiE '__tests__/|/tests?/' && exit 0
+if echo "$BASENAME" | grep -qiE '\.(test|spec)\.'; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome ALLOW "test-file-ext"
+  exit 0
+fi
+if echo "$BASENAME" | grep -qiE '^test_|_test\.'; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome ALLOW "test-file-prefix"
+  exit 0
+fi
+if echo "$FILE_PATH" | grep -qiE '__tests__/|/tests?/'; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome ALLOW "tests-dir"
+  exit 0
+fi
 
 # Allow non-code files (markdown, json, yaml, config, etc.)
-echo "$BASENAME" | grep -qiE '\.(md|json|yaml|yml|toml|txt|sh|css|html|svg|png|jpg)$' && exit 0
+if echo "$BASENAME" | grep -qiE '\.(md|json|yaml|yml|toml|txt|sh|css|html|svg|png|jpg)$'; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome ALLOW "non-code-file"
+  exit 0
+fi
 
 # Allow files in evidence/hooks/scripts directories
-echo "$FILE_PATH" | grep -qiE 'evidence/|/hooks/|/scripts/' && exit 0
+if echo "$FILE_PATH" | grep -qiE 'evidence/|/hooks/|/scripts/'; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome ALLOW "infra-dir"
+  exit 0
+fi
 
 # This is an implementation file — check for corresponding test
 DIR=$(dirname "$FILE_PATH")
@@ -57,6 +79,7 @@ for pattern in "${DIR}/${NAME_NO_EXT}.test.${EXT}" \
 done
 
 if [ "$FOUND_TEST" = "0" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome BLOCK "no-test-for-impl"
   echo "TDD GATE: Write the test first." >&2
   echo "" >&2
   echo "You are writing: ${FILE_PATH}" >&2
@@ -71,7 +94,10 @@ CHECKS_PASSED=true
 
 # Final guard — if we never reached the pass marker, something failed silently
 if [ "$CHECKS_PASSED" != "true" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome ERROR "checks-not-reached"
   echo "ENFORCEMENT ERROR: tdd-gate.sh did not complete all checks" >&2
   exit 2
 fi
+
+type _log_outcome >/dev/null 2>&1 && _log_outcome PASS "test-exists"
 exit 0

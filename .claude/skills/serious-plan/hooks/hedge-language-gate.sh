@@ -14,8 +14,12 @@ PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 [ ! -d "$PROJECT_ROOT" ] && exit 0
 [ -f "$PROJECT_ROOT/.claude/settings.json" ] || echo "WARNING: CLAUDE_PROJECT_DIR may be incorrect: $PROJECT_ROOT" >&2
 
-# No active plan session? Allow.
+# No active plan session? Allow (not logged — PreToolUse fires too often to log inactive sessions).
 [ ! -f "${PROJECT_ROOT}/.active-plan" ] && exit 0
+
+# Source observability helper (diagnostic only — not a security control).
+# shellcheck source=/dev/null
+source "$(dirname "$0")/../../_shared/log-outcome.sh" 2>/dev/null || true
 
 # --- CHECKS_PASSED fail-closed pattern ---
 # All grep -c invocations MUST use || true (returns exit 1 on zero matches)
@@ -24,21 +28,31 @@ CHECKS_PASSED=false
 # Parse file path from tool input
 FILE_PATH=$(echo "$CLAUDE_TOOL_INPUT" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"file_path"[[:space:]]*:[[:space:]]*"//' | sed 's/"$//')
 
-[ -z "$FILE_PATH" ] && exit 0
+if [ -z "$FILE_PATH" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome SKIP "no-file-path"
+  exit 0
+fi
 
 # Only check plan files (implementation_plan.md or files in plans/)
 BASENAME=$(basename "$FILE_PATH")
-echo "$FILE_PATH" | grep -qiE 'implementation_plan\.md|/plans/' || exit 0
+if ! echo "$FILE_PATH" | grep -qiE 'implementation_plan\.md|/plans/'; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome SKIP "non-plan-file"
+  exit 0
+fi
 
 # Extract content from tool input (between first and last quotes of content field)
 CONTENT=$(echo "$CLAUDE_TOOL_INPUT" | grep -o '"content"[[:space:]]*:[[:space:]]*"' | head -1)
-[ -z "$CONTENT" ] && exit 0
+if [ -z "$CONTENT" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome SKIP "no-content-field"
+  exit 0
+fi
 
 # Check for hedge patterns in the raw tool input (content field)
 # These are the exact patterns from the guardrail table
 VIOLATIONS=$(echo "$CLAUDE_TOOL_INPUT" | grep -ioE 'consider whether|you might want to|think about|it may be worth|as appropriate|optionally' | head -5)
 
 if [ -n "$VIOLATIONS" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome BLOCK "hedge-language"
   echo "HEDGE LANGUAGE DETECTED in plan content." >&2
   echo "" >&2
   echo "File: ${FILE_PATH}" >&2
@@ -56,7 +70,10 @@ CHECKS_PASSED=true
 
 # Final guard — if we never reached the pass marker, something failed silently
 if [ "$CHECKS_PASSED" != "true" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome ERROR "checks-not-reached"
   echo "ENFORCEMENT ERROR: hedge-language-gate.sh did not complete all checks" >&2
   exit 2
 fi
+
+type _log_outcome >/dev/null 2>&1 && _log_outcome PASS "no-hedge-language"
 exit 0

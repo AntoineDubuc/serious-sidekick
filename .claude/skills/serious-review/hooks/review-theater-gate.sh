@@ -13,8 +13,12 @@ PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 [ ! -d "$PROJECT_ROOT" ] && exit 0
 [ -f "$PROJECT_ROOT/.claude/settings.json" ] || echo "WARNING: CLAUDE_PROJECT_DIR may be incorrect: $PROJECT_ROOT" >&2
 
-# No active review session? Allow.
+# No active review session? Allow (not logged — PreToolUse fires too often to log inactive sessions).
 [ ! -f "${PROJECT_ROOT}/.active-review" ] && exit 0
+
+# Source observability helper (diagnostic only — not a security control).
+# shellcheck source=/dev/null
+source "$(dirname "$0")/../../_shared/log-outcome.sh" 2>/dev/null || true
 
 # --- CHECKS_PASSED fail-closed pattern ---
 # All grep -c invocations MUST use || true (returns exit 1 on zero matches)
@@ -23,11 +27,17 @@ CHECKS_PASSED=false
 # Parse file path from tool input
 FILE_PATH=$(echo "$CLAUDE_TOOL_INPUT" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"file_path"[[:space:]]*:[[:space:]]*"//' | sed 's/"$//')
 
-[ -z "$FILE_PATH" ] && exit 0
+if [ -z "$FILE_PATH" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome SKIP "no-file-path"
+  exit 0
+fi
 
 # Only check verdict files
 BASENAME=$(basename "$FILE_PATH")
-echo "$BASENAME" | grep -qiE 'verdict' || exit 0
+if ! echo "$BASENAME" | grep -qiE 'verdict'; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome SKIP "non-verdict-file"
+  exit 0
+fi
 
 # Check for review theater patterns in content
 THEATER=$(echo "$CLAUDE_TOOL_INPUT" | grep -ioE 'no (significant )?issues found|looks good|LGTM|no concerns|all good|passes all checks' | head -3)
@@ -37,6 +47,7 @@ if [ -n "$THEATER" ]; then
   SPECIFICS=$(echo "$CLAUDE_TOOL_INPUT" | grep -oE '[a-zA-Z_/]+\.(ts|tsx|js|jsx|py|rb|go|rs|java|kt|c|cpp|cs|swift|md|sh|bash|yaml|yml|json|toml|css|scss|html|vue|svelte):[0-9]+' | head -1)
 
   if [ -z "$SPECIFICS" ]; then
+    type _log_outcome >/dev/null 2>&1 && _log_outcome BLOCK "review-theater-no-specifics"
     echo "REVIEW THEATER DETECTED" >&2
     echo "" >&2
     echo "File: ${FILE_PATH}" >&2
@@ -56,7 +67,10 @@ CHECKS_PASSED=true
 
 # Final guard — if we never reached the pass marker, something failed silently
 if [ "$CHECKS_PASSED" != "true" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome ERROR "checks-not-reached"
   echo "ENFORCEMENT ERROR: review-theater-gate.sh did not complete all checks" >&2
   exit 2
 fi
+
+type _log_outcome >/dev/null 2>&1 && _log_outcome PASS "substantive-review"
 exit 0

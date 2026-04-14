@@ -20,6 +20,9 @@
 source "$(dirname "$0")/../../_shared/stop-hook-guard.sh" || exit 0
 # Source the canonical path helper (shared by all Stop hooks that read breadcrumb contents)
 source "$(dirname "$0")/../../_shared/path-resolve.sh" || exit 0
+# Source observability helper (diagnostic only — not a security control).
+# shellcheck source=/dev/null
+source "$(dirname "$0")/../../_shared/log-outcome.sh" 2>/dev/null || true
 guard_stop_hook_active
 
 # Breadcrumb files are written by SKILL.md prompt instructions from the main
@@ -30,16 +33,31 @@ PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 [ -f "$PROJECT_ROOT/.claude/settings.json" ] || echo "WARNING: CLAUDE_PROJECT_DIR may be incorrect: $PROJECT_ROOT" >&2
 
 # No active code session? Allow exit.
-[ ! -f "${PROJECT_ROOT}/.active-code" ] && exit 0
+if [ ! -f "${PROJECT_ROOT}/.active-code" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome SKIP "no-active-code"
+  exit 0
+fi
 
-PLAN_DIR=$(resolve_breadcrumb_path "${PROJECT_ROOT}/.active-code" "$PROJECT_ROOT") || exit 0
-[ -L "$PLAN_DIR" ] && exit 0
+if ! PLAN_DIR=$(resolve_breadcrumb_path "${PROJECT_ROOT}/.active-code" "$PROJECT_ROOT"); then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome SKIP "breadcrumb-unresolvable"
+  exit 0
+fi
+if [ -L "$PLAN_DIR" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome SKIP "plan-dir-is-symlink"
+  exit 0
+fi
 
 # No plan directory? Allow exit.
-[ ! -d "$PLAN_DIR" ] && exit 0
+if [ ! -d "$PLAN_DIR" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome SKIP "plan-dir-missing"
+  exit 0
+fi
 
 # No evidence directory? Allow exit (session just starting).
-[ ! -d "${PLAN_DIR}/evidence" ] && exit 0
+if [ ! -d "${PLAN_DIR}/evidence" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome SKIP "evidence-dir-missing"
+  exit 0
+fi
 
 # --- CHECKS_PASSED fail-closed pattern ---
 # All grep -c invocations MUST use || true (returns exit 1 on zero matches)
@@ -84,6 +102,7 @@ for task_dir in "${PLAN_DIR}/evidence"/task_*/; do
 done
 
 if [ -n "$MISSING" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome BLOCK "missing-gate-passed-md"
   emit_block_then_exit_2 "COMPLETION GATE BLOCK
 
 These tasks have evidence directories but no gate_passed.md:
@@ -93,6 +112,7 @@ verify ALL acceptance criteria before a task can be marked complete."
 fi
 
 if [ -n "$MISSING_EVIDENCE" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome BLOCK "missing-evidence-files"
   emit_block_then_exit_2 "EVIDENCE FILE BLOCK
 
 These agent evidence files are missing:
@@ -104,6 +124,7 @@ Required files per task: implementation.md, review.md, tests.md, runtime.md, qa.
 fi
 
 if [ -n "$INVALID_GATE" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome BLOCK "gate-verdict-invalid"
   emit_block_then_exit_2 "GATE VERDICT BLOCK
 
 These gate files do not contain a PASS verdict:
@@ -133,6 +154,7 @@ for task_dir in "${PLAN_DIR}/evidence"/task_*/; do
 done
 
 if [ -n "$WARNINGS" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome BLOCK "todo-fixme-markers"
   emit_block_then_exit_2 "TODO/FIXME WARNING
 
 Placeholder comments found in implementation files:
@@ -144,6 +166,9 @@ CHECKS_PASSED=true
 
 # Final guard — if we never reached the pass marker, something failed silently
 if [ "$CHECKS_PASSED" != "true" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome ERROR "checks-not-reached"
   emit_block_then_exit_2 "ENFORCEMENT ERROR: verify-completion-gate.sh did not complete all checks"
 fi
+
+type _log_outcome >/dev/null 2>&1 && _log_outcome PASS "all-tasks-verified"
 exit 0

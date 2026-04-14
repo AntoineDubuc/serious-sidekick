@@ -11,6 +11,9 @@
 source "$(dirname "$0")/../../_shared/stop-hook-guard.sh" || exit 0
 # Source the canonical path helper (shared by all Stop hooks that read breadcrumb contents)
 source "$(dirname "$0")/../../_shared/path-resolve.sh" || exit 0
+# Source observability helper (diagnostic only — not a security control).
+# shellcheck source=/dev/null
+source "$(dirname "$0")/../../_shared/log-outcome.sh" 2>/dev/null || true
 guard_stop_hook_active
 
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
@@ -18,13 +21,25 @@ PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 [ -f "$PROJECT_ROOT/.claude/settings.json" ] || echo "WARNING: CLAUDE_PROJECT_DIR may be incorrect: $PROJECT_ROOT" >&2
 
 # No active review session? Allow exit.
-[ ! -f "${PROJECT_ROOT}/.active-review" ] && exit 0
+if [ ! -f "${PROJECT_ROOT}/.active-review" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome SKIP "no-active-review"
+  exit 0
+fi
 
-REVIEW_DIR=$(resolve_breadcrumb_path "${PROJECT_ROOT}/.active-review" "$PROJECT_ROOT") || exit 0
-[ -L "$REVIEW_DIR" ] && exit 0
+if ! REVIEW_DIR=$(resolve_breadcrumb_path "${PROJECT_ROOT}/.active-review" "$PROJECT_ROOT"); then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome SKIP "breadcrumb-unresolvable"
+  exit 0
+fi
+if [ -L "$REVIEW_DIR" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome SKIP "review-dir-is-symlink"
+  exit 0
+fi
 
 # No review directory? Allow exit.
-[ ! -d "$REVIEW_DIR" ] && exit 0
+if [ ! -d "$REVIEW_DIR" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome SKIP "review-dir-missing"
+  exit 0
+fi
 
 # --- CHECKS_PASSED fail-closed pattern ---
 # All grep -c invocations MUST use || true (returns exit 1 on zero matches)
@@ -32,6 +47,7 @@ CHECKS_PASSED=false
 
 # Check for review_verdict.md
 if [ ! -f "${REVIEW_DIR}/review_verdict.md" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome BLOCK "verdict-md-missing"
   emit_block_then_exit_2 "REVIEW VERDICT WARNING
 
 Active review session at ${REVIEW_DIR} has no review_verdict.md.
@@ -47,6 +63,7 @@ if [ -f "${REVIEW_DIR}/review_verdict.md" ]; then
   VERDICT_LINE=$(echo "$VERDICT_CONTENT" | grep -i 'verdict:' | head -1)
   # Only flag if verdict says PASS but has zero specific references
   if echo "$VERDICT_LINE" | grep -qiE '\bpass\b' && [ "$HAS_REFS" -eq 0 ]; then
+    type _log_outcome >/dev/null 2>&1 && _log_outcome BLOCK "pass-without-refs"
     emit_block_then_exit_2 "REVIEW QUALITY WARNING
 
 Review verdict at ${REVIEW_DIR}/review_verdict.md passed but contains
@@ -69,6 +86,7 @@ if [ -f "${REVIEW_DIR}/review_verdict.md" ]; then
   [ "$SECURITY" -eq 0 ] && MISSING_AGENTS="${MISSING_AGENTS}  - Security Mind\n"
 
   if [ -n "$MISSING_AGENTS" ]; then
+    type _log_outcome >/dev/null 2>&1 && _log_outcome BLOCK "missing-agent-sections"
     emit_block_then_exit_2 "AGENT DISPATCH WARNING
 
 Review verdict at ${REVIEW_DIR}/review_verdict.md is missing reports from:
@@ -81,6 +99,9 @@ CHECKS_PASSED=true
 
 # Final guard — if we never reached the pass marker, something failed silently
 if [ "$CHECKS_PASSED" != "true" ]; then
+  type _log_outcome >/dev/null 2>&1 && _log_outcome ERROR "checks-not-reached"
   emit_block_then_exit_2 "ENFORCEMENT ERROR: check-verdict.sh did not complete all checks"
 fi
+
+type _log_outcome >/dev/null 2>&1 && _log_outcome PASS "verdict-substantive"
 exit 0
