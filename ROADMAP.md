@@ -1,6 +1,6 @@
 # Serious Sidekick — Product Roadmap
 
-> **Last updated:** 2026-04-14 · **Current version:** v1.8.0 · **Claude Code:** v2.1.104 (npm) / v2.1.101 (GitHub)
+> **Last updated:** 2026-04-14 · **Current version:** v1.8.0 · **Claude Code:** v2.1.107 (local) / v2.1.105 is the substantive release since v2.1.101
 
 ---
 
@@ -8,7 +8,7 @@
 
 | # | Feature | Why it matters | Impact | Effort | Status |
 |--:|---------|----------------|:------:|:------:|:------:|
-| **1** | **Monitor tool integration** | `/serious-code` polls evidence dirs with `sleep 5`. Monitor + `stdbuf -oL tail -F` replaces this with event-driven updates. Integration pattern verified (T2 spike). | High | M | **PLANNED** |
+| **1** | **Monitor tool integration** | `/serious-code` polls evidence dirs with `sleep 5`. Monitor + `stdbuf -oL tail -F` replaces this with event-driven updates. Integration pattern verified (T2 spike). **⚠️ Reassess:** v2.1.105 adds first-class `monitors` manifest key for plugins — may obsolete or reshape this. | High | M | **REASSESS** |
 | **2** | **Cold-read enforcement** | ~~PreToolUse/Read hook logs opens and fails the verdict on violations.~~ **ABANDONED 2026-04-14.** Plan failed `/serious-review` twice with identical pattern. Panel-endorsed decision to revisit only if observability log shows cold-read violations actually happen. See `Research/features/cold-read-enforcement/` (status: abandoned). | — | — | **ABANDONED** |
 | **3** | **Compound "quick skills"** | The serious pipeline is heavy by design. But operational work (ingest a video, audit artifacts, lint skills) needs 2-3 chained commands without TDD overhead. `context: fork` enables lightweight orchestrator skills. 5 candidates identified. | Med-High | M | **NEW** |
 | **4** | **`defer` + `PermissionDenied` hooks** | Unlocks unattended `/serious-code` runs. `defer` pauses on dangerous ops; `PermissionDenied` auto-retries safe denials. Critical for CI/headless and enterprise. | Med-High | M | **NEW** |

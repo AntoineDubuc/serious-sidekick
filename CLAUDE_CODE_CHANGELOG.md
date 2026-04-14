@@ -1,8 +1,53 @@
-# Claude Code Changelog (v2.1.87 — v2.1.101)
+# Claude Code Changelog (v2.1.87 — v2.1.107)
 
-> Covers 11 releases over 13 days (March 29 — April 10, 2026).
-> Versions v2.1.88, v2.1.93, v2.1.95, and v2.1.99 were internal/skipped builds.
-> v2.1.100 and v2.1.101 both shipped on April 10 — v2.1.100 was an empty republish, v2.1.101 has the actual changes.
+> Covers 13 releases over ~17 days (March 29 — April 14, 2026).
+> Skipped/internal builds: v2.1.88, v2.1.93, v2.1.95, v2.1.99, v2.1.100 (empty republish), v2.1.102, v2.1.103, v2.1.104, v2.1.106.
+> v2.1.105 is the substantive release since v2.1.101 (PreCompact hook, `monitors` manifest key, skill description cap raised 250→1536).
+
+---
+
+## v2.1.107 — April 14, 2026
+
+- Show thinking hints sooner during long operations
+
+---
+
+## v2.1.105 — April 12-13, 2026
+
+### Added
+- `path` parameter to the `EnterWorktree` tool to switch into an existing worktree of the current repository
+- PreCompact hook support: hooks can now block compaction by exiting with code 2 or returning `{"decision":"block"}`
+- Background monitor support for plugins via a top-level `monitors` manifest key that auto-arms at session start or on skill invoke
+- `/proactive` is now an alias for `/loop`
+
+### Improved
+- Stalled API stream handling: streams now abort after 5 minutes of no data and retry non-streaming instead of hanging indefinitely
+- Network error messages: connection errors now show a retry message immediately instead of a silent spinner
+- File write display: long single-line writes (e.g. minified JSON) are now truncated in the UI instead of paginating across many screens
+- `/doctor` layout with status icons; press `f` to have Claude fix reported issues
+- `/config` labels and descriptions for clarity
+- Skill description handling: raised the listing cap from 250 to 1,536 characters and added a startup warning when descriptions are truncated
+- `WebFetch` to strip `<style>` and `<script>` contents from fetched pages so CSS-heavy pages no longer exhaust the content budget before reaching actual text
+- Stale agent worktree cleanup to remove worktrees whose PR was squash-merged instead of keeping them indefinitely
+- MCP large-output truncation prompt to give format-specific recipes (e.g. `jq` for JSON, computed Read chunk sizes for text)
+
+### Fixed (selected highlights — 22 fixes total)
+- Images attached to queued messages (sent while Claude is working) being dropped
+- Screen going blank when the prompt input wraps to a second line in long conversations
+- Leading whitespace being trimmed from assistant messages, breaking ASCII art and indented diagrams
+- Garbled bash output when commands print clickable file links
+- `alt+enter` not inserting a newline in terminals using ESC-prefix alt encoding (regression in 2.1.100)
+- MCP tools missing on the first turn of headless/remote-trigger sessions when MCP servers connect asynchronously
+- 429 rate-limit errors showing a raw JSON dump instead of a clean message
+- `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` in one project's settings permanently disabling usage metrics for all projects on the machine
+- Marketplace auto-update leaving the official marketplace in a broken state when a plugin process holds files open during the update
+
+### Impact on Serious Sidekick
+
+- **PreCompact hook** — new event we weren't tracking. Useful for `/serious-code` long runs that approach context limits — block compaction until evidence files are written. Consider adding to roadmap.
+- **`monitors` manifest key** — upstream first-class support for what our ROADMAP item #1 (Monitor tool integration) was going to build. May obsolete our approach or reshape it to use the manifest key instead of custom polling.
+- **Skill description cap raised 250 → 1536** — our 18 auto-loader skills can now have richer descriptions. May improve auto-load accuracy without needing `paths:` globs (ROADMAP #5).
+- **`/proactive` alias for `/loop`** — cosmetic; no action.
 
 ---
 
