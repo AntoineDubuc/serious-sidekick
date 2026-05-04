@@ -1,0 +1,11 @@
+# Preserve LF line endings for all tracked files, on every platform.
+#
+# Why: manifest.json contains SHA-256 hashes of every distributed file. Those
+# hashes are computed once (via scripts/generate-manifest.sh) and verified at
+# install time by serious-update. If git's core.autocrlf converts files to
+# CRLF on Windows checkout, every hash check fails and 0 files distribute.
+#
+# `* -text` tells git: treat every file as binary (no eol conversion, ever).
+# This is safe — none of the toolkit's tracked files are platform-specific
+# in a way that requires native line endings.
+* -text

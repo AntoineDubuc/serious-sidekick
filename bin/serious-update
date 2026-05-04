@@ -13,11 +13,40 @@
 set -euo pipefail
 
 # --- Resolve script location and source shared library ---
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# Try, in order, to find the repo root containing lib/serious-common.sh:
+#   1. Walk symlinks via BASH_SOURCE (Linux/macOS canonical case)
+#   2. SERIOUS_SIDEKICK_HOME env var (test override / non-default install)
+#   3. $HOME/.serious-sidekick (the install.sh default)
+#
+# Git Bash on Windows doesn't create real symlinks — `ln -s` produces a file
+# copy — so the BASH_SOURCE walk lands on the copy with no neighboring lib/.
+# That's why a fallback to $HOME/.serious-sidekick is required for Windows.
+_script_path="${BASH_SOURCE[0]}"
+while [ -L "$_script_path" ]; do
+  _script_dir="$(cd -P "$(dirname "$_script_path")" && pwd)"
+  _script_path="$(readlink "$_script_path")"
+  [[ $_script_path != /* ]] && _script_path="$_script_dir/$_script_path"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$_script_path")" && pwd)"
+unset _script_path _script_dir
 
-if [ ! -f "$REPO_ROOT/lib/serious-common.sh" ]; then
-  echo "ERROR: Cannot find lib/serious-common.sh relative to script" >&2
+REPO_ROOT=""
+for _candidate in \
+  "$(cd "$SCRIPT_DIR/.." 2>/dev/null && pwd)" \
+  "${SERIOUS_SIDEKICK_HOME:-}" \
+  "$HOME/.serious-sidekick"
+do
+  if [ -n "$_candidate" ] && [ -f "$_candidate/lib/serious-common.sh" ]; then
+    REPO_ROOT="$_candidate"
+    break
+  fi
+done
+unset _candidate
+
+if [ -z "$REPO_ROOT" ]; then
+  echo "ERROR: Cannot find lib/serious-common.sh." >&2
+  echo "       Looked next to script ($SCRIPT_DIR/..), in \$SERIOUS_SIDEKICK_HOME, and in \$HOME/.serious-sidekick." >&2
+  echo "       Reinstall with: curl -fsSL https://raw.githubusercontent.com/AntoineDubuc/serious-sidekick/main/install.sh | bash" >&2
   exit 1
 fi
 source "$REPO_ROOT/lib/serious-common.sh"

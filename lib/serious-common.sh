@@ -8,13 +8,20 @@
 
 # --- JSON Backend Detection ---
 # Detected once at source time. Re-sourcing does not re-detect.
+# python3 is preferred (richer parser logic in this library), but `command -v`
+# alone is unreliable on Windows where it can resolve the Microsoft Store
+# launcher stub for `python3` that fails on actual invocation. Run a smoke
+# import to confirm python3 is real before selecting it as the backend.
 if [ -z "${_SERIOUS_JSON_BACKEND:-}" ]; then
-  if command -v python3 >/dev/null 2>&1; then
+  if command -v python3 >/dev/null 2>&1 \
+     && [ "$(python3 -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
     _SERIOUS_JSON_BACKEND="python3"
   elif command -v jq >/dev/null 2>&1; then
     _SERIOUS_JSON_BACKEND="jq"
   else
-    echo "ERROR: Neither python3 nor jq found. At least one is required." >&2
+    echo "ERROR: Neither working python3 nor jq found. At least one is required." >&2
+    echo "       (On Windows, 'python3' may resolve to the Microsoft Store launcher;" >&2
+    echo "       install Python from python.org, or install jq.)" >&2
     return 1 2>/dev/null || exit 1
   fi
 fi
