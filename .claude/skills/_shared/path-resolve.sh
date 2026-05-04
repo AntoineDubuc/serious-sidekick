@@ -202,3 +202,355 @@ resolve_breadcrumb_path() {
       ;;
   esac
 }
+
+# =============================================================================
+# Per-session breadcrumb helpers (multi-terminal collision fix)
+# =============================================================================
+#
+# These helpers implement the per-PID breadcrumb scheme:
+#
+#   $PROJECT_ROOT/.claude-active/{PID}-{skill}
+#
+# where {PID} is the result of claude_pid (the nearest ancestor process whose
+# `comm` is exactly `claude`).
+#
+# ## Security framing — claude_pid() is NOT authentication
+#
+# claude_pid() is a best-effort heuristic for "which Claude Code session am I
+# in." It is NOT a security control. A user can rename any process to `claude`
+# (e.g., `cp /bin/cat ~/claude && exec ~/claude`) and claude_pid will trust it.
+#
+# The threat model for this plan is a single-user dev tool; we accept that.
+# Future maintainers MUST NOT treat claude_pid as authentication of "this is
+# the real Claude Code process."
+#
+# The substring-vs-equality and `comm`-vs-`argv` distinctions reduce
+# trivial-mistake misidentification — they do not provide authenticated
+# identity.
+#
+# ## Security boundary — breadcrumb_path() skill-name allow-list IS a control
+#
+# breadcrumb_path() validates skill names against ^[a-z][a-z0-9-]{0,31}$ before
+# constructing any path. This guarantees the constructed path cannot escape
+# .claude-active/ via traversal, contain shell metacharacters that downstream
+# callers might unquote, or include control characters that corrupt log lines.
+#
+# ## Sweep contract — sweep is called from skill startups, NEVER from hooks
+#
+# breadcrumb_sweep() runs `kill -0` per file (~2.4ms each) and a glob walk
+# (~1ms). At ~12ms total for 5 files, calling it from every hook would multiply
+# 12ms × 30 tools = 360ms wasted per plan run. Sweep MUST run on every skill
+# startup. Sweep MUST NOT run from hooks.
+#
+# ## TOCTOU and PID-reuse — sweep is race-narrowed, NOT race-closed
+#
+# Sweep has known residual race windows:
+#
+#   1. PID reuse during sweep: kill -0 99999 returns dead, then rm -f
+#      .claude-active/99999-research. Between those two operations, the OS
+#      could recycle PID 99999 to a new Claude Code process that creates a new
+#      breadcrumb at the same path. Sweep then deletes a LIVE breadcrumb.
+#      macOS PID space is 99,999 — recycle is slow but possible under stress.
+#
+#   2. `> file` open vs concurrent unlink: writer's
+#      `printf '%s\n' "$path" > "$bc"` is open(O_WRONLY|O_CREAT|O_TRUNC) +
+#      write + close. Sweep's `rm -f "$bc"` is unlink. If sweep's kill -0
+#      happens during a transient ESRCH window of the writer's parent (e.g.,
+#      during fork/zombie reaping), sweep deletes a directory entry that the
+#      writer is about to populate.
+#
+# These are accepted in v1. They are NOT zero-risk; they are low-probability
+# on macOS for a single-user dev tool, with zero observed instances in 21
+# days of 5-concurrent-process operation.
+#
+# Future maintainers MUST NOT read this comment as claiming sweep is
+# race-free — it is race-narrowed, not race-closed. A v2 fix would use flock
+# on .claude-active/.lock for the sweep critical section + O_EXCL on writer
+# create + procStart/lstart= PID-reuse guard.
+
+# claude_pid — Walk $PPID upward until a process whose comm is exactly
+# `claude` (case-sensitive, byte-mode comparison under LC_ALL=C) is found.
+# Returns that PID on stdout.
+#
+# If no `claude` ancestor is found within 10 hops or before reaching pid=1,
+# fall back to printing $PPID and emit a stderr warning.
+#
+# Arguments: none
+#
+# Outputs:
+#   stdout — numeric PID
+#   stderr — warning on fallback (no claude ancestor found)
+#
+# Exit codes:
+#   0 — always (graceful fallback; never errors out)
+#
+# Implementation note: the comm match uses
+#   case "$comm" in claude) ... ;; esac
+# under LC_ALL=C — exact equality, NOT [[ "$comm" == *claude* ]] (substring),
+# NOT grep -i (case-insensitive). This prevents `claude-helper` and
+# `fakeclaude` from matching as `claude`.
+claude_pid() {
+  local pid="$PPID"
+  local hops=0
+  local max_hops=10
+  local ppid comm line
+
+  while [ "$hops" -lt "$max_hops" ]; do
+    # Bail at pid=1 (init) — no point walking further.
+    case "$pid" in
+      ''|0|1)
+        echo "claude_pid: no claude ancestor found (reached pid=$pid); falling back to PPID=$PPID" >&2
+        printf '%s\n' "$PPID"
+        return 0
+        ;;
+    esac
+
+    # Read ppid and comm in one ps call. LC_ALL=C forces byte-mode so multibyte
+    # chars in comm don't confuse the comparison.
+    line=$(LC_ALL=C ps -p "$pid" -o ppid=,comm= 2>/dev/null)
+    case "$line" in
+      '')
+        # ps failed (PID gone or invalid). Fall back.
+        echo "claude_pid: ps lookup failed for pid=$pid; falling back to PPID=$PPID" >&2
+        printf '%s\n' "$PPID"
+        return 0
+        ;;
+    esac
+
+    # Strip leading whitespace, then split on first whitespace into ppid + comm.
+    # Use a portable trim via parameter expansion (avoid `read` since stdin may
+    # be in use by the caller).
+    line="${line#"${line%%[![:space:]]*}"}"  # ltrim
+    ppid="${line%%[[:space:]]*}"
+    comm="${line#*[[:space:]]}"
+    # ltrim comm too (multiple spaces between fields).
+    comm="${comm#"${comm%%[![:space:]]*}"}"
+
+    # Exact-equality match on comm. Per the security framing: NOT substring.
+    case "$comm" in
+      claude)
+        printf '%s\n' "$pid"
+        return 0
+        ;;
+    esac
+
+    pid="$ppid"
+    hops=$((hops + 1))
+  done
+
+  # Walk-bound exhausted — fall back to PPID with warning.
+  echo "claude_pid: walk-bound (${max_hops}) exhausted without finding claude ancestor; falling back to PPID=$PPID" >&2
+  printf '%s\n' "$PPID"
+  return 0
+}
+
+# breadcrumb_path — Compute the per-session breadcrumb path for a skill.
+# Outputs $PROJECT_ROOT/.claude-active/{PID}-{skill_name} on stdout when
+# skill_name passes the allow-list ^[a-z][a-z0-9-]{0,31}$.
+#
+# Arguments:
+#   $1 — skill name (kebab-case, must match the allow-list)
+#
+# Outputs:
+#   stdout — absolute path on success; nothing on rejection
+#   stderr — warning on rejection
+#
+# Exit codes:
+#   0 — success
+#   1 — rejected (skill_name failed allow-list, or PROJECT_ROOT unset)
+#
+# Allow-list: first char must be [a-z]; subsequent chars must be [a-z0-9-];
+# total length must be 1..32. Rejects: empty, leading dash/digit, uppercase,
+# slashes, dotdot, shell metacharacters, whitespace, control chars, NUL,
+# Unicode lookalikes, names >32 chars.
+breadcrumb_path() {
+  local skill="$1"
+
+  # Reject empty.
+  if [ -z "$skill" ]; then
+    echo "breadcrumb_path: skill name is empty" >&2
+    return 1
+  fi
+
+  # Length check first (cheap; defends against very long inputs reaching the
+  # case patterns).
+  if [ "${#skill}" -gt 32 ]; then
+    echo "breadcrumb_path: skill name too long (${#skill} > 32 chars): $skill" >&2
+    return 1
+  fi
+
+  # Allow-list via case (bash 3.2 compatible — no [[ ]] regex).
+  # Step 1: first char must be [a-z].
+  case "$skill" in
+    [a-z]*) ;;
+    *)
+      echo "breadcrumb_path: skill name must start with lowercase letter: $skill" >&2
+      return 1
+      ;;
+  esac
+
+  # Step 2: every char must be in [a-z0-9-].
+  # Inverse match: reject if any char is NOT in [a-z0-9-].
+  case "$skill" in
+    *[!a-z0-9-]*)
+      echo "breadcrumb_path: skill name contains disallowed char (allow-list: [a-z][a-z0-9-]{0,31}): $skill" >&2
+      return 1
+      ;;
+  esac
+
+  # PROJECT_ROOT must be set.
+  if [ -z "$PROJECT_ROOT" ]; then
+    echo "breadcrumb_path: PROJECT_ROOT is not set" >&2
+    return 1
+  fi
+
+  local pid
+  pid=$(claude_pid)
+  printf '%s/.claude-active/%s-%s\n' "$PROJECT_ROOT" "$pid" "$skill"
+  return 0
+}
+
+# breadcrumb_sweep — Reap orphaned per-session breadcrumb files.
+#
+# Iterates $PROJECT_ROOT/.claude-active/*-* and removes files whose leading
+# {pid} segment refers to a process that no longer exists.
+#
+# File-name parsing rules (a file is candidate-for-sweep ONLY if all hold):
+#   - Filename matches *-* (contains at least one dash).
+#   - Leading segment up to first dash is purely digits (PID candidate).
+#   - Trailing segment after first dash is non-empty.
+#   - Trailing segment matches ^[a-z][a-z0-9-]{0,31}$ (skill allow-list).
+#
+# Files that do not match are LEFT UNTOUCHED (never deleted) — sweep is
+# defensive: anything we don't recognize, we don't touch.
+#
+# Arguments: none
+#
+# Outputs:
+#   stderr — optional debug messages
+#
+# Exit codes:
+#   0 — always (idempotent)
+#
+# Contract: this function MUST NOT be called from hooks (see file-level
+# comment for cost rationale). It MUST run on every skill startup.
+#
+# Implementation note: this function uses bare shell (ls + kill -0 + rm -f)
+# and does NOT call resolve_breadcrumb_path. Per research Finding 2, the
+# sweep operates on filenames that we own (we wrote them at skill startup),
+# not on opaque target paths.
+breadcrumb_sweep() {
+  if [ -z "$PROJECT_ROOT" ]; then
+    return 0
+  fi
+
+  local dir="$PROJECT_ROOT/.claude-active"
+  if [ ! -d "$dir" ]; then
+    return 0
+  fi
+
+  local file name pid rest first_char
+  # Use a glob; if no match, the literal pattern is returned (nullglob is not
+  # set in source-safe code), so guard with -e.
+  for file in "$dir"/*-*; do
+    [ -e "$file" ] || continue
+    [ -f "$file" ] || continue
+
+    name="${file##*/}"
+
+    # Skip hidden files (we don't own them).
+    case "$name" in
+      .*) continue ;;
+    esac
+
+    # Parse: leading digits up to first dash, then rest.
+    pid="${name%%-*}"
+    rest="${name#*-}"
+
+    # Validate pid is purely digits and non-empty.
+    case "$pid" in
+      ''|*[!0-9]*) continue ;;
+    esac
+
+    # Validate rest is non-empty.
+    [ -n "$rest" ] || continue
+
+    # Validate rest matches skill allow-list ^[a-z][a-z0-9-]{0,31}$.
+    if [ "${#rest}" -gt 32 ]; then
+      continue
+    fi
+    first_char="${rest:0:1}"
+    case "$first_char" in
+      [a-z]) ;;
+      *) continue ;;
+    esac
+    case "$rest" in
+      *[!a-z0-9-]*) continue ;;
+    esac
+
+    # All checks passed — pid is a valid candidate. Probe liveness.
+    # kill -0 returns 0 if process exists; non-zero otherwise.
+    if ! kill -0 "$pid" 2>/dev/null; then
+      rm -f "$file"
+    fi
+  done
+
+  return 0
+}
+
+# breadcrumb_list_all — Enumerate breadcrumb files for a given skill across
+# all live sessions.
+#
+# Outputs each matching filename in $PROJECT_ROOT/.claude-active/*-{skill}
+# on stdout, one per line. Used by /serious-status and parent
+# auto-detection.
+#
+# Arguments:
+#   $1 — skill name (must pass the allow-list; otherwise no-op)
+#
+# Outputs:
+#   stdout — one filename per matching breadcrumb (or empty if no match)
+#
+# Exit codes:
+#   0 — always
+#
+# Note: this function does NOT validate liveness of the PIDs (use
+# breadcrumb_sweep first if a stale-free view is required).
+breadcrumb_list_all() {
+  local skill="$1"
+
+  # Validate skill name via the same allow-list as breadcrumb_path. We open-
+  # code it here rather than calling breadcrumb_path (which would also call
+  # claude_pid and emit unrelated output).
+  if [ -z "$skill" ]; then
+    return 0
+  fi
+  if [ "${#skill}" -gt 32 ]; then
+    return 0
+  fi
+  case "$skill" in
+    [a-z]*) ;;
+    *) return 0 ;;
+  esac
+  case "$skill" in
+    *[!a-z0-9-]*) return 0 ;;
+  esac
+
+  if [ -z "$PROJECT_ROOT" ]; then
+    return 0
+  fi
+
+  local dir="$PROJECT_ROOT/.claude-active"
+  if [ ! -d "$dir" ]; then
+    return 0
+  fi
+
+  local file
+  for file in "$dir"/*-"$skill"; do
+    [ -e "$file" ] || continue
+    [ -f "$file" ] || continue
+    printf '%s\n' "$file"
+  done
+
+  return 0
+}
