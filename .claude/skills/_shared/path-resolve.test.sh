@@ -1040,6 +1040,295 @@ test_sweep_no_resolve_call() {
   fi
 }
 
+# =============================================================================
+# Task 3 — Writer migration tests
+# =============================================================================
+#
+# These tests simulate the SKILL.md prose-based writer block. The writer prose
+# instructs Claude to run a specific subshell-scoped bash snippet at skill
+# startup. The tests run that exact snippet against an isolated PROJECT_ROOT
+# fixture and verify the post-conditions (file exists, perms, dir perms, no
+# umask leak, no legacy file, etc.).
+#
+# The writer template MUST match the prose pattern used in all 10 SKILL.md
+# files. Keep the template here in sync with the SKILL.md prose.
+
+# Run the writer block in an isolated bash invocation. This mirrors what
+# Claude does when following the SKILL.md prose: it spawns a fresh bash and
+# runs the snippet inside a subshell. Returns exit code of the writer.
+#
+# Args:
+#   $1 — PROJECT_ROOT fixture path
+#   $2 — skill name
+#   $3 — relative output path to write into the breadcrumb
+#   $4 — (optional) caller umask to set before invoking the writer; defaults
+#        to 022 so test_writer_umask_does_not_leak can detect leaks.
+_run_writer_block() {
+  local root="$1"
+  local skill="$2"
+  local relpath="$3"
+  local caller_umask="${4:-022}"
+  CLAUDE_PROJECT_DIR="$root" PROJECT_ROOT="$root" SKILL="$skill" RELATIVE_OUTPUT_PATH="$relpath" \
+    bash -c "
+      umask $caller_umask
+      (
+        umask 077
+        source \"\${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh\"
+        cad=\"\${CLAUDE_PROJECT_DIR}/.claude-active\"
+        if [ -L \"\$cad\" ]; then
+          echo \"FATAL: \$cad is a symlink — refusing to write breadcrumbs\" >&2
+          exit 1
+        elif [ -e \"\$cad\" ]; then
+          [ -d \"\$cad\" ] || { echo \"FATAL: \$cad exists and is not a directory\" >&2; exit 1; }
+          chmod 700 \"\$cad\" 2>/dev/null || { echo \"FATAL: cannot enforce 0700 on \$cad\" >&2; exit 1; }
+        else
+          mkdir -p \"\$cad\"
+        fi
+        bc=\$(breadcrumb_path \"\${SKILL}\") || exit 1
+        printf '%s\n' \"\${RELATIVE_OUTPUT_PATH}\" > \"\$bc\"
+      )
+      writer_exit=\$?
+      # Print the umask AFTER the subshell runs so the test can verify it
+      # did not leak. Format: 'UMASK_AFTER:<value>'.
+      printf 'UMASK_AFTER:%s\n' \"\$(umask)\"
+      exit \$writer_exit
+    " 2>/tmp/pr-test-stderr
+}
+
+# Build a writer fixture: an isolated PROJECT_ROOT with the .claude/skills/_shared
+# directory set up so the writer block can source path-resolve.sh inside it.
+_mk_writer_fixture() {
+  local root
+  root=$(mktemp -d 2>/dev/null) || return 1
+  mkdir -p "$root/.claude/skills/_shared"
+  cp "$HELPER" "$root/.claude/skills/_shared/path-resolve.sh"
+  printf '%s\n' "$root"
+}
+
+# Helper: read mode of a path portably (macOS/Linux).
+_mode_of() {
+  stat -f '%Lp' "$1" 2>/dev/null || stat -c '%a' "$1" 2>/dev/null
+}
+
+test_writer_creates_new_path() {
+  local root expected_pid
+  root=$(_mk_writer_fixture) || { fail "test_writer_creates_new_path" "mktemp failed"; return; }
+  _run_writer_block "$root" "research" "Research/features/test-feature" >/tmp/pr-test-stdout
+  # Find the breadcrumb file (we don't know the exact PID claude_pid resolved to).
+  local files count
+  files=$(ls "$root/.claude-active"/*-research 2>/dev/null)
+  count=$(printf '%s\n' "$files" | grep -c '.' || true)
+  if [ "$count" -ne 1 ]; then
+    rm -rf "$root"
+    fail "test_writer_creates_new_path" "expected 1 file matching *-research; got $count: $files"
+    return
+  fi
+  local content
+  content=$(cat "$files")
+  rm -rf "$root"
+  if [ "$content" = "Research/features/test-feature" ]; then
+    pass "test_writer_creates_new_path"
+  else
+    fail "test_writer_creates_new_path" "content mismatch: '$content'"
+  fi
+}
+
+test_writer_cleanup_removes() {
+  # Writer creates the file; cleanup (the prose pair) removes it. We simulate
+  # the cleanup snippet that the SKILL.md prose instructs.
+  local root
+  root=$(_mk_writer_fixture) || { fail "test_writer_cleanup_removes" "mktemp failed"; return; }
+  _run_writer_block "$root" "research" "Research/features/test-feature" >/dev/null
+  # Simulate the cleanup prose:
+  #   new_bc=$(bash -c 'source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh" && breadcrumb_path research')
+  #   rm -f "$new_bc" "${CLAUDE_PROJECT_DIR}/.active-research"
+  CLAUDE_PROJECT_DIR="$root" PROJECT_ROOT="$root" bash -c '
+    new_bc=$(bash -c "source \"${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh\" && breadcrumb_path research")
+    rm -f "$new_bc" "${CLAUDE_PROJECT_DIR}/.active-research"
+  '
+  local remaining
+  remaining=$(ls "$root/.claude-active"/*-research 2>/dev/null | wc -l | tr -d ' ')
+  rm -rf "$root"
+  if [ "$remaining" -eq 0 ]; then
+    pass "test_writer_cleanup_removes"
+  else
+    fail "test_writer_cleanup_removes" "expected 0 files; got $remaining"
+  fi
+}
+
+test_writer_file_perms() {
+  local root mode files
+  root=$(_mk_writer_fixture) || { fail "test_writer_file_perms" "mktemp failed"; return; }
+  _run_writer_block "$root" "research" "Research/features/test" >/dev/null
+  files=$(ls "$root/.claude-active"/*-research 2>/dev/null)
+  mode=$(_mode_of "$files")
+  rm -rf "$root"
+  if [ "$mode" = "600" ]; then
+    pass "test_writer_file_perms (mode=$mode)"
+  else
+    fail "test_writer_file_perms" "expected 600; got '$mode'"
+  fi
+}
+
+test_writer_dir_perms_fresh() {
+  local root mode
+  root=$(_mk_writer_fixture) || { fail "test_writer_dir_perms_fresh" "mktemp failed"; return; }
+  # .claude-active does NOT pre-exist — writer must create it with 0700.
+  [ -e "$root/.claude-active" ] && rm -rf "$root/.claude-active"
+  _run_writer_block "$root" "research" "Research/features/test" >/dev/null
+  mode=$(_mode_of "$root/.claude-active")
+  rm -rf "$root"
+  if [ "$mode" = "700" ]; then
+    pass "test_writer_dir_perms_fresh (mode=$mode)"
+  else
+    fail "test_writer_dir_perms_fresh" "expected 700; got '$mode'"
+  fi
+}
+
+test_writer_dir_perms_corrects_existing() {
+  local root mode
+  root=$(_mk_writer_fixture) || { fail "test_writer_dir_perms_corrects_existing" "mktemp failed"; return; }
+  # Pre-existing .claude-active with WIDE 0755 permissions.
+  mkdir -p "$root/.claude-active"
+  chmod 0755 "$root/.claude-active"
+  _run_writer_block "$root" "research" "Research/features/test" >/dev/null
+  mode=$(_mode_of "$root/.claude-active")
+  rm -rf "$root"
+  if [ "$mode" = "700" ]; then
+    pass "test_writer_dir_perms_corrects_existing (0755 -> $mode)"
+  else
+    fail "test_writer_dir_perms_corrects_existing" "expected 700; got '$mode'"
+  fi
+}
+
+test_writer_rejects_symlink_dir() {
+  local root rc stderr
+  root=$(_mk_writer_fixture) || { fail "test_writer_rejects_symlink_dir" "mktemp failed"; return; }
+  # Replace .claude-active with a symlink. Writer must FATAL.
+  mkdir -p "$root/symlink-target"
+  ln -s "$root/symlink-target" "$root/.claude-active"
+  _run_writer_block "$root" "research" "Research/features/test" >/tmp/pr-test-stdout
+  rc=$?
+  stderr=$(cat /tmp/pr-test-stderr)
+  # Verify breadcrumb was NOT silently created in the symlink target.
+  local leaked
+  leaked=$(ls "$root/symlink-target"/*-research 2>/dev/null | wc -l | tr -d ' ')
+  rm -rf "$root"
+  if [ "$rc" -ne 0 ] && [ "$leaked" -eq 0 ] && echo "$stderr" | grep -q "FATAL"; then
+    pass "test_writer_rejects_symlink_dir (FATAL, no leak)"
+  else
+    fail "test_writer_rejects_symlink_dir" "rc=$rc leaked=$leaked stderr='$stderr'"
+  fi
+}
+
+test_writer_rejects_file_at_dir_path() {
+  local root rc stderr
+  root=$(_mk_writer_fixture) || { fail "test_writer_rejects_file_at_dir_path" "mktemp failed"; return; }
+  # Place a regular file at .claude-active. Writer must FATAL.
+  : > "$root/.claude-active"
+  _run_writer_block "$root" "research" "Research/features/test" >/tmp/pr-test-stdout
+  rc=$?
+  stderr=$(cat /tmp/pr-test-stderr)
+  rm -rf "$root"
+  if [ "$rc" -ne 0 ] && echo "$stderr" | grep -q "FATAL"; then
+    pass "test_writer_rejects_file_at_dir_path (FATAL)"
+  else
+    fail "test_writer_rejects_file_at_dir_path" "rc=$rc stderr='$stderr'"
+  fi
+}
+
+test_writer_umask_does_not_leak() {
+  local root stdout caller_umask
+  root=$(_mk_writer_fixture) || { fail "test_writer_umask_does_not_leak" "mktemp failed"; return; }
+  # Run writer with caller umask = 022; the writer's `umask 077` must NOT leak.
+  stdout=$(_run_writer_block "$root" "research" "Research/features/test" "022")
+  caller_umask=$(printf '%s\n' "$stdout" | grep '^UMASK_AFTER:' | head -1 | cut -d: -f2)
+  rm -rf "$root"
+  # umask command output normalizes to the form `0022`. Check trailing chars.
+  case "$caller_umask" in
+    *022)
+      pass "test_writer_umask_does_not_leak (caller umask still $caller_umask)"
+      ;;
+    *)
+      fail "test_writer_umask_does_not_leak" "expected umask ending in 022; got '$caller_umask'"
+      ;;
+  esac
+}
+
+test_writer_does_not_create_legacy() {
+  local root legacy_count
+  root=$(_mk_writer_fixture) || { fail "test_writer_does_not_create_legacy" "mktemp failed"; return; }
+  _run_writer_block "$root" "research" "Research/features/test" >/dev/null
+  # Legacy file at project root must NOT be created by the writer.
+  legacy_count=$(ls "$root"/.active-* 2>/dev/null | wc -l | tr -d ' ')
+  rm -rf "$root"
+  if [ "$legacy_count" -eq 0 ]; then
+    pass "test_writer_does_not_create_legacy"
+  else
+    fail "test_writer_does_not_create_legacy" "found $legacy_count legacy files at project root"
+  fi
+}
+
+# Negative: no SKILL.md writes BOTH the new and the legacy path.
+# We grep each SKILL.md for an instruction that would write the legacy file
+# (e.g., a fenced bash block containing `> .active-{skill}` or a prose line
+# `Write \`.active-{skill}\``). Such instructions must NOT appear in the
+# write-step area (after Task 3, only legacy CLEANUP references are allowed).
+test_no_dual_write() {
+  local skills_dir failed=""
+  skills_dir="$(cd "$SCRIPT_DIR/.." && pwd)"
+  local skill_md
+  for skill_md in "$skills_dir"/serious-conversation/SKILL.md \
+                  "$skills_dir"/serious-research/SKILL.md \
+                  "$skills_dir"/serious-mock-ups/SKILL.md \
+                  "$skills_dir"/serious-scope/SKILL.md \
+                  "$skills_dir"/serious-plan/SKILL.md \
+                  "$skills_dir"/serious-review/SKILL.md \
+                  "$skills_dir"/serious-code/SKILL.md \
+                  "$skills_dir"/serious-debug/SKILL.md \
+                  "$skills_dir"/serious-prospect-research/SKILL.md \
+                  "$skills_dir"/serious-youtube-tldr/SKILL.md; do
+    [ -f "$skill_md" ] || { failed="$failed missing:$(basename $(dirname "$skill_md"))"; continue; }
+    # Heuristic: a line whose text is literally `**Write \`.active-...` (bold
+    # write directive to the legacy path) is the smoking gun for dual-write.
+    # Such lines must be GONE after Task 3. The legacy path may still appear
+    # in cleanup prose, hooks, or migration notes — those are allowed.
+    if grep -q "^\*\*Write \`\.active-" "$skill_md"; then
+      failed="$failed dual-write:$(basename $(dirname "$skill_md"))"
+    fi
+    # Also reject prose lines starting with "Write `.active-" (no leading bold).
+    if grep -q "^Write \`\.active-" "$skill_md"; then
+      failed="$failed dual-write:$(basename $(dirname "$skill_md"))"
+    fi
+  done
+  if [ -z "$failed" ]; then
+    pass "test_no_dual_write"
+  else
+    fail "test_no_dual_write" "files with surviving legacy write prose:$failed"
+  fi
+}
+
+# All 10 writing skills' SKILL.md files reference the new claude-active path.
+test_all_skills_updated() {
+  local skills_dir failed=""
+  skills_dir="$(cd "$SCRIPT_DIR/.." && pwd)"
+  local skill
+  for skill in serious-conversation serious-research serious-mock-ups serious-scope \
+               serious-plan serious-review serious-code serious-debug \
+               serious-prospect-research serious-youtube-tldr; do
+    local md="$skills_dir/$skill/SKILL.md"
+    [ -f "$md" ] || { failed="$failed missing:$skill"; continue; }
+    if ! grep -q "claude-active" "$md"; then
+      failed="$failed not-updated:$skill"
+    fi
+  done
+  if [ -z "$failed" ]; then
+    pass "test_all_skills_updated (all 10 SKILL.md files reference claude-active)"
+  else
+    fail "test_all_skills_updated" "$failed"
+  fi
+}
+
 # --- Run all tests ---
 if [ "$FIX_ROOT_AVAILABLE" -eq 1 ]; then
   echo "--- Attack Vector Tests (18 rows) ---"
@@ -1121,6 +1410,20 @@ echo ""
 echo "--- Task 2: breadcrumb_list_all() tests ---"
 test_list_all_enumerates
 test_list_all_empty
+
+echo ""
+echo "--- Task 3: writer migration tests ---"
+test_writer_creates_new_path
+test_writer_cleanup_removes
+test_writer_file_perms
+test_writer_dir_perms_fresh
+test_writer_dir_perms_corrects_existing
+test_writer_rejects_symlink_dir
+test_writer_rejects_file_at_dir_path
+test_writer_umask_does_not_leak
+test_writer_does_not_create_legacy
+test_no_dual_write
+test_all_skills_updated
 
 echo ""
 echo "=== Summary ==="
