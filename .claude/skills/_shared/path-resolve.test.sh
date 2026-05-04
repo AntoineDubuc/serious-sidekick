@@ -667,8 +667,10 @@ test_breadcrumb_path_reject_whitespace_cr()       { _assert_breadcrumb_path_reje
 # Control chars (\x01 representative; loop over the range).
 test_breadcrumb_path_reject_control_chars() {
   local i failed=""
-  # Iterate over the same control-char set rejected by resolve_breadcrumb_path.
-  for i in 1 2 3 4 5 6 7 8 11 12 14 15; do
+  # Iterate \x01-\x1f range plus \x7f per criterion. Skip 9 (TAB), 10 (LF), 13 (CR) —
+  # they are covered by dedicated test_breadcrumb_path_reject_whitespace_* tests, AND
+  # propagating raw LF/CR through env-var → bash-subshell loses them in some shells.
+  for i in 1 2 3 4 5 6 7 8 11 12 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31; do
     local ch
     ch=$(printf "\\$(printf '%03o' $i)")
     local skill="re${ch}search"
@@ -693,7 +695,7 @@ test_breadcrumb_path_reject_control_chars() {
     failed="$failed [\\x7f]"
   fi
   if [ -z "$failed" ]; then
-    pass "test_breadcrumb_path_reject_control_chars (all 13 control chars rejected)"
+    pass "test_breadcrumb_path_reject_control_chars (full \\x01-\\x1f + \\x7f rejected)"
   else
     fail "test_breadcrumb_path_reject_control_chars" "accepted:$failed"
   fi
