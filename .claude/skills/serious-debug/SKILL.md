@@ -51,7 +51,7 @@ Before anything else, check for active workflow breadcrumbs in the project root:
    - Set `parent` in this workflow's frontmatter to the parent's output folder path.
    - Create output at `{parent_folder}/sub/debug-{slug}/` instead of the normal location.
 8. **If NO:** Create output in normal location, no parent field set.
-9. **Same-skill restoration:** On completion, if frontmatter has a `parent:` field and the parent was also debug, restore `.active-debug` with the parent's folder path.
+9. **Same-skill restoration:** On completion, if frontmatter has a `parent:` field and the parent was also debug, restore the breadcrumb by **re-running the writer block** with the parent's folder path as `${RELATIVE_OUTPUT_PATH}` and `${SKILL}=debug`. The writer block writes to `.claude-active/$(claude_pid)-debug`, NOT the legacy `.active-debug` at the project root.
 
 ### 0a. Auto-detect bug input
 

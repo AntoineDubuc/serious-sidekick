@@ -1286,18 +1286,27 @@ test_no_dual_write() {
                   "$skills_dir"/serious-review/SKILL.md \
                   "$skills_dir"/serious-code/SKILL.md \
                   "$skills_dir"/serious-debug/SKILL.md \
+                  "$skills_dir"/serious-abandon/SKILL.md \
                   "$skills_dir"/serious-prospect-research/SKILL.md \
                   "$skills_dir"/serious-youtube-tldr/SKILL.md; do
     [ -f "$skill_md" ] || { failed="$failed missing:$(basename $(dirname "$skill_md"))"; continue; }
-    # Heuristic: a line whose text is literally `**Write \`.active-...` (bold
-    # write directive to the legacy path) is the smoking gun for dual-write.
-    # Such lines must be GONE after Task 3. The legacy path may still appear
-    # in cleanup prose, hooks, or migration notes — those are allowed.
-    if grep -q "^\*\*Write \`\.active-" "$skill_md"; then
-      failed="$failed dual-write:$(basename $(dirname "$skill_md"))"
-    fi
-    # Also reject prose lines starting with "Write `.active-" (no leading bold).
-    if grep -q "^Write \`\.active-" "$skill_md"; then
+    # Heuristic: any line that contains a directive form ("write" or "restore")
+    # in close proximity to a legacy backtick-wrapped `.active-*` path is the
+    # smoking gun for dual-write. Anchored anywhere in the line (not just at
+    # start), case-insensitive, so embedded prose like
+    #   "restore the breadcrumb: write `.active-research`" or
+    #   "restore `.active-scope` with parent's folder path"
+    # is caught — both were missed by the old line-anchored regex.
+    #
+    # Allow exceptions for documentation lines that EXPLICITLY explain the
+    # migration: lines containing "NOT", "rather than", or "do not write"
+    # near `.active-` are negative directives — they describe what should
+    # NOT happen. Those are the new-prose framing and must remain.
+    local hits
+    hits=$(grep -niE '\b(write|restore)\b[^.]*`\.active-[a-z-]+`' "$skill_md" \
+           | grep -viE '\b(NOT|rather than|do not write|do not create)\b' \
+           || true)
+    if [ -n "$hits" ]; then
       failed="$failed dual-write:$(basename $(dirname "$skill_md"))"
     fi
   done

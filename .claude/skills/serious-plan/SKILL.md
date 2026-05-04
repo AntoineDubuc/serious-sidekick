@@ -46,7 +46,7 @@ Before anything else, check for active workflow breadcrumbs in the project root:
    - Set `parent` in this workflow's frontmatter to the parent's output folder path
    - Create output at `{parent_folder}/sub/{slug}/` instead of the normal location
 8. **If NO:** Create output in normal location, no parent field set.
-9. **Same-skill restoration:** On wrap-up/completion of this skill, if frontmatter has a `parent:` field and the parent was the same skill type (plan), restore the breadcrumb: write `.active-plan` with the parent's folder path as content. This works even if the parent was itself a sub-workflow (depth 2), because the parent's frontmatter has its own parent reference, and the breadcrumb just needs to point to the immediate parent.
+9. **Same-skill restoration:** On wrap-up/completion of this skill, if frontmatter has a `parent:` field and the parent was the same skill type (plan), restore the breadcrumb by **re-running the writer block** with the parent's folder path as `${RELATIVE_OUTPUT_PATH}` and `${SKILL}=plan`. The writer block writes to `.claude-active/$(claude_pid)-plan`, NOT the legacy `.active-plan` at the project root. This works even if the parent was itself a sub-workflow (depth 2), because the parent's frontmatter has its own parent reference, and the breadcrumb just needs to point to the immediate parent.
 
 ### 0a. Auto-detect existing research
 

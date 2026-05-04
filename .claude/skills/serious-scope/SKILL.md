@@ -24,7 +24,7 @@ Read research output, propose how to split the work into implementation plans, a
 6. **Branching prompt:** Cross-skill: "Link as sub-workflow? (Y/N)" Same-skill (scope→scope): "Start nested /serious-scope? (Y/N)" (overwrites `.active-scope`).
 7. **If YES:** Depth guard (≥3 = warn). Set `parent` in frontmatter. Output at `{parent_folder}/sub/{slug}/`.
 8. **If NO:** Normal location, no parent field.
-9. **Same-skill restoration:** On completion, if `parent:` exists and parent was scope, restore `.active-scope` with parent's folder path.
+9. **Same-skill restoration:** On completion, if `parent:` exists and parent was scope, restore the breadcrumb by **re-running the writer block** with the parent's folder path as `${RELATIVE_OUTPUT_PATH}` and `${SKILL}=scope`. The writer block writes to `.claude-active/$(claude_pid)-scope`, NOT the legacy `.active-scope` at the project root.
 
 ### 0a. Auto-detect research
 
@@ -151,5 +151,5 @@ Run handoff verifier per `.claude/skills/_shared/handoff-verifier.md`:
    new_bc=$(bash -c 'source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh" && breadcrumb_path scope')
    rm -f "$new_bc" "${CLAUDE_PROJECT_DIR}/.active-scope"
    ```
-3. **Same-skill restoration:** If `parent:` exists and parent was scope, restore `.active-scope` with parent's folder path.
+3. **Same-skill restoration:** If `parent:` exists and parent was scope, **re-run the writer block** with the parent's folder path as `${RELATIVE_OUTPUT_PATH}` and `${SKILL}=scope`. The writer block writes to `.claude-active/$(claude_pid)-scope`, do not write the legacy `.active-scope` at the project root.
 4. Report: manifest path, number of plans, summary of the split.

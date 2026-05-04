@@ -123,10 +123,10 @@ Read the parent folder's primary output file. Extract the `skill:` field from it
 ### 5c. Restore breadcrumb (same-skill drilling)
 
 If the abandoned workflow's skill type MATCHES the parent's skill type (same-skill drilling — e.g., both are `research`):
-- The `.active-{skill}` breadcrumb was overwritten when the sub-workflow started
-- Restore it: write `.active-{skill}` with the parent's folder path as content
+- The breadcrumb was overwritten when the sub-workflow started
+- Restore it by **re-running the writer block** with the parent's folder path as `${RELATIVE_OUTPUT_PATH}` and `${SKILL}={parent_skill}`. The writer block writes to `.claude-active/$(claude_pid)-{parent_skill}`, NOT the legacy `.active-{parent_skill}` at the project root.
 
-Example: Sub-research at `Research/features/auth/sub/token-expiry/` was abandoned. Parent is `Research/features/auth/`. Write `Research/features/auth` to `.active-research`.
+Example: Sub-research at `Research/features/auth/sub/token-expiry/` was abandoned. Parent is `Research/features/auth/`. Re-run the writer block with `${RELATIVE_OUTPUT_PATH}=Research/features/auth` and `${SKILL}=research` (writes `.claude-active/$(claude_pid)-research`).
 
 **Edge case — depth 2 parent:** If the parent itself is a sub-workflow (its frontmatter also has a `parent:` field), restoration still works correctly. The breadcrumb just needs to point to the IMMEDIATE parent. The parent's own parent relationship is tracked in the parent's frontmatter, not in the breadcrumb.
 

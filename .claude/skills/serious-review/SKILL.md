@@ -47,7 +47,7 @@ Before anything else, check for active workflow breadcrumbs in the project root:
    - Set `parent` in this workflow's frontmatter to the parent's output folder path
    - Create output at `{parent_folder}/sub/{slug}/` instead of the normal location
 8. **If NO:** Create output in normal location, no parent field set.
-9. **Same-skill restoration:** On wrap-up/completion of this skill, if frontmatter has a `parent:` field and the parent was the same skill type (review), restore the breadcrumb: write `.active-review` with the parent's folder path as content.
+9. **Same-skill restoration:** On wrap-up/completion of this skill, if frontmatter has a `parent:` field and the parent was the same skill type (review), restore the breadcrumb by **re-running the writer block** with the parent's folder path as `${RELATIVE_OUTPUT_PATH}` and `${SKILL}=review`. The writer block writes to `.claude-active/$(claude_pid)-review`, NOT the legacy `.active-review` at the project root.
 
 ### 0a. Locate the plan
 
