@@ -77,7 +77,28 @@ Create `Research/youtube/` at the project root if it doesn't exist.
 
 ### 1b. Write breadcrumb
 
-Write `.active-youtube-tldr` to the project root. Content is the relative path to the output folder (e.g., `Research/youtube/vector-db-memory-systems`).
+**Write `.claude-active/{claude_pid}-youtube-tldr`** at the project root. Use a SUBSHELL so `umask` does not leak to the rest of the skill, and CORRECT directory permissions if `.claude-active/` pre-exists with wider perms. Content is the relative path to the output folder (e.g., `Research/youtube/vector-db-memory-systems`).
+
+```bash
+(
+  umask 077
+  source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh"
+  cad="${CLAUDE_PROJECT_DIR}/.claude-active"
+  if [ -L "$cad" ]; then
+    echo "FATAL: $cad is a symlink — refusing to write breadcrumbs" >&2
+    exit 1
+  elif [ -e "$cad" ]; then
+    [ -d "$cad" ] || { echo "FATAL: $cad exists and is not a directory" >&2; exit 1; }
+    chmod 700 "$cad" 2>/dev/null || { echo "FATAL: cannot enforce 0700 on $cad" >&2; exit 1; }
+  else
+    mkdir -p "$cad"
+  fi
+  bc=$(breadcrumb_path youtube-tldr) || exit 1
+  printf '%s\n' "${RELATIVE_OUTPUT_PATH}" > "$bc"
+)
+```
+
+The outer `( ... )` subshell scopes `umask 077` so the caller's umask is unchanged after this block. The pre-existing-perm correction enforces `0700` on `.claude-active/` even if a previous-version skill or attacker created it with wider perms.
 
 ### 1c. Initialize notebook.md
 
@@ -275,7 +296,12 @@ If the slug was temporary (video ID), rename the folder to a descriptive slug no
 
 ### 5c. Remove breadcrumb
 
-Delete `.active-youtube-tldr` from the project root.
+Delete the breadcrumb. During the dual-read transition window, BOTH the new-path breadcrumb AND any legacy `.active-youtube-tldr` at project root must be removed:
+
+```bash
+new_bc=$(bash -c 'source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh" && breadcrumb_path youtube-tldr')
+rm -f "$new_bc" "${CLAUDE_PROJECT_DIR}/.active-youtube-tldr"
+```
 
 ### 5d. Present deliverables
 

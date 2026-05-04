@@ -101,7 +101,28 @@ Default to **Both** — wireframes are fast and establish structure; visuals bri
 
 ### 0f. Set up the mock-ups folder
 
-**Write `.active-mock-ups`** to the project root FIRST (before creating mock-up-summary.md). Content is the relative path from project root to the mock-ups folder.
+**Write `.claude-active/{claude_pid}-mock-ups`** at the project root FIRST (before creating mock-up-summary.md). Use a SUBSHELL so `umask` does not leak to the rest of the skill, and CORRECT directory permissions if `.claude-active/` pre-exists with wider perms. Content is the relative path from project root to the mock-ups folder.
+
+```bash
+(
+  umask 077
+  source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh"
+  cad="${CLAUDE_PROJECT_DIR}/.claude-active"
+  if [ -L "$cad" ]; then
+    echo "FATAL: $cad is a symlink — refusing to write breadcrumbs" >&2
+    exit 1
+  elif [ -e "$cad" ]; then
+    [ -d "$cad" ] || { echo "FATAL: $cad exists and is not a directory" >&2; exit 1; }
+    chmod 700 "$cad" 2>/dev/null || { echo "FATAL: cannot enforce 0700 on $cad" >&2; exit 1; }
+  else
+    mkdir -p "$cad"
+  fi
+  bc=$(breadcrumb_path mock-ups) || exit 1
+  printf '%s\n' "${RELATIVE_OUTPUT_PATH}" > "$bc"
+)
+```
+
+The outer `( ... )` subshell scopes `umask 077` so the caller's umask is unchanged after this block. The pre-existing-perm correction enforces `0700` on `.claude-active/` even if a previous-version skill or attacker created it with wider perms.
 
 Create the output structure:
 
@@ -466,7 +487,12 @@ If the `source` field points to a `research.md`, run the verifier:
 
 ### 4c. Cleanup
 
-Set `status: done` in the YAML frontmatter of `mock-up-summary.md`. Then remove the `.active-mock-ups` breadcrumb file from the project root.
+Set `status: done` in the YAML frontmatter of `mock-up-summary.md`. Then remove the breadcrumb. During the dual-read transition window, BOTH the new-path breadcrumb AND any legacy `.active-mock-ups` at project root must be removed:
+
+```bash
+new_bc=$(bash -c 'source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh" && breadcrumb_path mock-ups')
+rm -f "$new_bc" "${CLAUDE_PROJECT_DIR}/.active-mock-ups"
+```
 
 ### 4d. Report to user
 

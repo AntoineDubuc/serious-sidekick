@@ -192,7 +192,28 @@ Research/
 - Create `Research/` and the relevant subdirectory at the project root if they don't exist.
 - `{descriptive-slug}` should be short, descriptive, kebab-case (e.g., `auth-token-expiry`, `notification-architecture-eval`).
 - If the slug isn't obvious from context, ask the user.
-- **Write `.active-research`** to the project root FIRST (before creating research.md). Content is the relative path from project root to the research folder (e.g., `Research/features/auth-token-expiry`). The Stop hook reads this to know where to append to `notebook.md`.
+- **Write `.claude-active/{claude_pid}-research`** at the project root FIRST (before creating research.md). Use a SUBSHELL so `umask` does not leak to the rest of the skill, and CORRECT directory permissions if `.claude-active/` pre-exists with wider perms. Content is the relative path from project root to the research folder (e.g., `Research/features/auth-token-expiry`). The Stop hook reads this to know where to append to `notebook.md`.
+
+  ```bash
+  (
+    umask 077
+    source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh"
+    cad="${CLAUDE_PROJECT_DIR}/.claude-active"
+    if [ -L "$cad" ]; then
+      echo "FATAL: $cad is a symlink — refusing to write breadcrumbs" >&2
+      exit 1
+    elif [ -e "$cad" ]; then
+      [ -d "$cad" ] || { echo "FATAL: $cad exists and is not a directory" >&2; exit 1; }
+      chmod 700 "$cad" 2>/dev/null || { echo "FATAL: cannot enforce 0700 on $cad" >&2; exit 1; }
+    else
+      mkdir -p "$cad"
+    fi
+    bc=$(breadcrumb_path research) || exit 1
+    printf '%s\n' "${RELATIVE_OUTPUT_PATH}" > "$bc"
+  )
+  ```
+
+  The outer `( ... )` subshell scopes `umask 077` so the caller's umask is unchanged after this block. The pre-existing-perm correction enforces `0700` on `.claude-active/` even if a previous-version skill or attacker created it with wider perms.
 
 ### 1b. Initialize common files
 
@@ -859,7 +880,12 @@ If the `source` field points to a conversation `summary.md`, run the verifier:
 
 **On PASS or PASS WITH DEFERRALS:** The verifier will have stamped `research.md` frontmatter with `verified`, `verified_source`, and `verified_hash`. Proceed to cleanup.
 
-**Cleanup:** Set `status: done` in the YAML frontmatter of `research.md`. Then remove the `.active-research` breadcrumb file from the project root.
+**Cleanup:** Set `status: done` in the YAML frontmatter of `research.md`. Then remove the breadcrumb. During the dual-read transition window, BOTH the new-path breadcrumb AND any legacy `.active-research` at project root must be removed:
+
+```bash
+new_bc=$(bash -c 'source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh" && breadcrumb_path research')
+rm -f "$new_bc" "${CLAUDE_PROJECT_DIR}/.active-research"
+```
 
 ---
 

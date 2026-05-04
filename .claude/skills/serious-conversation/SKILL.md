@@ -124,9 +124,30 @@ The `parent` field is left empty for now (populated by Phase 0-pre if this is a 
 
 Tell the user: **"I've set up the panel. The persona prompts are in `personas/`. You can review or edit them before we start. Say 'go' when ready."**
 
-### 0e. Write the `.active-conversation` breadcrumb
+### 0e. Write the per-session breadcrumb
 
-Write the `.active-conversation` breadcrumb FIRST (before creating conversation.md). Content is the relative path from project root to the conversation folder (e.g., `Research/conversations/auth-discussion`). The Stop hook reads this to know where to append the conversation log.
+**Write `.claude-active/{claude_pid}-conversation`** at the project root FIRST (before creating conversation.md). Use a SUBSHELL so `umask` does not leak to the rest of the skill, and CORRECT directory permissions if `.claude-active/` pre-exists with wider perms. Content is the relative path from project root to the conversation folder (e.g., `Research/conversations/auth-discussion`). The Stop hook reads this to know where to append the conversation log.
+
+```bash
+(
+  umask 077
+  source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh"
+  cad="${CLAUDE_PROJECT_DIR}/.claude-active"
+  if [ -L "$cad" ]; then
+    echo "FATAL: $cad is a symlink — refusing to write breadcrumbs" >&2
+    exit 1
+  elif [ -e "$cad" ]; then
+    [ -d "$cad" ] || { echo "FATAL: $cad exists and is not a directory" >&2; exit 1; }
+    chmod 700 "$cad" 2>/dev/null || { echo "FATAL: cannot enforce 0700 on $cad" >&2; exit 1; }
+  else
+    mkdir -p "$cad"
+  fi
+  bc=$(breadcrumb_path conversation) || exit 1
+  printf '%s\n' "${RELATIVE_OUTPUT_PATH}" > "$bc"
+)
+```
+
+The outer `( ... )` subshell scopes `umask 077` so the caller's umask is unchanged after this block. The pre-existing-perm correction enforces `0700` on `.claude-active/` even if a previous-version skill or attacker created it with wider perms.
 
 ---
 
@@ -334,7 +355,12 @@ If yes, copy their `prompt.md` to `Research/conversations/_personas/{name}/promp
 
 ### 3c. Clean up
 
-Set `status: done` in the YAML frontmatter of `conversation.md`. Then remove the `.active-conversation` breadcrumb file from the project root.
+Set `status: done` in the YAML frontmatter of `conversation.md`. Then remove the breadcrumb. During the dual-read transition window, BOTH the new-path breadcrumb AND any legacy `.active-conversation` at project root must be removed:
+
+```bash
+new_bc=$(bash -c 'source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh" && breadcrumb_path conversation')
+rm -f "$new_bc" "${CLAUDE_PROJECT_DIR}/.active-conversation"
+```
 
 Report:
 - The conversation folder path

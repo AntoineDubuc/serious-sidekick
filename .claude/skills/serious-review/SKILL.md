@@ -61,7 +61,28 @@ Before anything else, check for active workflow breadcrumbs in the project root:
 
 ### 0b. Write breadcrumb
 
-**Write `.active-review`** to the project root. Content is the relative path from project root to the plan's parent folder.
+**Write `.claude-active/{claude_pid}-review`** at the project root. Use a SUBSHELL so `umask` does not leak to the rest of the skill, and CORRECT directory permissions if `.claude-active/` pre-exists with wider perms. Content is the relative path from project root to the plan's parent folder.
+
+```bash
+(
+  umask 077
+  source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh"
+  cad="${CLAUDE_PROJECT_DIR}/.claude-active"
+  if [ -L "$cad" ]; then
+    echo "FATAL: $cad is a symlink — refusing to write breadcrumbs" >&2
+    exit 1
+  elif [ -e "$cad" ]; then
+    [ -d "$cad" ] || { echo "FATAL: $cad exists and is not a directory" >&2; exit 1; }
+    chmod 700 "$cad" 2>/dev/null || { echo "FATAL: cannot enforce 0700 on $cad" >&2; exit 1; }
+  else
+    mkdir -p "$cad"
+  fi
+  bc=$(breadcrumb_path review) || exit 1
+  printf '%s\n' "${RELATIVE_OUTPUT_PATH}" > "$bc"
+)
+```
+
+The outer `( ... )` subshell scopes `umask 077` so the caller's umask is unchanged after this block. The pre-existing-perm correction enforces `0700` on `.claude-active/` even if a previous-version skill or attacker created it with wider perms.
 
 ---
 
@@ -217,9 +238,14 @@ Write a `review_verdict.md` file in the same directory as the plan. Use frontmat
 
 ### 5a. Remove breadcrumb
 
-Delete `.active-review` from the project root.
+Delete the breadcrumb. During the dual-read transition window, BOTH the new-path breadcrumb AND any legacy `.active-review` at project root must be removed:
 
-If frontmatter has a `parent:` field and the parent was the same skill type (review), restore the breadcrumb: write `.active-review` with the parent's folder path as content.
+```bash
+new_bc=$(bash -c 'source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh" && breadcrumb_path review')
+rm -f "$new_bc" "${CLAUDE_PROJECT_DIR}/.active-review"
+```
+
+If frontmatter has a `parent:` field and the parent was the same skill type (review), restore the breadcrumb at the new per-session path: re-run the writer block above with `RELATIVE_OUTPUT_PATH` set to the parent's folder path.
 
 ### 5b. Present summary
 

@@ -121,7 +121,34 @@ If corpus has no match, omit the corpus line. Never show an empty field.
 
 ### 0c. Write breadcrumb and state
 
-1. **Write `.active-debug`** to the project root. Content: relative path from project root to the debug output folder.
+1. **Write `.claude-active/{claude_pid}-debug`** at the project root. Use a SUBSHELL so `umask` does not leak to the rest of the skill, and CORRECT directory permissions if `.claude-active/` pre-exists with wider perms. Content: relative path from project root to the debug output folder.
+
+   ```bash
+   (
+     umask 077
+     source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh"
+     cad="${CLAUDE_PROJECT_DIR}/.claude-active"
+     if [ -L "$cad" ]; then
+       echo "FATAL: $cad is a symlink — refusing to write breadcrumbs" >&2
+       exit 1
+     elif [ -e "$cad" ]; then
+       [ -d "$cad" ] || { echo "FATAL: $cad exists and is not a directory" >&2; exit 1; }
+       chmod 700 "$cad" 2>/dev/null || { echo "FATAL: cannot enforce 0700 on $cad" >&2; exit 1; }
+     else
+       mkdir -p "$cad"
+     fi
+     bc=$(breadcrumb_path debug) || exit 1
+     printf '%s\n' "${RELATIVE_OUTPUT_PATH}" > "$bc"
+   )
+   ```
+
+   The outer `( ... )` subshell scopes `umask 077` so the caller's umask is unchanged after this block. The pre-existing-perm correction enforces `0700` on `.claude-active/` even if a previous-version skill or attacker created it with wider perms.
+
+   On debug completion, remove the breadcrumb — BOTH the new-path and any legacy `.active-debug`:
+   ```bash
+   new_bc=$(bash -c 'source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh" && breadcrumb_path debug')
+   rm -f "$new_bc" "${CLAUDE_PROJECT_DIR}/.active-debug"
+   ```
 2. **Create output folder:** `Research/debug/{slug}/` (or `{parent_folder}/sub/debug-{slug}/` if sub-workflow).
 3. **Initialize `state.json`** with triage output (see 0b).
 4. **Initialize `debug_report.md`** from `templates/debug-report.md` with frontmatter:

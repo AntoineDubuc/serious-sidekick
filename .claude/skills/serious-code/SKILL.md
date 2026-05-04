@@ -119,7 +119,28 @@ Create the execution tracking files:
 └── evidence/
 ```
 
-**Write `.active-code`** to the project root FIRST (before creating execution_log.md). Content is the relative path from project root to the plan folder. The Stop hook reads this.
+**Write `.claude-active/{claude_pid}-code`** at the project root FIRST (before creating execution_log.md). Use a SUBSHELL so `umask` does not leak to the rest of the skill, and CORRECT directory permissions if `.claude-active/` pre-exists with wider perms. Content is the relative path from project root to the plan folder. The Stop hook reads this.
+
+```bash
+(
+  umask 077
+  source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh"
+  cad="${CLAUDE_PROJECT_DIR}/.claude-active"
+  if [ -L "$cad" ]; then
+    echo "FATAL: $cad is a symlink — refusing to write breadcrumbs" >&2
+    exit 1
+  elif [ -e "$cad" ]; then
+    [ -d "$cad" ] || { echo "FATAL: $cad exists and is not a directory" >&2; exit 1; }
+    chmod 700 "$cad" 2>/dev/null || { echo "FATAL: cannot enforce 0700 on $cad" >&2; exit 1; }
+  else
+    mkdir -p "$cad"
+  fi
+  bc=$(breadcrumb_path code) || exit 1
+  printf '%s\n' "${RELATIVE_OUTPUT_PATH}" > "$bc"
+)
+```
+
+The outer `( ... )` subshell scopes `umask 077` so the caller's umask is unchanged after this block. The pre-existing-perm correction enforces `0700` on `.claude-active/` even if a previous-version skill or attacker created it with wider perms.
 
 ### 0f. Initialize execution_log.md
 
@@ -611,7 +632,11 @@ If the `source` field points to an `implementation_plan.md` (or `phase_map.md`),
 
 ### 2c. Clean up
 
-- Set `status: done` in the YAML frontmatter of `execution_log.md`. Then remove `.active-code` breadcrumb from project root.
+- Set `status: done` in the YAML frontmatter of `execution_log.md`. Then remove the breadcrumb. During the dual-read transition window, BOTH the new-path breadcrumb AND any legacy `.active-code` at project root must be removed:
+  ```bash
+  new_bc=$(bash -c 'source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh" && breadcrumb_path code')
+  rm -f "$new_bc" "${CLAUDE_PROJECT_DIR}/.active-code"
+  ```
 - Clean up any remaining worktrees
 - Update `execution_log.md` with final status: Complete
 

@@ -112,7 +112,28 @@ created: {date}
 - **Tags:** {freeform labels}
 ```
 
-Write `.active-scope` breadcrumb to project root (content = relative path to manifest folder).
+**Write `.claude-active/{claude_pid}-scope`** at the project root FIRST. Use a SUBSHELL so `umask` does not leak to the rest of the skill, and CORRECT directory permissions if `.claude-active/` pre-exists with wider perms. Content is the relative path to the manifest folder.
+
+```bash
+(
+  umask 077
+  source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh"
+  cad="${CLAUDE_PROJECT_DIR}/.claude-active"
+  if [ -L "$cad" ]; then
+    echo "FATAL: $cad is a symlink — refusing to write breadcrumbs" >&2
+    exit 1
+  elif [ -e "$cad" ]; then
+    [ -d "$cad" ] || { echo "FATAL: $cad exists and is not a directory" >&2; exit 1; }
+    chmod 700 "$cad" 2>/dev/null || { echo "FATAL: cannot enforce 0700 on $cad" >&2; exit 1; }
+  else
+    mkdir -p "$cad"
+  fi
+  bc=$(breadcrumb_path scope) || exit 1
+  printf '%s\n' "${RELATIVE_OUTPUT_PATH}" > "$bc"
+)
+```
+
+The outer `( ... )` subshell scopes `umask 077` so the caller's umask is unchanged after this block. The pre-existing-perm correction enforces `0700` on `.claude-active/` even if a previous-version skill or attacker created it with wider perms.
 
 ## Phase 4: Verification — MANDATORY GATE
 
@@ -125,6 +146,10 @@ Run handoff verifier per `.claude/skills/_shared/handoff-verifier.md`:
 ## Phase 5: Cleanup
 
 1. Set `status: done` in manifest frontmatter (if not already set).
-2. Remove `.active-scope` breadcrumb from project root.
+2. Remove the breadcrumb. During the dual-read transition window, BOTH the new-path breadcrumb AND any legacy `.active-scope` at project root must be removed:
+   ```bash
+   new_bc=$(bash -c 'source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh" && breadcrumb_path scope')
+   rm -f "$new_bc" "${CLAUDE_PROJECT_DIR}/.active-scope"
+   ```
 3. **Same-skill restoration:** If `parent:` exists and parent was scope, restore `.active-scope` with parent's folder path.
 4. Report: manifest path, number of plans, summary of the split.
