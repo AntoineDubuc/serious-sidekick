@@ -1641,6 +1641,173 @@ test_warn_reaches_stderr() {
   fi
 }
 
+# =============================================================================
+# Task 5 — SKILL.md prose-reader migration tests (grep-based)
+# =============================================================================
+#
+# SKILL.md files are PROSE — Claude reads them as natural-language instructions.
+# Tests for prose are grep assertions on file content + structural reasoning.
+#
+# Writer skills (10) — must call breadcrumb_sweep at startup AND must reference
+# the new helper interface (path-resolve.sh / breadcrumb_path / claude-active).
+# Reader-only skills (2) — serious-status uses breadcrumb_list_all,
+# serious-abandon uses breadcrumb_path for delete.
+#
+# Source: implementation_plan.md Task 5, ACs 1-4 + negative tests 1-2.
+
+# AC 1: every writer SKILL.md mentions breadcrumb_sweep in its startup scan.
+# Writers are the 10 skills that maintain a parent-detection scan block.
+# (serious-prospect-research has no scan block — it never branches.)
+test_all_skill_md_call_sweep() {
+  local skills_dir failed=""
+  skills_dir="$(cd "$SCRIPT_DIR/.." && pwd)"
+  local skill md
+  for skill in serious-conversation serious-research serious-mock-ups serious-scope \
+               serious-plan serious-review serious-code serious-debug \
+               serious-youtube-tldr; do
+    md="$skills_dir/$skill/SKILL.md"
+    [ -f "$md" ] || { failed="$failed missing:$skill"; continue; }
+    if ! grep -q 'breadcrumb_sweep' "$md"; then
+      failed="$failed no-sweep:$skill"
+    fi
+  done
+  if [ -z "$failed" ]; then
+    pass "test_all_skill_md_call_sweep (9 writer SKILL.md files invoke breadcrumb_sweep)"
+  else
+    fail "test_all_skill_md_call_sweep" "$failed"
+  fi
+}
+
+# AC 2: serious-status SKILL.md uses breadcrumb_list_all for enumeration.
+test_status_uses_list_all() {
+  local skills_dir md
+  skills_dir="$(cd "$SCRIPT_DIR/.." && pwd)"
+  md="$skills_dir/serious-status/SKILL.md"
+  if [ ! -f "$md" ]; then
+    fail "test_status_uses_list_all" "missing: $md"
+    return
+  fi
+  if grep -q 'breadcrumb_list_all' "$md"; then
+    pass "test_status_uses_list_all (serious-status enumerates via breadcrumb_list_all)"
+  else
+    fail "test_status_uses_list_all" "no breadcrumb_list_all reference in serious-status/SKILL.md"
+  fi
+}
+
+# AC 3: serious-abandon SKILL.md uses breadcrumb_path for delete.
+test_abandon_uses_breadcrumb_path() {
+  local skills_dir md
+  skills_dir="$(cd "$SCRIPT_DIR/.." && pwd)"
+  md="$skills_dir/serious-abandon/SKILL.md"
+  if [ ! -f "$md" ]; then
+    fail "test_abandon_uses_breadcrumb_path" "missing: $md"
+    return
+  fi
+  if grep -q 'breadcrumb_path' "$md"; then
+    pass "test_abandon_uses_breadcrumb_path (serious-abandon deletes via breadcrumb_path)"
+  else
+    fail "test_abandon_uses_breadcrumb_path" "no breadcrumb_path reference in serious-abandon/SKILL.md"
+  fi
+}
+
+# AC 4: no SKILL.md references the bare path `.active-{skill}` outside an
+# explicit "legacy fallback" or "dual-read transition" annotation. Lines that
+# DO mention .active-* must also mention legacy / dual-read / transition /
+# overwritten / removed (cleanup context) — those are the annotated migration
+# uses we accept during the transition window.
+test_skill_md_no_bare_legacy() {
+  local skills_dir failed=""
+  skills_dir="$(cd "$SCRIPT_DIR/.." && pwd)"
+  local skill md hits
+  for skill in serious-conversation serious-research serious-mock-ups serious-scope \
+               serious-plan serious-review serious-code serious-debug \
+               serious-abandon serious-status serious-prospect-research \
+               serious-youtube-tldr; do
+    md="$skills_dir/$skill/SKILL.md"
+    [ -f "$md" ] || { failed="$failed missing:$skill"; continue; }
+    # Lines containing a bare `.active-...` reference, MINUS lines that contain
+    # a legacy/transition annotation. Anything that survives is a smoking gun.
+    hits=$(grep -nE '\.active-[a-z-]+' "$md" \
+           | grep -viE 'legacy|dual-read|transition|overwritten|overwrite|removed|remove\b|stale|delete|abandon|cleanup|warn|fallback|old' \
+           || true)
+    if [ -n "$hits" ]; then
+      failed="$failed bare-legacy:$skill"
+    fi
+  done
+  if [ -z "$failed" ]; then
+    pass "test_skill_md_no_bare_legacy (no unannotated .active-{skill} references)"
+  else
+    fail "test_skill_md_no_bare_legacy" "$failed"
+  fi
+}
+
+# Negative test 1: sweep appears in skill-startup prose, NOT in hook references.
+# We verify the SKILL.md does not place breadcrumb_sweep inside a YAML hook
+# block (Stop / PreToolUse / PostToolUse / SessionStart). The structural
+# guarantee we want: sweep is mentioned in the prose of the discovery /
+# startup phase, not as a directive inside a `hooks:` frontmatter block or in
+# language describing what a hook does.
+test_skill_md_sweep_only_in_startup() {
+  local skills_dir failed=""
+  skills_dir="$(cd "$SCRIPT_DIR/.." && pwd)"
+  local skill md
+  for skill in serious-conversation serious-research serious-mock-ups serious-scope \
+               serious-plan serious-review serious-code serious-debug \
+               serious-youtube-tldr; do
+    md="$skills_dir/$skill/SKILL.md"
+    [ -f "$md" ] || continue
+    # Use awk to find the line numbers of every `hooks:` block (top-level YAML
+    # key in frontmatter) and the line numbers of every `breadcrumb_sweep`
+    # reference. A sweep mention inside the frontmatter block is forbidden.
+    # Heuristic: frontmatter starts at line 1 (---) and ends at the next ---.
+    # Anything before the closing --- is frontmatter.
+    local fm_end
+    fm_end=$(awk '/^---[[:space:]]*$/ { c++; if (c == 2) { print NR; exit } }' "$md")
+    if [ -z "$fm_end" ]; then
+      # no frontmatter end found — defensive skip
+      continue
+    fi
+    local sweep_lines line
+    sweep_lines=$(grep -n 'breadcrumb_sweep' "$md" | cut -d: -f1)
+    for line in $sweep_lines; do
+      if [ "$line" -le "$fm_end" ]; then
+        failed="$failed sweep-in-frontmatter:$skill@$line"
+      fi
+    done
+  done
+  if [ -z "$failed" ]; then
+    pass "test_skill_md_sweep_only_in_startup (sweep mentioned outside hook frontmatter)"
+  else
+    fail "test_skill_md_sweep_only_in_startup" "$failed"
+  fi
+}
+
+# Negative test 2: serious-status does NOT iterate claude_pid itself — that
+# would only show this terminal's session. It must use breadcrumb_list_all
+# so all sessions across terminals are visible.
+test_status_no_claude_pid_iteration() {
+  local skills_dir md hits
+  skills_dir="$(cd "$SCRIPT_DIR/.." && pwd)"
+  md="$skills_dir/serious-status/SKILL.md"
+  if [ ! -f "$md" ]; then
+    fail "test_status_no_claude_pid_iteration" "missing: $md"
+    return
+  fi
+  # Forbidden shape: any line that calls claude_pid as part of building a path,
+  # except inside a comment that explicitly says "do NOT" or "without".
+  # The legitimate way to view this terminal's session is via
+  # breadcrumb_list_all (which scans all PIDs), not claude_pid (which scopes
+  # to one).
+  hits=$(grep -nE 'claude_pid' "$md" \
+         | grep -viE 'do NOT|do not|without|never|forbid' \
+         || true)
+  if [ -z "$hits" ]; then
+    pass "test_status_no_claude_pid_iteration (status enumerates via list_all, not claude_pid)"
+  else
+    fail "test_status_no_claude_pid_iteration" "claude_pid usage in status: $hits"
+  fi
+}
+
 # --- Run all tests ---
 if [ "$FIX_ROOT_AVAILABLE" -eq 1 ]; then
   echo "--- Attack Vector Tests (18 rows) ---"
@@ -1748,6 +1915,15 @@ test_all_hooks_updated
 test_no_hook_calls_sweep
 test_hook_structure_if_elif_else
 test_warn_reaches_stderr
+
+echo ""
+echo "--- Task 5: SKILL.md prose-reader migration tests ---"
+test_all_skill_md_call_sweep
+test_status_uses_list_all
+test_abandon_uses_breadcrumb_path
+test_skill_md_no_bare_legacy
+test_skill_md_sweep_only_in_startup
+test_status_no_claude_pid_iteration
 
 echo ""
 echo "=== Summary ==="
