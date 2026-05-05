@@ -8,10 +8,15 @@ hooks:
       handler:
         type: prompt
         prompt: |
-          If a serious conversation is active (check for .active-conversation file in project root),
-          read the conversation folder path from it, then append a summary of the latest exchange
-          to conversation.md in that folder. Include timestamp, who spoke (user or orchestrator),
-          and the key points. Keep it concise.
+          Source .claude/skills/_shared/path-resolve.sh. Compute bc=$(breadcrumb_path conversation)
+          which resolves to .claude-active/{claude_pid}-conversation (per-session, this terminal only).
+          If [ -f "$bc" ], read the conversation folder path from it. Otherwise fall back to legacy
+          .active-conversation at the project root and emit "WARN: dual-read fallback for conversation"
+          to stderr (transition-window cleanup will remove these in Task 6). If neither breadcrumb
+          exists, exit silently.
+          Once you have the folder path, append a summary of the latest exchange to conversation.md
+          in that folder. Include timestamp, who spoke (user or orchestrator), and the key points.
+          Keep it concise.
 ---
 
 # Serious Conversation

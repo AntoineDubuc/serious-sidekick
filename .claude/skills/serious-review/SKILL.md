@@ -114,7 +114,7 @@ The cold-read principle ensures reviewers judge the plan on its own merits, not 
 
 Before reading the plan, handle these error cases:
 
-1. **Plan file does not exist:** Output "ERROR: Plan file at {path} not found." Remove `.active-review` breadcrumb. Stop.
+1. **Plan file does not exist:** Output "ERROR: Plan file at {path} not found." Remove the breadcrumb via `rm -f "$(breadcrumb_path review)"` (per-session, this terminal only) AND legacy `.active-review` at the project root if it exists (transition-window cleanup). Stop.
 2. **Plan file has no YAML frontmatter** (no `---` delimiters in first 20 lines): Output "ERROR: Plan file has no YAML frontmatter. Cannot extract metadata for review." Remove breadcrumb. Stop.
 3. **Frontmatter is malformed** (YAML parse error): Output "WARNING: Plan frontmatter is malformed. Proceeding with heading-based extraction. Review may be incomplete."
 4. **`source:` field is present but path does not exist on disk:** Output "WARNING: Plan's source path {path} does not exist. Copy-Paste Echo check (Check 4) will be skipped — cannot compare against upstream." Proceed with remaining checks.

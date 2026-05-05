@@ -397,7 +397,7 @@ Add the following to your project's `.claude/settings.json` to catch plans that 
         "hooks": [
           {
             "type": "command",
-            "command": "if [ -f .active-plan ]; then plan_dir=$(cat .active-plan); if [ ! -f \"$plan_dir/_extracted_items.md\" ]; then echo 'WARNING: Plan at '$plan_dir' has no _extracted_items.md — upstream verification was skipped. Run Phase 0d before using this plan.' >&2; fi; fi",
+            "command": "source \"$CLAUDE_PROJECT_DIR/.claude/skills/_shared/path-resolve.sh\"; bc=$(breadcrumb_path plan); if [ -f \"$bc\" ]; then plan_dir=$(cat \"$bc\"); elif [ -f .active-plan ]; then plan_dir=$(cat .active-plan); echo 'WARN: dual-read fallback for plan from legacy path' >&2; else exit 0; fi; if [ ! -f \"$plan_dir/_extracted_items.md\" ]; then echo 'WARNING: Plan at '$plan_dir' has no _extracted_items.md — upstream verification was skipped. Run Phase 0d before using this plan.' >&2; fi",
             "timeout": 10
           }
         ]

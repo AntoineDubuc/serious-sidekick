@@ -1657,14 +1657,13 @@ test_warn_reaches_stderr() {
 
 # AC 1: every writer SKILL.md mentions breadcrumb_sweep in its startup scan.
 # Writers are the 10 skills that maintain a parent-detection scan block.
-# (serious-prospect-research has no scan block — it never branches.)
 test_all_skill_md_call_sweep() {
   local skills_dir failed=""
   skills_dir="$(cd "$SCRIPT_DIR/.." && pwd)"
   local skill md
   for skill in serious-conversation serious-research serious-mock-ups serious-scope \
                serious-plan serious-review serious-code serious-debug \
-               serious-youtube-tldr; do
+               serious-prospect-research serious-youtube-tldr; do
     md="$skills_dir/$skill/SKILL.md"
     [ -f "$md" ] || { failed="$failed missing:$skill"; continue; }
     if ! grep -q 'breadcrumb_sweep' "$md"; then
@@ -1672,7 +1671,7 @@ test_all_skill_md_call_sweep() {
     fi
   done
   if [ -z "$failed" ]; then
-    pass "test_all_skill_md_call_sweep (9 writer SKILL.md files invoke breadcrumb_sweep)"
+    pass "test_all_skill_md_call_sweep (10 writer SKILL.md files invoke breadcrumb_sweep)"
   else
     fail "test_all_skill_md_call_sweep" "$failed"
   fi
@@ -1726,12 +1725,12 @@ test_skill_md_no_bare_legacy() {
     md="$skills_dir/$skill/SKILL.md"
     [ -f "$md" ] || { failed="$failed missing:$skill"; continue; }
     # Lines containing a bare `.active-...` reference, MINUS lines that contain
-    # a legacy/transition annotation. Anything that survives is a smoking gun.
-    # Allowed annotations include explicit migration words AND the actual
-    # cleanup/check operations that act on the legacy file (rm -f, is active,
-    # check for) — those lines are inherently transition-cleanup context.
+    # an explicit migration annotation. Tightened after Task 5v QA found two
+    # leaks (plan:400, review:117) — `warn`, `old`, `check for` were too
+    # permissive (anything `WARNING:` slipped through). Now require explicit
+    # migration words OR concrete cleanup operations (rm -f, removed, dual-read).
     hits=$(grep -nE '\.active-[a-z-]+' "$md" \
-           | grep -viE 'legacy|dual-read|transition|overwritten|overwrite|removed|remove\b|stale|delete|abandon|cleanup|warn|fallback|old|rm -f|is active|check for' \
+           | grep -viE 'legacy|dual-read|transition|overwritten|overwrite|removed|stale|abandon|cleanup|fallback|rm -f' \
            || true)
     if [ -n "$hits" ]; then
       failed="$failed bare-legacy:$skill"

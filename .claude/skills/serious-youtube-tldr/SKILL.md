@@ -8,9 +8,14 @@ hooks:
       handler:
         type: prompt
         prompt: |
-          If a serious-youtube-tldr session is active (check for .active-youtube-tldr file in project root),
-          read the output folder path from it, then append a summary of the latest exchange
-          to notebook.md in that folder. Include timestamp and key points. Keep it concise.
+          Source .claude/skills/_shared/path-resolve.sh. Compute bc=$(breadcrumb_path youtube-tldr)
+          which resolves to .claude-active/{claude_pid}-youtube-tldr (per-session, this terminal only).
+          If [ -f "$bc" ], read the output folder path from it. Otherwise fall back to legacy
+          .active-youtube-tldr at the project root and emit "WARN: dual-read fallback for youtube-tldr"
+          to stderr (transition-window cleanup will remove these in Task 6). If neither breadcrumb
+          exists, exit silently.
+          Once you have the folder path, append a summary of the latest exchange to notebook.md
+          in that folder. Include timestamp and key points. Keep it concise.
           This ensures progress survives context compaction.
 ---
 

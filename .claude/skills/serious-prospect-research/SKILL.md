@@ -62,6 +62,12 @@ Print a one-liner confirming what's about to happen:
 
 Proceed without waiting for confirmation. The user will interrupt if wrong.
 
+### 0d. Check for active parent workflow
+
+Source `.claude/skills/_shared/path-resolve.sh`. Run `breadcrumb_sweep` once to reap orphaned per-session breadcrumbs left behind by terminals that crashed without cleanup. Then for each known skill name in the writer roster (`conversation`, `research`, `mock-ups`, `scope`, `plan`, `review`, `code`, `debug`), check the per-session path first by running `bc=$(breadcrumb_path {skill})` and testing `[ -f "$bc" ]` (this resolves to `.claude-active/{claude_pid}-{skill}`); if not found, fall back to the legacy `.active-{skill}` at the project root and emit `WARN: dual-read fallback for {skill}` to stderr (transition-window cleanup will remove these in Task 6).
+
+Prospect research is a sales-side skill — it does not have a parent workflow in the dev pipeline. If any active dev workflow is found, proceed anyway: prospect research is independent and runs alongside whatever else is happening. The scan exists to keep the per-session breadcrumb directory tidy across terminals.
+
 ---
 
 ## Phase 1: Setup
