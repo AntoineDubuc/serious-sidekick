@@ -1269,6 +1269,60 @@ test_writer_does_not_create_legacy() {
   fi
 }
 
+# Production parity: real Claude Code sessions only set CLAUDE_PROJECT_DIR.
+# PROJECT_ROOT is never exported by SKILL.md prose. The writer block in every
+# SKILL.md must work with ONLY CLAUDE_PROJECT_DIR set. This test reproduces
+# that exact environment — no PROJECT_ROOT injected anywhere — and asserts the
+# breadcrumb file gets created. If this fails, every skill writes 0 breadcrumbs
+# in production despite the rest of the suite passing green.
+test_writer_works_with_only_claude_project_dir() {
+  local root
+  root=$(_mk_writer_fixture) || { fail "test_writer_works_with_only_claude_project_dir" "mktemp failed"; return; }
+  # Run the writer with ONLY CLAUDE_PROJECT_DIR — explicitly unset PROJECT_ROOT
+  # to defend against any leak from the test harness's environment.
+  unset PROJECT_ROOT
+  CLAUDE_PROJECT_DIR="$root" SKILL="research" RELATIVE_OUTPUT_PATH="Research/features/prod-parity" \
+    bash -c '
+      unset PROJECT_ROOT
+      umask 022
+      (
+        umask 077
+        source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-resolve.sh"
+        cad="${CLAUDE_PROJECT_DIR}/.claude-active"
+        if [ -L "$cad" ]; then
+          echo "FATAL: $cad is a symlink" >&2; exit 1
+        elif [ -e "$cad" ]; then
+          [ -d "$cad" ] || { echo "FATAL: $cad is not a directory" >&2; exit 1; }
+          chmod 700 "$cad" 2>/dev/null || { echo "FATAL: cannot enforce 0700" >&2; exit 1; }
+        else
+          mkdir -p "$cad"
+        fi
+        bc=$(breadcrumb_path "${SKILL}") || exit 1
+        printf "%s\n" "${RELATIVE_OUTPUT_PATH}" > "$bc"
+      )
+    ' 2>/tmp/pr-test-stderr
+  local writer_exit=$?
+  local files count
+  files=$(ls "$root/.claude-active"/*-research 2>/dev/null)
+  count=$(printf '%s\n' "$files" | grep -c '.' || true)
+  if [ "$writer_exit" -ne 0 ] || [ "$count" -ne 1 ]; then
+    local stderr_excerpt
+    stderr_excerpt=$(cat /tmp/pr-test-stderr 2>/dev/null | head -3 | tr '\n' ';')
+    rm -rf "$root"
+    fail "test_writer_works_with_only_claude_project_dir" \
+         "exit=$writer_exit files=$count stderr={$stderr_excerpt}"
+    return
+  fi
+  local content
+  content=$(cat "$files")
+  rm -rf "$root"
+  if [ "$content" = "Research/features/prod-parity" ]; then
+    pass "test_writer_works_with_only_claude_project_dir"
+  else
+    fail "test_writer_works_with_only_claude_project_dir" "content mismatch: '$content'"
+  fi
+}
+
 # Negative: no SKILL.md writes BOTH the new and the legacy path.
 # We grep each SKILL.md for an instruction that would write the legacy file
 # (e.g., a fenced bash block containing `> .active-{skill}` or a prose line
@@ -1335,6 +1389,255 @@ test_all_skills_updated() {
     pass "test_all_skills_updated (all 10 SKILL.md files reference claude-active)"
   else
     fail "test_all_skills_updated" "$failed"
+  fi
+}
+
+# =============================================================================
+# Task 4 — Hook dual-read gate tests
+# =============================================================================
+#
+# These tests fixture-test a representative hook (serious-debug/session-start.sh)
+# under the four breadcrumb scenarios:
+#   (a) only new path (.claude-active/{PID}-debug)
+#   (b) only legacy (.active-debug)
+#   (c) both
+#   (d) neither
+#
+# Why session-start.sh? It's a debug stub with a deterministic "fired" stderr
+# signal, no jq dependency, no Stop-hook stdin guard, and no FILE_PATH parsing.
+# It's the cleanest probe for "did the hook get past the breadcrumb gate?".
+#
+# The tests build a self-contained fixture project root in mktemp -d, copy the
+# .claude/skills tree into it, and drive the hook with CLAUDE_PROJECT_DIR set
+# to the fixture (matching production-parity: PROJECT_ROOT is NOT set).
+
+# Build a hook fixture: a project root with a working copy of .claude/skills.
+_mk_hook_fixture() {
+  local root
+  root=$(mktemp -d 2>/dev/null) || return 1
+  mkdir -p "$root/.claude"
+  cp -R "$(cd "$SCRIPT_DIR/.." && pwd)" "$root/.claude/skills"
+  touch "$root/.claude/settings.json"
+  printf '%s\n' "$root"
+}
+
+# Compute the per-PID breadcrumb path the hook would compute for itself.
+# We invoke claude_pid in the SAME calling shell shape the hook will see, so
+# the resulting PID matches what the hook resolves at runtime.
+_hook_new_bc() {
+  local root="$1"
+  local skill="$2"
+  CLAUDE_PROJECT_DIR="$root" bash -c "
+    source '$HELPER'
+    breadcrumb_path '$skill'
+  " 2>/dev/null
+}
+
+# (a) only new path -> hook fires, no WARN
+test_hook_prefers_new_path() {
+  local root new_bc stderr exit_code
+  root=$(_mk_hook_fixture) || { fail "test_hook_prefers_new_path" "mktemp failed"; return; }
+  new_bc=$(_hook_new_bc "$root" "debug")
+  if [ -z "$new_bc" ]; then
+    rm -rf "$root"; fail "test_hook_prefers_new_path" "could not compute new_bc"; return
+  fi
+  mkdir -p "$(dirname "$new_bc")"
+  printf '.\n' > "$new_bc"
+  # Run hook with CLAUDE_PROJECT_DIR only (production parity).
+  CLAUDE_PROJECT_DIR="$root" bash "$root/.claude/skills/serious-debug/hooks/session-start.sh" </dev/null >/dev/null 2>/tmp/pr-test-stderr
+  exit_code=$?
+  stderr=$(cat /tmp/pr-test-stderr)
+  rm -rf "$root"
+  # Hook MUST have fired (its "fired" stderr line appears) AND no WARN about fallback.
+  if [ "$exit_code" -eq 0 ] && echo "$stderr" | grep -q "session-start fired" && ! echo "$stderr" | grep -q "dual-read fallback"; then
+    pass "test_hook_prefers_new_path"
+  else
+    fail "test_hook_prefers_new_path" "exit=$exit_code stderr={$stderr}"
+  fi
+}
+
+# (b) only legacy path -> hook fires, WARN to stderr
+test_hook_legacy_fallback_with_warn() {
+  local root stderr exit_code
+  root=$(_mk_hook_fixture) || { fail "test_hook_legacy_fallback_with_warn" "mktemp failed"; return; }
+  printf '.\n' > "$root/.active-debug"
+  CLAUDE_PROJECT_DIR="$root" bash "$root/.claude/skills/serious-debug/hooks/session-start.sh" </dev/null >/dev/null 2>/tmp/pr-test-stderr
+  exit_code=$?
+  stderr=$(cat /tmp/pr-test-stderr)
+  rm -rf "$root"
+  # Hook MUST have fired AND emitted a WARN naming the skill.
+  if [ "$exit_code" -eq 0 ] \
+      && echo "$stderr" | grep -q "session-start fired" \
+      && echo "$stderr" | grep -qi "WARN.*dual-read fallback.*debug"; then
+    pass "test_hook_legacy_fallback_with_warn"
+  else
+    fail "test_hook_legacy_fallback_with_warn" "exit=$exit_code stderr={$stderr}"
+  fi
+}
+
+# (d) neither breadcrumb -> hook exits 0 silently
+test_hook_no_breadcrumb_silent_exit() {
+  local root stderr exit_code
+  root=$(_mk_hook_fixture) || { fail "test_hook_no_breadcrumb_silent_exit" "mktemp failed"; return; }
+  CLAUDE_PROJECT_DIR="$root" bash "$root/.claude/skills/serious-debug/hooks/session-start.sh" </dev/null >/dev/null 2>/tmp/pr-test-stderr
+  exit_code=$?
+  stderr=$(cat /tmp/pr-test-stderr)
+  rm -rf "$root"
+  # Exit 0 AND no "fired" message AND no WARN.
+  if [ "$exit_code" -eq 0 ] \
+      && ! echo "$stderr" | grep -q "session-start fired" \
+      && ! echo "$stderr" | grep -q "dual-read fallback"; then
+    pass "test_hook_no_breadcrumb_silent_exit"
+  else
+    fail "test_hook_no_breadcrumb_silent_exit" "exit=$exit_code stderr={$stderr}"
+  fi
+}
+
+# (c) both -> hook fires using new path, no WARN (new path takes precedence)
+test_hook_new_path_no_warn() {
+  local root new_bc stderr exit_code
+  root=$(_mk_hook_fixture) || { fail "test_hook_new_path_no_warn" "mktemp failed"; return; }
+  new_bc=$(_hook_new_bc "$root" "debug")
+  if [ -z "$new_bc" ]; then
+    rm -rf "$root"; fail "test_hook_new_path_no_warn" "could not compute new_bc"; return
+  fi
+  mkdir -p "$(dirname "$new_bc")"
+  printf '.\n' > "$new_bc"
+  printf '.\n' > "$root/.active-debug"
+  CLAUDE_PROJECT_DIR="$root" bash "$root/.claude/skills/serious-debug/hooks/session-start.sh" </dev/null >/dev/null 2>/tmp/pr-test-stderr
+  exit_code=$?
+  stderr=$(cat /tmp/pr-test-stderr)
+  rm -rf "$root"
+  if [ "$exit_code" -eq 0 ] \
+      && echo "$stderr" | grep -q "session-start fired" \
+      && ! echo "$stderr" | grep -q "dual-read fallback"; then
+    pass "test_hook_new_path_no_warn"
+  else
+    fail "test_hook_new_path_no_warn" "exit=$exit_code stderr={$stderr}"
+  fi
+}
+
+# All 16 hook files reference the new claude-active path.
+# Source: implementation_plan.md Task 4 acceptance criterion 5.
+_TASK4_HOOK_FILES="
+serious-debug/hooks/session-start.sh
+serious-debug/hooks/reproducer-gate.sh
+serious-debug/hooks/stop-corpus-append.sh
+serious-debug/hooks/block-edit-during-investigate.sh
+serious-debug/hooks/stop-plan-escalation.sh
+serious-debug/hooks/stop-require-report.sh
+serious-plan/hooks/hedge-language-gate.sh
+serious-code/hooks/tdd-gate.sh
+serious-review/hooks/review-theater-gate.sh
+serious-code/hooks/log-dispatch.sh
+serious-conversation/hooks/capture-conversation.sh
+serious-research/hooks/capture-research.sh
+serious-scope/hooks/check-manifest.sh
+serious-plan/hooks/check-extraction.sh
+serious-review/hooks/check-verdict.sh
+serious-code/hooks/verify-completion-gate.sh
+"
+
+test_all_hooks_updated() {
+  local skills_dir failed="" hf
+  skills_dir="$(cd "$SCRIPT_DIR/.." && pwd)"
+  for hf in $_TASK4_HOOK_FILES; do
+    local path="$skills_dir/$hf"
+    [ -f "$path" ] || { failed="$failed missing:$hf"; continue; }
+    if ! grep -q "claude-active" "$path"; then
+      failed="$failed not-updated:$hf"
+    fi
+  done
+  if [ -z "$failed" ]; then
+    pass "test_all_hooks_updated (all 16 hook files reference claude-active)"
+  else
+    fail "test_all_hooks_updated" "$failed"
+  fi
+}
+
+# No hook may call breadcrumb_sweep. Sweep is a skill-startup-only contract.
+# Source: implementation_plan.md Task 4 acceptance criterion 6.
+test_no_hook_calls_sweep() {
+  local skills_dir failed="" hf
+  skills_dir="$(cd "$SCRIPT_DIR/.." && pwd)"
+  for hf in $_TASK4_HOOK_FILES; do
+    local path="$skills_dir/$hf"
+    [ -f "$path" ] || continue
+    if grep -q 'breadcrumb_sweep' "$path"; then
+      failed="$failed sweep-call:$hf"
+    fi
+  done
+  if [ -z "$failed" ]; then
+    pass "test_no_hook_calls_sweep (no hook invokes breadcrumb_sweep)"
+  else
+    fail "test_no_hook_calls_sweep" "$failed"
+  fi
+}
+
+# Negative test 1 (structural): hooks use if/elif/else, not parallel reads.
+# We verify that no hook reads BOTH breadcrumb files in the same statement
+# group. The shape we want is "if [ -f new ] ... elif [ -f legacy ] ... else
+# exit 0". The shape we forbid is concatenating both files (e.g., `cat new
+# legacy`) or `[ -f new ] || [ -f legacy ]` (which would cause the gate to
+# fire when EITHER exists with no preference order).
+test_hook_structure_if_elif_else() {
+  local skills_dir failed="" hf
+  skills_dir="$(cd "$SCRIPT_DIR/.." && pwd)"
+  for hf in $_TASK4_HOOK_FILES; do
+    local path="$skills_dir/$hf"
+    [ -f "$path" ] || continue
+    # Forbidden shape: parallel-OR check on the two breadcrumbs.
+    if grep -qE '\[ -f.*\.claude-active.*\].*\|\|.*\[ -f.*\.active-' "$path"; then
+      failed="$failed parallel-or:$hf"
+    fi
+    # Forbidden shape: cat-concatenation of both files.
+    if grep -qE 'cat[[:space:]]+[^|&;]*\.claude-active[^|&;]*\.active-' "$path"; then
+      failed="$failed cat-both:$hf"
+    fi
+    # Required shape: new path appears AND legacy path appears AND there is an
+    # `elif` (or equivalent) — i.e. the hook is dual-read aware.
+    # Skip log-dispatch.sh structural shape variant (uses BREADCRUMB var).
+    case "$hf" in
+      *log-dispatch*) ;;
+      *)
+        if ! grep -q '\.claude-active' "$path"; then
+          failed="$failed missing-new-ref:$hf"
+        fi
+        if ! grep -q '\.active-' "$path"; then
+          failed="$failed missing-legacy-ref:$hf"
+        fi
+        if ! grep -qE '\belif\b' "$path"; then
+          failed="$failed missing-elif:$hf"
+        fi
+        ;;
+    esac
+  done
+  if [ -z "$failed" ]; then
+    pass "test_hook_structure_if_elif_else (all 16 hooks share dual-read shape)"
+  else
+    fail "test_hook_structure_if_elif_else" "$failed"
+  fi
+}
+
+# Negative test 2: hooks do NOT silently swallow the dual-read WARN — the
+# message MUST reach stderr. We verify by checking that the legacy fallback
+# scenario writes a WARN to stderr and NOTHING to stdout.
+test_warn_reaches_stderr() {
+  local root stdout stderr
+  root=$(_mk_hook_fixture) || { fail "test_warn_reaches_stderr" "mktemp failed"; return; }
+  printf '.\n' > "$root/.active-debug"
+  stdout=$(CLAUDE_PROJECT_DIR="$root" bash "$root/.claude/skills/serious-debug/hooks/session-start.sh" </dev/null 2>/tmp/pr-test-stderr)
+  stderr=$(cat /tmp/pr-test-stderr)
+  rm -rf "$root"
+  # Stdout MUST NOT contain the WARN; stderr MUST.
+  if echo "$stdout" | grep -q "dual-read fallback"; then
+    fail "test_warn_reaches_stderr" "WARN leaked to stdout: '$stdout'"
+    return
+  fi
+  if echo "$stderr" | grep -qi "WARN.*dual-read fallback.*debug"; then
+    pass "test_warn_reaches_stderr"
+  else
+    fail "test_warn_reaches_stderr" "WARN did not reach stderr; stderr={$stderr}"
   fi
 }
 
@@ -1431,8 +1734,20 @@ test_writer_rejects_symlink_dir
 test_writer_rejects_file_at_dir_path
 test_writer_umask_does_not_leak
 test_writer_does_not_create_legacy
+test_writer_works_with_only_claude_project_dir
 test_no_dual_write
 test_all_skills_updated
+
+echo ""
+echo "--- Task 4: hook dual-read gate tests ---"
+test_hook_prefers_new_path
+test_hook_legacy_fallback_with_warn
+test_hook_no_breadcrumb_silent_exit
+test_hook_new_path_no_warn
+test_all_hooks_updated
+test_no_hook_calls_sweep
+test_hook_structure_if_elif_else
+test_warn_reaches_stderr
 
 echo ""
 echo "=== Summary ==="
