@@ -13,8 +13,23 @@ PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 [ ! -d "$PROJECT_ROOT" ] && exit 0
 [ -f "$PROJECT_ROOT/.claude/settings.json" ] || echo "WARNING: CLAUDE_PROJECT_DIR may be incorrect: $PROJECT_ROOT" >&2
 
-# No active review session? Allow (not logged — PreToolUse fires too often to log inactive sessions).
-[ ! -f "${PROJECT_ROOT}/.active-review" ] && exit 0
+# Source the per-session breadcrumb helper (claude_pid).
+# shellcheck source=/dev/null
+source "$(dirname "$0")/../../_shared/path-resolve.sh" || exit 0
+
+# Dual-read breadcrumb gate (Task 4 of multi-terminal-breadcrumb-collision-verify).
+# Prefer the per-session path; fall back to legacy with a stderr WARN.
+SKILL=review
+PID_BC="${PROJECT_ROOT}/.claude-active/$(claude_pid)-${SKILL}"
+LEGACY_BC="${PROJECT_ROOT}/.active-${SKILL}"
+if [ -f "$PID_BC" ]; then
+  bc="$PID_BC"
+elif [ -f "$LEGACY_BC" ]; then
+  bc="$LEGACY_BC"
+  echo "WARN: dual-read fallback for ${SKILL} from legacy path" >&2
+else
+  exit 0
+fi
 
 # Source observability helper (diagnostic only — not a security control).
 # shellcheck source=/dev/null

@@ -32,13 +32,22 @@ PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 [ ! -d "$PROJECT_ROOT" ] && exit 0
 [ -f "$PROJECT_ROOT/.claude/settings.json" ] || echo "WARNING: CLAUDE_PROJECT_DIR may be incorrect: $PROJECT_ROOT" >&2
 
-# No active code session? Allow exit.
-if [ ! -f "${PROJECT_ROOT}/.active-code" ]; then
+# Dual-read breadcrumb gate (Task 4 of multi-terminal-breadcrumb-collision-verify).
+# Prefer the per-session path; fall back to legacy with a stderr WARN.
+SKILL=code
+PID_BC="${PROJECT_ROOT}/.claude-active/$(claude_pid)-${SKILL}"
+LEGACY_BC="${PROJECT_ROOT}/.active-${SKILL}"
+if [ -f "$PID_BC" ]; then
+  bc="$PID_BC"
+elif [ -f "$LEGACY_BC" ]; then
+  bc="$LEGACY_BC"
+  echo "WARN: dual-read fallback for ${SKILL} from legacy path" >&2
+else
   type _log_outcome >/dev/null 2>&1 && _log_outcome SKIP "no-active-code"
   exit 0
 fi
 
-if ! PLAN_DIR=$(resolve_breadcrumb_path "${PROJECT_ROOT}/.active-code" "$PROJECT_ROOT"); then
+if ! PLAN_DIR=$(resolve_breadcrumb_path "$bc" "$PROJECT_ROOT"); then
   type _log_outcome >/dev/null 2>&1 && _log_outcome SKIP "breadcrumb-unresolvable"
   exit 0
 fi

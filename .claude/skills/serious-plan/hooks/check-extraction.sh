@@ -21,10 +21,21 @@ PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 [ ! -d "$PROJECT_ROOT" ] && exit 0
 [ -f "$PROJECT_ROOT/.claude/settings.json" ] || echo "WARNING: CLAUDE_PROJECT_DIR may be incorrect: $PROJECT_ROOT" >&2
 
-# No active plan session? Allow exit.
-[ ! -f "${PROJECT_ROOT}/.active-plan" ] && exit 0
+# Dual-read breadcrumb gate (Task 4 of multi-terminal-breadcrumb-collision-verify).
+# Prefer the per-session path; fall back to legacy with a stderr WARN.
+SKILL=plan
+PID_BC="${PROJECT_ROOT}/.claude-active/$(claude_pid)-${SKILL}"
+LEGACY_BC="${PROJECT_ROOT}/.active-${SKILL}"
+if [ -f "$PID_BC" ]; then
+  bc="$PID_BC"
+elif [ -f "$LEGACY_BC" ]; then
+  bc="$LEGACY_BC"
+  echo "WARN: dual-read fallback for ${SKILL} from legacy path" >&2
+else
+  exit 0
+fi
 
-PLAN_DIR=$(resolve_breadcrumb_path "${PROJECT_ROOT}/.active-plan" "$PROJECT_ROOT") || exit 0
+PLAN_DIR=$(resolve_breadcrumb_path "$bc" "$PROJECT_ROOT") || exit 0
 [ -L "$PLAN_DIR" ] && exit 0
 
 # No plan directory? Allow exit.

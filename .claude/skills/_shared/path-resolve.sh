@@ -398,15 +398,23 @@ breadcrumb_path() {
       ;;
   esac
 
-  # PROJECT_ROOT must be set.
-  if [ -z "$PROJECT_ROOT" ]; then
-    echo "breadcrumb_path: PROJECT_ROOT is not set" >&2
+  # PROJECT_ROOT must be set. Fall back to CLAUDE_PROJECT_DIR — that is the env
+  # var Claude Code itself sets in every session, and it is the only project-
+  # root signal that SKILL.md prose-driven writers have access to. Without this
+  # fallback the deployed writer block fails at runtime with "PROJECT_ROOT is
+  # not set" because no SKILL.md exports PROJECT_ROOT before invoking us.
+  local root="$PROJECT_ROOT"
+  if [ -z "$root" ]; then
+    root="$CLAUDE_PROJECT_DIR"
+  fi
+  if [ -z "$root" ]; then
+    echo "breadcrumb_path: neither PROJECT_ROOT nor CLAUDE_PROJECT_DIR is set" >&2
     return 1
   fi
 
   local pid
   pid=$(claude_pid)
-  printf '%s/.claude-active/%s-%s\n' "$PROJECT_ROOT" "$pid" "$skill"
+  printf '%s/.claude-active/%s-%s\n' "$root" "$pid" "$skill"
   return 0
 }
 
@@ -440,11 +448,17 @@ breadcrumb_path() {
 # sweep operates on filenames that we own (we wrote them at skill startup),
 # not on opaque target paths.
 breadcrumb_sweep() {
-  if [ -z "$PROJECT_ROOT" ]; then
+  # Same fallback as breadcrumb_path: real Claude Code sessions only set
+  # CLAUDE_PROJECT_DIR. Sweep is idempotent — exit 0 if neither is set.
+  local root="$PROJECT_ROOT"
+  if [ -z "$root" ]; then
+    root="$CLAUDE_PROJECT_DIR"
+  fi
+  if [ -z "$root" ]; then
     return 0
   fi
 
-  local dir="$PROJECT_ROOT/.claude-active"
+  local dir="$root/.claude-active"
   if [ ! -d "$dir" ]; then
     return 0
   fi
@@ -536,11 +550,18 @@ breadcrumb_list_all() {
     *[!a-z0-9-]*) return 0 ;;
   esac
 
-  if [ -z "$PROJECT_ROOT" ]; then
+  # Same fallback as breadcrumb_path: real Claude Code sessions only set
+  # CLAUDE_PROJECT_DIR. List is idempotent — return 0 with no output if
+  # neither is set.
+  local root="$PROJECT_ROOT"
+  if [ -z "$root" ]; then
+    root="$CLAUDE_PROJECT_DIR"
+  fi
+  if [ -z "$root" ]; then
     return 0
   fi
 
-  local dir="$PROJECT_ROOT/.claude-active"
+  local dir="$root/.claude-active"
   if [ ! -d "$dir" ]; then
     return 0
   fi

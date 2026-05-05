@@ -29,6 +29,12 @@ assert() {
 
 # Helper: run hook with given JSON input, breadcrumb, and plan dir
 # Usage: run_hook <json_file_or_string> <plan_dir_relative> [create_breadcrumb=yes|no] [create_evidence_dir=yes|no]
+#
+# Writes the breadcrumb to the new per-PID path
+# ($project_dir/.claude-active/{PID}-code) so the hook does NOT emit the
+# Task-4 dual-read WARN. Computing the breadcrumb_path inside a child bash
+# that shares the same PPID as the hook's child bash means claude_pid's
+# fallback resolves to the same PID in both places.
 run_hook() {
   local input="$1"
   local plan_dir="${2:-test-plan}"
@@ -40,7 +46,19 @@ run_hook() {
   mkdir -p "$project_dir"
 
   if [ "$create_breadcrumb" = "yes" ]; then
-    echo "$plan_dir" > "$project_dir/.active-code"
+    # Compute the per-PID path the hook will resolve at runtime.
+    local bc_path
+    bc_path=$(CLAUDE_PROJECT_DIR="$project_dir" bash -c "
+      source '$REPO_ROOT/.claude/skills/_shared/path-resolve.sh'
+      breadcrumb_path code
+    " 2>/dev/null)
+    if [ -n "$bc_path" ]; then
+      mkdir -p "$(dirname "$bc_path")"
+      echo "$plan_dir" > "$bc_path"
+    else
+      # Fallback: write to legacy path (will trigger the dual-read WARN).
+      echo "$plan_dir" > "$project_dir/.active-code"
+    fi
   fi
 
   if [ "$create_evidence_dir" = "yes" ]; then

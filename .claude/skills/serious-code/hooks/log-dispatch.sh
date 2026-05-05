@@ -13,9 +13,24 @@ JQ=$(command -v jq) || exit 0
 
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 
-# No active /serious-code session? Exit silently.
-BREADCRUMB="${PROJECT_ROOT}/.active-code"
-[ -f "$BREADCRUMB" ] || exit 0
+# Source the per-session breadcrumb helper (claude_pid).
+# shellcheck source=/dev/null
+source "$(dirname "$0")/../../_shared/path-resolve.sh" || exit 0
+
+# Dual-read breadcrumb gate (Task 4 of multi-terminal-breadcrumb-collision-verify).
+# Prefer the per-session path; fall back to legacy with a stderr WARN.
+SKILL=code
+PID_BC="${PROJECT_ROOT}/.claude-active/$(claude_pid)-${SKILL}"
+LEGACY_BC="${PROJECT_ROOT}/.active-${SKILL}"
+if [ -f "$PID_BC" ]; then
+  bc="$PID_BC"
+elif [ -f "$LEGACY_BC" ]; then
+  bc="$LEGACY_BC"
+  echo "WARN: dual-read fallback for ${SKILL} from legacy path" >&2
+else
+  exit 0
+fi
+BREADCRUMB="$bc"
 
 # Read plan dir from breadcrumb
 PLAN_DIR=""
