@@ -14,14 +14,7 @@ Mark the deepest active workflow as abandoned, remove its breadcrumb, restore th
 
 ### 1a. Read breadcrumbs
 
-Read all `.active-*` breadcrumb files in the project root:
-- `.active-conversation`
-- `.active-research`
-- `.active-mock-ups`
-- `.active-scope`
-- `.active-plan`
-- `.active-code`
-- `.active-review`
+Source `.claude/skills/_shared/path-resolve.sh`. For each known skill name in the writer roster (`conversation`, `research`, `mock-ups`, `scope`, `plan`, `review`, `code`, `debug`), compute this terminal's per-session breadcrumb path via `bc=$(breadcrumb_path {skill})` and read it if it exists (resolves to `.claude-active/{claude_pid}-{skill}`). For transition-window completeness, also check the legacy `.active-{skill}` at the project root and warn `dual-read fallback for {skill}` to stderr if only the legacy is present.
 
 ### 1b. Validate each
 
@@ -81,7 +74,7 @@ Read the primary output file of the deepest active workflow. Change the `status:
 
 ### 3b. Remove breadcrumb
 
-**AFTER** setting `status: abandoned` in the frontmatter (reverse of creation order — frontmatter first, breadcrumb second), remove the `.active-{skill}` breadcrumb file from the project root.
+**AFTER** setting `status: abandoned` in the frontmatter (reverse of creation order — frontmatter first, breadcrumb second), source `.claude/skills/_shared/path-resolve.sh` and compute the breadcrumb path via `bc=$(breadcrumb_path {skill})`, then `rm -f "$bc"` to remove this terminal's breadcrumb. For transition cleanup, also `rm -f "${CLAUDE_PROJECT_DIR}/.active-{skill}"` to remove the legacy file at the project root if it still exists.
 
 ---
 

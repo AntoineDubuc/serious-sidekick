@@ -54,7 +54,7 @@ Reject anything that doesn't match. Report invalid inputs to the user but contin
 
 ### 0d. Check for active parent workflow
 
-Check for active workflow breadcrumbs in the project root (`.active-conversation`, `.active-research`, `.active-plan`, etc.).
+Source `.claude/skills/_shared/path-resolve.sh`. Run `breadcrumb_sweep` once to reap orphaned per-session breadcrumbs left behind by terminals that crashed without cleanup. Then for each known skill name in the writer roster (`conversation`, `research`, `mock-ups`, `scope`, `plan`, `review`, `code`, `debug`), check the per-session path first by running `bc=$(breadcrumb_path {skill})` and testing `[ -f "$bc" ]` (this resolves to `.claude-active/{claude_pid}-{skill}`); if not found, fall back to the legacy `.active-{skill}` at the project root and emit `WARN: dual-read fallback for {skill}` to stderr (transition-window cleanup will remove these in Task 6).
 
 - **Pipeline order:** This skill is order 0.5 (ingestion, before conversation).
 - If active workflows exist and their order is > 0.5, this is **advancing** — proceed normally.

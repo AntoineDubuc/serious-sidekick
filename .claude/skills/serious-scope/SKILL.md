@@ -12,7 +12,7 @@ Read research output, propose how to split the work into implementation plans, a
 
 ### 0-pre. Check for active parent workflow
 
-1. **Scan for breadcrumbs:** Check for `.active-conversation`, `.active-research`, `.active-mock-ups`, `.active-scope`, `.active-plan`, `.active-code`, `.active-review`
+1. **Scan for breadcrumbs:** Source `.claude/skills/_shared/path-resolve.sh`. Run `breadcrumb_sweep` once to reap orphaned per-session breadcrumbs left behind by terminals that crashed without cleanup. Then for each known skill name in the writer roster (`conversation`, `research`, `mock-ups`, `scope`, `plan`, `review`, `code`), check the per-session path first by running `bc=$(breadcrumb_path {skill})` and testing `[ -f "$bc" ]` (this resolves to `.claude-active/{claude_pid}-{skill}`); if not found, fall back to the legacy `.active-{skill}` at the project root and emit `WARN: dual-read fallback for {skill}` to stderr (transition-window cleanup will remove these in Task 6). Treat each found breadcrumb as a candidate for the validation steps below.
 2. **Validate each:** Verify target folder exists with valid YAML frontmatter. Delete stale breadcrumbs with warning.
 2b. **Status-based staleness:** If target frontmatter has `status: done` or `abandoned`, remove the breadcrumb silently.
 2c. **Age-based staleness:** If target has `status: active` and `.active-*` file is older than 4 hours, prompt: "Treat as active? (Y/N)". No → remove. Yes → continue to step 4.

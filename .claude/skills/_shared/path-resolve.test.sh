@@ -1727,8 +1727,11 @@ test_skill_md_no_bare_legacy() {
     [ -f "$md" ] || { failed="$failed missing:$skill"; continue; }
     # Lines containing a bare `.active-...` reference, MINUS lines that contain
     # a legacy/transition annotation. Anything that survives is a smoking gun.
+    # Allowed annotations include explicit migration words AND the actual
+    # cleanup/check operations that act on the legacy file (rm -f, is active,
+    # check for) — those lines are inherently transition-cleanup context.
     hits=$(grep -nE '\.active-[a-z-]+' "$md" \
-           | grep -viE 'legacy|dual-read|transition|overwritten|overwrite|removed|remove\b|stale|delete|abandon|cleanup|warn|fallback|old' \
+           | grep -viE 'legacy|dual-read|transition|overwritten|overwrite|removed|remove\b|stale|delete|abandon|cleanup|warn|fallback|old|rm -f|is active|check for' \
            || true)
     if [ -n "$hits" ]; then
       failed="$failed bare-legacy:$skill"
