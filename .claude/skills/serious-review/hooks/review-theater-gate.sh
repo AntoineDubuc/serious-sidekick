@@ -3,7 +3,8 @@
 # PreToolUse hook for /serious-review: blocks Write of review verdicts
 # that constitute review theater (generic approval without specifics).
 #
-# Only active during /serious-review sessions (checks .active-review breadcrumb).
+# Only active during /serious-review sessions — dual-read gate prefers
+# .claude-active/{PID}-review and falls back to legacy .active-review with a WARN.
 #
 # Exit codes:
 #   0 = allow (no active session, non-verdict file, or substantive review)

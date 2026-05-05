@@ -12,6 +12,7 @@
 JQ=$(command -v jq) || exit 0
 
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
+[ ! -d "$PROJECT_ROOT" ] && exit 0
 
 # Source the per-session breadcrumb helper (claude_pid).
 # shellcheck source=/dev/null
@@ -30,11 +31,10 @@ elif [ -f "$LEGACY_BC" ]; then
 else
   exit 0
 fi
-BREADCRUMB="$bc"
 
 # Read plan dir from breadcrumb
 PLAN_DIR=""
-PLAN_DIR=$(cat "$BREADCRUMB" 2>/dev/null) || exit 0
+PLAN_DIR=$(cat "$bc" 2>/dev/null) || exit 0
 [ -z "$PLAN_DIR" ] && exit 0
 
 # Evidence dir must already exist — do NOT create it

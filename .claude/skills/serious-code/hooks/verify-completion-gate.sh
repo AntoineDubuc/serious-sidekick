@@ -5,7 +5,8 @@
 # is missing required agent evidence files, or has a gate verdict without PASS.
 #
 # How it works:
-# 1. Check if .active-code breadcrumb exists (active /serious-code session)
+# 1. Dual-read breadcrumb gate: prefer .claude-active/{PID}-code, fall back
+#    to legacy .active-code with WARN, exit 0 if neither exists
 # 2. Find all task evidence directories (evidence/task_*/)
 # 3. For each, check that gate_passed.md exists
 # 4. For each, check that all 5 agent evidence files exist

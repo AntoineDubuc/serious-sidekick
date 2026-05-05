@@ -3,7 +3,8 @@
 # PreToolUse hook for /serious-plan: blocks Write if the content
 # contains hedge language that produces vague plans.
 #
-# Only active during /serious-plan sessions (checks .active-plan breadcrumb).
+# Only active during /serious-plan sessions — dual-read gate prefers
+# .claude-active/{PID}-plan and falls back to legacy .active-plan with a WARN.
 # Scans the content being written for banned patterns.
 #
 # Exit codes:

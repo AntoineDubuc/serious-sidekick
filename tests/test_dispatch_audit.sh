@@ -300,7 +300,19 @@ run_hook_no_jq() {
   rm -rf "$project_dir" "$fake_bin"
   mkdir -p "$project_dir/test-plan/evidence"
   mkdir -p "$fake_bin"
-  echo "test-plan" > "$project_dir/.active-code"
+  # Write breadcrumb to the per-PID path (matches run_hook's approach) so the
+  # hook does NOT emit the Task-4 dual-read WARN under the no-jq env.
+  local bc_path
+  bc_path=$(CLAUDE_PROJECT_DIR="$project_dir" bash -c "
+    source '$REPO_ROOT/.claude/skills/_shared/path-resolve.sh'
+    breadcrumb_path code
+  " 2>/dev/null)
+  if [ -n "$bc_path" ]; then
+    mkdir -p "$(dirname "$bc_path")"
+    echo "test-plan" > "$bc_path"
+  else
+    echo "test-plan" > "$project_dir/.active-code"
+  fi
 
   # Symlink essential commands but NOT jq
   for cmd in bash cat date grep head sed tr cut printf; do
@@ -482,7 +494,18 @@ if [ -f "$HOOK_SCRIPT" ]; then
   PERF_PROJECT="$TMP_DIR/perf-project"
   rm -rf "$PERF_PROJECT"
   mkdir -p "$PERF_PROJECT/test-plan/evidence"
-  echo "test-plan" > "$PERF_PROJECT/.active-code"
+  # Write breadcrumb to the per-PID path so the perf measurement reflects the
+  # production happy path (no dual-read WARN, no legacy fallback overhead).
+  PERF_BC=$(CLAUDE_PROJECT_DIR="$PERF_PROJECT" bash -c "
+    source '$REPO_ROOT/.claude/skills/_shared/path-resolve.sh'
+    breadcrumb_path code
+  " 2>/dev/null)
+  if [ -n "$PERF_BC" ]; then
+    mkdir -p "$(dirname "$PERF_BC")"
+    echo "test-plan" > "$PERF_BC"
+  else
+    echo "test-plan" > "$PERF_PROJECT/.active-code"
+  fi
 
   START_MS=$(python3 -c "import time; print(int(time.time() * 1000))")
   CLAUDE_PROJECT_DIR="$PERF_PROJECT" bash "$HOOK_SCRIPT" < "$FIXTURES_DIR/valid_dispatch.json" >/dev/null 2>&1 || true

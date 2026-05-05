@@ -3,7 +3,8 @@
 # PreToolUse hook for /serious-code: blocks Write of implementation files
 # when no corresponding test file exists yet.
 #
-# Only active during /serious-code sessions (checks .active-code breadcrumb).
+# Only active during /serious-code sessions — dual-read gate prefers
+# .claude-active/{PID}-code and falls back to legacy .active-code with a WARN.
 # Checks if the file being written is an implementation file and whether
 # a test file for it already exists on disk.
 #
