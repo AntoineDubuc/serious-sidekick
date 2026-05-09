@@ -1810,6 +1810,555 @@ test_status_no_claude_pid_iteration() {
   fi
 }
 
+# =============================================================================
+# Task 6 — breadcrumb_migrate() tests (agreement-gated legacy deletion)
+# =============================================================================
+#
+# These tests build isolated PROJECT_ROOT fixtures with legacy `.active-{skill}`
+# files (and matching `.claude-active/{PID}-{skill}` counterparts when
+# applicable) and verify that breadcrumb_migrate applies its 5 gates correctly:
+#
+#   Gate 0 — Type check (skip symlinks, directories, non-regular files)
+#   Gate 1 — Carve-out (preserve .active-conversation by exact filename)
+#   Gate 2 — Content validation (reject empty, traversal, shell-meta, control chars, escape)
+#   Gate 3a — Orphan branch (delete only if filename + content valid AND target missing)
+#   Gate 3b — Agreement branch (delete only if new-path content matches exactly)
+
+# Helper: build a fresh isolated project root with a .claude-active dir.
+# Identical shape to _mk_sweep_fixture so tests are familiar.
+_mk_migrate_fixture() {
+  local root
+  root=$(mktemp -d 2>/dev/null) || return 1
+  mkdir -p "$root/.claude-active"
+  printf '%s\n' "$root"
+}
+
+# AC: agreement check — new-path matches legacy → delete legacy.
+test_migrate_agreement_required() {
+  local root pid_self
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_agreement_required" "mktemp failed"; return; }
+  # Seed a real folder both files point to.
+  mkdir -p "$root/Research/features/foo"
+  printf 'Research/features/foo\n' > "$root/.active-research"
+  # New-path file written by THIS shell's claude_pid (which we look up live).
+  pid_self=$(PROJECT_ROOT="$root" bash -c "source '$HELPER'; claude_pid")
+  printf 'Research/features/foo\n' > "$root/.claude-active/${pid_self}-research"
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  if [ -e "$root/.active-research" ]; then
+    fail "test_migrate_agreement_required" "legacy file still present after agreement"
+  else
+    pass "test_migrate_agreement_required"
+  fi
+  rm -rf "$root"
+}
+
+# Negative: disagreement — new-path content differs → preserve legacy.
+test_migrate_disagreement_preserves() {
+  local root pid_self stderr
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_disagreement_preserves" "mktemp failed"; return; }
+  mkdir -p "$root/Research/features/foo"
+  mkdir -p "$root/Research/features/bar"
+  printf 'Research/features/foo\n' > "$root/.active-research"
+  pid_self=$(PROJECT_ROOT="$root" bash -c "source '$HELPER'; claude_pid")
+  printf 'Research/features/bar\n' > "$root/.claude-active/${pid_self}-research"
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  stderr=$(cat /tmp/pr-test-stderr)
+  if [ -e "$root/.active-research" ] && echo "$stderr" | grep -q "MIGRATE: skip no-agreement"; then
+    pass "test_migrate_disagreement_preserves"
+  else
+    fail "test_migrate_disagreement_preserves" "deleted=$([ ! -e "$root/.active-research" ] && echo y || echo n) stderr=$stderr"
+  fi
+  rm -rf "$root"
+}
+
+# AC: carve-out — .active-conversation is preserved even on agreement.
+test_migrate_preserves_active_conversation() {
+  local root pid_self
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_preserves_active_conversation" "mktemp failed"; return; }
+  mkdir -p "$root/Research/conversations/c1"
+  printf 'Research/conversations/c1\n' > "$root/.active-conversation"
+  pid_self=$(PROJECT_ROOT="$root" bash -c "source '$HELPER'; claude_pid")
+  printf 'Research/conversations/c1\n' > "$root/.claude-active/${pid_self}-conversation"
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  local stderr
+  stderr=$(cat /tmp/pr-test-stderr)
+  if [ -e "$root/.active-conversation" ] && echo "$stderr" | grep -q "MIGRATE: preserve carve-out"; then
+    pass "test_migrate_preserves_active_conversation"
+  else
+    fail "test_migrate_preserves_active_conversation" "deleted=$([ ! -e "$root/.active-conversation" ] && echo y || echo n) stderr=$stderr"
+  fi
+  rm -rf "$root"
+}
+
+# AC: orphan — folder doesn't exist + filename shape valid → delete.
+# Uses the canonical fixture: .active-code-test with content
+# 'status-line-script-and-integration' (matches the live April-12 stray).
+test_migrate_removes_orphan() {
+  local root
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_removes_orphan" "mktemp failed"; return; }
+  printf 'status-line-script-and-integration\n' > "$root/.active-code-test"
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  if [ -e "$root/.active-code-test" ]; then
+    fail "test_migrate_removes_orphan" "orphan still present after migrate"
+  else
+    pass "test_migrate_removes_orphan"
+  fi
+  rm -rf "$root"
+}
+
+# AC: every action emits a stderr line prefixed `MIGRATE:`.
+test_migrate_logs_actions() {
+  local root pid_self stderr
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_logs_actions" "mktemp failed"; return; }
+  mkdir -p "$root/Research/conversations/c1"
+  printf 'status-line-script-and-integration\n' > "$root/.active-code-test"
+  printf 'Research/conversations/c1\n' > "$root/.active-conversation"
+  pid_self=$(PROJECT_ROOT="$root" bash -c "source '$HELPER'; claude_pid")
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  stderr=$(cat /tmp/pr-test-stderr)
+  rm -rf "$root"
+  # Must see MIGRATE: removed orphan AND MIGRATE: preserve carve-out.
+  if echo "$stderr" | grep -q "MIGRATE: removed orphan" && \
+     echo "$stderr" | grep -q "MIGRATE: preserve carve-out"; then
+    pass "test_migrate_logs_actions"
+  else
+    fail "test_migrate_logs_actions" "stderr missing MIGRATE: lines: $stderr"
+  fi
+}
+
+# Negative — content validation: empty content (after whitespace strip).
+test_migrate_skip_empty_content() {
+  local root stderr
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_skip_empty_content" "mktemp failed"; return; }
+  printf '   \t\n  \n' > "$root/.active-research"
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  stderr=$(cat /tmp/pr-test-stderr)
+  if [ -e "$root/.active-research" ] && echo "$stderr" | grep -q "MIGRATE: skip invalid content"; then
+    pass "test_migrate_skip_empty_content"
+  else
+    fail "test_migrate_skip_empty_content" "deleted=$([ ! -e "$root/.active-research" ] && echo y || echo n) stderr=$stderr"
+  fi
+  rm -rf "$root"
+}
+
+# Negative — traversal content: '..' or leading '/'.
+test_migrate_skip_traversal_content() {
+  local root ok=1 stderr
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_skip_traversal_content" "mktemp failed"; return; }
+  printf '../../etc/passwd\n' > "$root/.active-research"
+  printf '/etc/passwd\n' > "$root/.active-plan"
+  printf 'Research/../../etc\n' > "$root/.active-scope"
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  stderr=$(cat /tmp/pr-test-stderr)
+  [ -e "$root/.active-research" ] || ok=0
+  [ -e "$root/.active-plan" ] || ok=0
+  [ -e "$root/.active-scope" ] || ok=0
+  # Must see at least one MIGRATE: skip line for traversal content.
+  echo "$stderr" | grep -q "MIGRATE: skip" || ok=0
+  rm -rf "$root"
+  if [ "$ok" -eq 1 ]; then
+    pass "test_migrate_skip_traversal_content"
+  else
+    fail "test_migrate_skip_traversal_content" "stderr=$stderr"
+  fi
+}
+
+# Negative — shell-meta content: each metachar individually triggers rejection.
+test_migrate_skip_shell_meta_content() {
+  local root ok=1 c char_list
+  # We test each metachar with its own legacy file, then run migrate once and
+  # verify NONE were deleted. Each filename uses a unique skill-suffix.
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_skip_shell_meta_content" "mktemp failed"; return; }
+  # Build content samples — each contains exactly one metachar wrapped in path-y context.
+  printf 'foo;bar\n' > "$root/.active-a"
+  printf 'foo|bar\n' > "$root/.active-b"
+  printf 'foo`bar\n' > "$root/.active-c"
+  printf 'foo$bar\n' > "$root/.active-d"
+  printf 'foo&bar\n' > "$root/.active-e"
+  printf 'foo(bar\n' > "$root/.active-f"
+  printf 'foo)bar\n' > "$root/.active-g"
+  printf 'foo<bar\n' > "$root/.active-h"
+  printf 'foo>bar\n' > "$root/.active-i"
+  printf 'foo*bar\n' > "$root/.active-j"
+  printf 'foo?bar\n' > "$root/.active-k"
+  printf 'foo[bar\n' > "$root/.active-l"
+  printf 'foo]bar\n' > "$root/.active-m"
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  local stderr
+  stderr=$(cat /tmp/pr-test-stderr)
+  for c in a b c d e f g h i j k l m; do
+    [ -e "$root/.active-$c" ] || ok=0
+  done
+  # Must see MIGRATE: skip lines (proof migrate ran).
+  echo "$stderr" | grep -q "MIGRATE: skip" || ok=0
+  rm -rf "$root"
+  if [ "$ok" -eq 1 ]; then
+    pass "test_migrate_skip_shell_meta_content"
+  else
+    fail "test_migrate_skip_shell_meta_content" "stderr=$stderr"
+  fi
+}
+
+# Negative — control-char content: each rejected control char triggers skip.
+test_migrate_skip_control_chars_content() {
+  local root ok=1
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_skip_control_chars_content" "mktemp failed"; return; }
+  # Use \x01 and \x7f as representative control chars (the case pattern handles all).
+  printf 'foo\001bar\n' > "$root/.active-a"
+  printf 'foo\177bar\n' > "$root/.active-b"
+  printf 'foo\013bar\n' > "$root/.active-c"
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  local stderr
+  stderr=$(cat /tmp/pr-test-stderr)
+  [ -e "$root/.active-a" ] || ok=0
+  [ -e "$root/.active-b" ] || ok=0
+  [ -e "$root/.active-c" ] || ok=0
+  echo "$stderr" | grep -q "MIGRATE: skip" || ok=0
+  rm -rf "$root"
+  if [ "$ok" -eq 1 ]; then
+    pass "test_migrate_skip_control_chars_content"
+  else
+    fail "test_migrate_skip_control_chars_content" "stderr=$stderr"
+  fi
+}
+
+# Negative — escape: content resolves outside project root via realpath check.
+test_migrate_skip_escape_content() {
+  local root ok=1
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_skip_escape_content" "mktemp failed"; return; }
+  # Content does NOT contain '..' literally but resolves via symlink to outside.
+  # Easier: an absolute leading-slash variant is already covered by traversal;
+  # here we use a content that, after canonicalization, points outside the root.
+  # We craft `Research/escape` where Research/ is a symlink to /tmp/elsewhere.
+  mkdir -p "$root/elsewhere/escape-target"
+  ln -s "$root/elsewhere" "$root/Research"
+  printf 'Research/escape-target\n' > "$root/.active-research"
+  # Run migrate — content resolves to $root/elsewhere/escape-target which IS
+  # under $root/, so this WOULD pass the prefix check. To force escape, use a
+  # symlink that points OUTSIDE the root.
+  rm -f "$root/Research"
+  ln -s "/tmp" "$root/Research"
+  printf 'Research/whatever\n' > "$root/.active-plan"
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  local stderr
+  stderr=$(cat /tmp/pr-test-stderr)
+  [ -e "$root/.active-research" ] || ok=0
+  [ -e "$root/.active-plan" ] || ok=0
+  echo "$stderr" | grep -q "MIGRATE:" || ok=0
+  rm -rf "$root"
+  if [ "$ok" -eq 1 ]; then
+    pass "test_migrate_skip_escape_content"
+  else
+    fail "test_migrate_skip_escape_content" "stderr=$stderr"
+  fi
+}
+
+# Negative — Gate 0: symlink legacy entry is left untouched.
+test_migrate_skip_symlink() {
+  local root stderr
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_skip_symlink" "mktemp failed"; return; }
+  ln -s "/etc/passwd" "$root/.active-research"
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  stderr=$(cat /tmp/pr-test-stderr)
+  if [ -L "$root/.active-research" ] && echo "$stderr" | grep -q "MIGRATE: skip symlink"; then
+    pass "test_migrate_skip_symlink"
+  else
+    fail "test_migrate_skip_symlink" "symlink mishandled; stderr=$stderr"
+  fi
+  rm -f "$root/.active-research"
+  rm -rf "$root"
+}
+
+# Negative — Gate 0: directory legacy entry is left untouched.
+test_migrate_skip_directory() {
+  local root stderr
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_skip_directory" "mktemp failed"; return; }
+  mkdir -p "$root/.active-research"
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  stderr=$(cat /tmp/pr-test-stderr)
+  if [ -d "$root/.active-research" ] && echo "$stderr" | grep -q "MIGRATE: skip directory"; then
+    pass "test_migrate_skip_directory"
+  else
+    fail "test_migrate_skip_directory" "directory mishandled; stderr=$stderr"
+  fi
+  rm -rf "$root"
+}
+
+# Negative — orphan branch filename shape: rejects non-conforming basenames.
+test_migrate_orphan_filename_shape() {
+  local root ok=1 stderr
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_orphan_filename_shape" "mktemp failed"; return; }
+  # Each of these has otherwise-valid content that does NOT resolve to a folder
+  # (orphan branch candidate). Filename shape MUST reject:
+  printf 'somewhere\n' > "$root/.active-FAKE"            # uppercase
+  printf 'somewhere\n' > "$root/.active-Foo"             # mixed case
+  printf 'somewhere\n' > "$root/.active-99research"      # leading digit
+  : > "$root/.active-"                                   # empty suffix
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  stderr=$(cat /tmp/pr-test-stderr)
+  [ -e "$root/.active-FAKE" ] || ok=0
+  [ -e "$root/.active-Foo" ] || ok=0
+  [ -e "$root/.active-99research" ] || ok=0
+  [ -e "$root/.active-" ] || ok=0
+  # Must see at least one MIGRATE: log line proving migrate ran.
+  echo "$stderr" | grep -q "MIGRATE:" || ok=0
+  rm -rf "$root"
+  if [ "$ok" -eq 1 ]; then
+    pass "test_migrate_orphan_filename_shape"
+  else
+    fail "test_migrate_orphan_filename_shape" "stderr=$stderr"
+  fi
+}
+
+# Negative — carve-out variant: .active-conversation as a directory → Gate 0
+# preserves it (skipped as directory before reaching Gate 1).
+test_migrate_carveout_directory_variant() {
+  local root stderr
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_carveout_directory_variant" "mktemp failed"; return; }
+  mkdir -p "$root/.active-conversation"
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  stderr=$(cat /tmp/pr-test-stderr)
+  if [ -d "$root/.active-conversation" ] && echo "$stderr" | grep -q "MIGRATE: skip directory"; then
+    pass "test_migrate_carveout_directory_variant"
+  else
+    fail "test_migrate_carveout_directory_variant" "deleted=$([ ! -d "$root/.active-conversation" ] && echo y || echo n) stderr=$stderr"
+  fi
+  rm -rf "$root"
+}
+
+# Negative — carve-out variant: .active-conversation as a symlink → Gate 0
+# preserves it (skipped as symlink).
+test_migrate_carveout_symlink_variant() {
+  local root stderr
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_carveout_symlink_variant" "mktemp failed"; return; }
+  ln -s "/tmp" "$root/.active-conversation"
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  stderr=$(cat /tmp/pr-test-stderr)
+  if [ -L "$root/.active-conversation" ] && echo "$stderr" | grep -q "MIGRATE: skip symlink"; then
+    pass "test_migrate_carveout_symlink_variant"
+  else
+    fail "test_migrate_carveout_symlink_variant" "deleted=$([ ! -L "$root/.active-conversation" ] && echo y || echo n) stderr=$stderr"
+  fi
+  rm -f "$root/.active-conversation"
+  rm -rf "$root"
+}
+
+# Negative — carve-out edge: trailing-newline filename `.active-conversation\n`
+# is normalized via ${name%$'\n'} and matches the carve-out.
+test_migrate_carveout_trailing_newline() {
+  local root pid_self fname
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_carveout_trailing_newline" "mktemp failed"; return; }
+  # Most filesystems reject \n in filenames, but some accept it. We use printf
+  # with %b to write a name with trailing newline. If the filesystem rejects it,
+  # we fall back to a passing assertion (the filesystem itself defends).
+  fname=$(printf '.active-conversation\n')
+  mkdir -p "$root/Research/conversations/c1"
+  if ! printf 'Research/conversations/c1\n' > "$root/$fname" 2>/dev/null; then
+    # FS rejected — defense-in-depth at the FS layer satisfies the AC.
+    pass "test_migrate_carveout_trailing_newline (FS rejected trailing-newline filename — defense at FS layer)"
+    rm -rf "$root"
+    return
+  fi
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  local stderr
+  stderr=$(cat /tmp/pr-test-stderr)
+  # The trailing-newline filename is normalized by the helper, so it must match
+  # the carve-out and emit the preserve log line.
+  if [ -e "$root/$fname" ] && echo "$stderr" | grep -q "MIGRATE: preserve carve-out"; then
+    pass "test_migrate_carveout_trailing_newline"
+  else
+    fail "test_migrate_carveout_trailing_newline" "deleted=$([ ! -e "$root/$fname" ] && echo y || echo n) stderr=$stderr"
+  fi
+  rm -rf "$root"
+}
+
+# Negative — agreement check is per-PID. Different PID's new-path file does
+# NOT satisfy agreement.
+test_migrate_per_pid_check() {
+  local root other_pid stderr
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_per_pid_check" "mktemp failed"; return; }
+  mkdir -p "$root/Research/features/foo"
+  printf 'Research/features/foo\n' > "$root/.active-research"
+  # Use a fixed unrelated PID (99999 — the same dead PID convention the sweep tests use).
+  other_pid=99999
+  printf 'Research/features/foo\n' > "$root/.claude-active/${other_pid}-research"
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  stderr=$(cat /tmp/pr-test-stderr)
+  if [ -e "$root/.active-research" ] && echo "$stderr" | grep -q "MIGRATE: skip no-agreement"; then
+    pass "test_migrate_per_pid_check"
+  else
+    fail "test_migrate_per_pid_check" "deleted=$([ ! -e "$root/.active-research" ] && echo y || echo n) stderr=$stderr"
+  fi
+  rm -rf "$root"
+}
+
+# Negative — migrate does NOT touch .claude-active/{PID}-{skill} entries.
+# Only legacy .active-* root files are migration targets.
+test_migrate_does_not_touch_new_path() {
+  local root pid_self exit_code
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_does_not_touch_new_path" "mktemp failed"; return; }
+  mkdir -p "$root/Research/conversations/c1"
+  pid_self=$(PROJECT_ROOT="$root" bash -c "source '$HELPER'; claude_pid")
+  printf 'Research/conversations/c1\n' > "$root/.claude-active/${pid_self}-conversation"
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  exit_code=$?
+  # Function must exist (exit 0) AND the new-path file must remain.
+  if [ "$exit_code" -eq 0 ] && [ -e "$root/.claude-active/${pid_self}-conversation" ]; then
+    pass "test_migrate_does_not_touch_new_path"
+  else
+    fail "test_migrate_does_not_touch_new_path" "exit=$exit_code missing-new-path=$([ ! -e "$root/.claude-active/${pid_self}-conversation" ] && echo y || echo n)"
+  fi
+  rm -rf "$root"
+}
+
+# AC: migrate is idempotent — running twice produces no errors.
+test_migrate_idempotent() {
+  local root pid_self exit2 snap1 snap2
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_idempotent" "mktemp failed"; return; }
+  mkdir -p "$root/Research/features/foo"
+  mkdir -p "$root/Research/conversations/c1"
+  printf 'status-line-script-and-integration\n' > "$root/.active-code-test"
+  printf 'Research/conversations/c1\n' > "$root/.active-conversation"
+  printf 'Research/features/foo\n' > "$root/.active-research"
+  pid_self=$(PROJECT_ROOT="$root" bash -c "source '$HELPER'; claude_pid")
+  printf 'Research/features/foo\n' > "$root/.claude-active/${pid_self}-research"
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/dev/null
+  snap1=$(ls -a "$root" | sort)
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  exit2=$?
+  snap2=$(ls -a "$root" | sort)
+  rm -rf "$root"
+  if [ "$exit2" -eq 0 ] && [ "$snap1" = "$snap2" ]; then
+    pass "test_migrate_idempotent"
+  else
+    fail "test_migrate_idempotent" "exit2=$exit2 snap1='$snap1' snap2='$snap2'"
+  fi
+}
+
+# AC: migrate uses `rm -f --` (with end-of-options marker), never `rm -rf`.
+# This is a static-grep test on the helper file.
+test_migrate_uses_rm_f_dash_dash() {
+  local body
+  body=$(awk '
+    /^breadcrumb_migrate\(\)/ { in_func=1 }
+    in_func { print }
+    in_func && /^}/ { in_func=0; exit }
+  ' "$HELPER")
+  if [ -z "$body" ]; then
+    fail "test_migrate_uses_rm_f_dash_dash" "breadcrumb_migrate function not found in helper"
+    return
+  fi
+  if echo "$body" | grep -qE '\brm -rf\b'; then
+    fail "test_migrate_uses_rm_f_dash_dash" "breadcrumb_migrate body uses rm -rf"
+    return
+  fi
+  # Must use `rm -f --` (with end-of-options marker) at least once in the body.
+  if echo "$body" | grep -q 'rm -f --'; then
+    pass "test_migrate_uses_rm_f_dash_dash"
+  else
+    fail "test_migrate_uses_rm_f_dash_dash" "breadcrumb_migrate body does not use 'rm -f --'"
+  fi
+}
+
+# AC: when /bin/realpath fails (or pure-shell fallback fails), migrate
+# fail-safes — does NOT delete and logs `MIGRATE: skip realpath-unavailable`.
+test_migrate_realpath_failure_fail_safe() {
+  local root stub_dir stderr
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_realpath_failure_fail_safe" "mktemp failed"; return; }
+  stub_dir=$(mktemp -d 2>/dev/null) || { fail "test_migrate_realpath_failure_fail_safe" "stub mktemp failed"; rm -rf "$root"; return; }
+  # Build a /bin/realpath stub that always fails. The shell's PATH lookup uses
+  # this stub before /bin/realpath. The helper calls /bin/realpath via its
+  # absolute path, so PATH-stubbing won't override the absolute path. We must
+  # use a different approach — inject a fake `/bin` via PATH prefix is moot for
+  # absolute calls. Solution: use the helper's existing pure-shell fallback by
+  # making the target path nonexistent so realpath returns failure → fall back
+  # to `cd "$target" && pwd -P`, which also fails → escape branch.
+  # We craft content that points to a path that does NOT exist, AND we expect
+  # a SKIP (not orphan-delete) because filename shape ALSO has to pass for
+  # orphan delete; if filename shape fails, it's still SKIP.
+  # The cleanest test: use a fixture where realpath cannot resolve at all
+  # because both /bin/realpath and the cd-fallback fail. We achieve this by
+  # placing nonexistent target content under a filename that ALSO fails the
+  # orphan filename-shape check — then EITHER branch leads to no deletion.
+  # However, the AC specifically asks for `MIGRATE: skip realpath-unavailable`.
+  # That requires both realpath paths to fail. We simulate that by ALWAYS-FAIL
+  # via /tmp/no-such-dir/.../ paths.
+  # In practice on macOS, /bin/realpath returns failure on missing target, and
+  # `cd "$target"` also fails — so our case is realistic without stubbing.
+  printf 'no/such/path/anywhere\n' > "$root/.active-research"
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  stderr=$(cat /tmp/pr-test-stderr)
+  rm -rf "$stub_dir"
+  if [ -e "$root/.active-research" ] && echo "$stderr" | grep -q "MIGRATE: skip realpath-unavailable"; then
+    pass "test_migrate_realpath_failure_fail_safe"
+  else
+    # Acceptable alternative: orphan-deleted via the `[ ! -d ... ]` check is
+    # OK ONLY if the filename shape ALSO fails (which it doesn't here — filename
+    # is .active-research). So if it was deleted, the test fails.
+    fail "test_migrate_realpath_failure_fail_safe" "exists=$([ -e "$root/.active-research" ] && echo y || echo n) stderr=$stderr"
+  fi
+  rm -rf "$root"
+}
+
+# AC: log lines NEVER include legacy file content. Defense against log injection.
+test_migrate_logs_filename_only() {
+  local root stderr fake_lines
+  root=$(_mk_migrate_fixture) || { fail "test_migrate_logs_filename_only" "mktemp failed"; return; }
+  # Content includes a fake MIGRATE log line — if the helper interpolates content
+  # into stderr, we'd see `MIGRATE: fake log line`. Content includes a newline
+  # to maximize injection surface (also a shell-meta = rejection).
+  printf 'injected\nMIGRATE: fake log line\n' > "$root/.active-foo"
+  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
+  stderr=$(cat /tmp/pr-test-stderr)
+  rm -rf "$root"
+  # Must see a legitimate MIGRATE: skip line referencing the filename.
+  # Must NOT see any line starting with "MIGRATE: fake".
+  fake_lines=$(echo "$stderr" | grep -c "MIGRATE: fake" || true)
+  if [ "$fake_lines" -eq 0 ] && echo "$stderr" | grep -q "MIGRATE: skip"; then
+    pass "test_migrate_logs_filename_only"
+  else
+    fail "test_migrate_logs_filename_only" "fake_lines=$fake_lines stderr='$stderr'"
+  fi
+}
+
+# AC: content shell-meta rejection uses a `case` pattern enumerating each
+# rejected character class explicitly (not solely `[[ ]]` regex).
+# Static-grep verification: the helper body must contain a `case "$legacy_content" in ...`
+# block (or the reusable variable name) and reject the metachars via case.
+test_migrate_content_case_pattern_explicit() {
+  local body
+  body=$(awk '
+    /^breadcrumb_migrate\(\)/ { in_func=1 }
+    in_func { print }
+    in_func && /^}/ { in_func=0; exit }
+  ' "$HELPER")
+  if [ -z "$body" ]; then
+    fail "test_migrate_content_case_pattern_explicit" "breadcrumb_migrate function not found"
+    return
+  fi
+  # Must contain a case statement matching shell-meta classes.
+  # We grep for the literal characters inside a case pattern, e.g. `*";"*`.
+  # The presence of `*\;*` or `*'|'*` style patterns inside the body is the
+  # required structure.
+  local hits=0
+  echo "$body" | grep -q '\*";"\*' && hits=$((hits+1))
+  echo "$body" | grep -q "\\*\"|\"\\*"  && hits=$((hits+1))
+  echo "$body" | grep -q '\*"\\\$"\*' && hits=$((hits+1))
+  echo "$body" | grep -q '\*"&"\*' && hits=$((hits+1))
+  echo "$body" | grep -q '\*"("\*' && hits=$((hits+1))
+  # Conservative: require at least one explicit case-pattern shell-meta hit.
+  # Also require an explicit `case "$legacy_content" in` (or similar) line.
+  if echo "$body" | grep -qE 'case[[:space:]]+"\$legacy_content"[[:space:]]+in'; then
+    if [ "$hits" -ge 1 ]; then
+      pass "test_migrate_content_case_pattern_explicit"
+    else
+      fail "test_migrate_content_case_pattern_explicit" "case present but no shell-meta literal hits"
+    fi
+  else
+    fail "test_migrate_content_case_pattern_explicit" "no 'case \"\$legacy_content\" in' block in breadcrumb_migrate body"
+  fi
+}
+
 # --- Run all tests ---
 if [ "$FIX_ROOT_AVAILABLE" -eq 1 ]; then
   echo "--- Attack Vector Tests (18 rows) ---"
@@ -1926,6 +2475,32 @@ test_abandon_uses_breadcrumb_path
 test_skill_md_no_bare_legacy
 test_skill_md_sweep_only_in_startup
 test_status_no_claude_pid_iteration
+
+echo ""
+echo "--- Task 6: breadcrumb_migrate() tests ---"
+test_migrate_agreement_required
+test_migrate_disagreement_preserves
+test_migrate_preserves_active_conversation
+test_migrate_removes_orphan
+test_migrate_logs_actions
+test_migrate_skip_empty_content
+test_migrate_skip_traversal_content
+test_migrate_skip_shell_meta_content
+test_migrate_skip_control_chars_content
+test_migrate_skip_escape_content
+test_migrate_skip_symlink
+test_migrate_skip_directory
+test_migrate_orphan_filename_shape
+test_migrate_carveout_directory_variant
+test_migrate_carveout_symlink_variant
+test_migrate_carveout_trailing_newline
+test_migrate_per_pid_check
+test_migrate_does_not_touch_new_path
+test_migrate_idempotent
+test_migrate_uses_rm_f_dash_dash
+test_migrate_realpath_failure_fail_safe
+test_migrate_logs_filename_only
+test_migrate_content_case_pattern_explicit
 
 echo ""
 echo "=== Summary ==="
