@@ -576,6 +576,44 @@ breadcrumb_list_all() {
   return 0
 }
 
+# _breadcrumb_migrate_canonicalize — Internal helper for breadcrumb_migrate.
+#
+# Resolves $1 to its canonical absolute path. Tries /bin/realpath first; if
+# unavailable or it fails, falls back to a pure-shell `cd && pwd -P`. Returns
+# non-zero (and prints nothing) if BOTH fail.
+#
+# Extracted as a separate function so tests can override it with a stub that
+# unconditionally fails — letting us actually exercise the
+# `MIGRATE: skip realpath-unavailable` code path in breadcrumb_migrate.
+#
+# Arguments:
+#   $1 — path to canonicalize
+#
+# Outputs:
+#   stdout — canonical path on success (no trailing newline beyond what the
+#            underlying tool emits; callers strip via $(...) anyway).
+#   stderr — silent (errors from realpath/cd are swallowed by 2>/dev/null).
+#
+# Exit codes:
+#   0 — success, canonical path printed to stdout
+#   1 — both methods failed (caller decides whether this is fail-safe-skip
+#       or orphan-branch based on target existence)
+_breadcrumb_migrate_canonicalize() {
+  local _path="$1"
+  local _canon=""
+  if command -v /bin/realpath >/dev/null 2>&1; then
+    _canon=$(/bin/realpath "$_path" 2>/dev/null)
+  fi
+  if [ -z "$_canon" ]; then
+    _canon=$(cd "$_path" 2>/dev/null && pwd -P)
+  fi
+  if [ -z "$_canon" ]; then
+    return 1
+  fi
+  printf '%s\n' "$_canon"
+  return 0
+}
+
 # breadcrumb_migrate — Agreement-gated deletion of legacy `.active-{skill}`
 # files at the project root.
 #
@@ -589,9 +627,11 @@ breadcrumb_list_all() {
 #     Reject non-regular files. Use -L before -d to detect symlinks first.
 #
 #   Gate 1 — Carve-out (in-flight parent preservation)
-#     If basename equals `.active-conversation` (after trailing-newline strip)
-#     under LC_ALL=C, log preserve and continue. Filename-only — content is
-#     never resolved, never realpathed.
+#     If basename equals `.active-conversation` (after trailing-newline strip),
+#     log preserve and continue. Filename-only — content is never resolved,
+#     never realpathed. The match is a literal-byte `case` pattern that is
+#     locale-insensitive by construction (no metacharacters or character
+#     classes), so no $LC_ALL wrapping is needed.
 #
 #   Gate 2 — Content validation
 #     Reject empty (after whitespace strip), control chars, shell metacharacters,
@@ -642,13 +682,10 @@ breadcrumb_migrate() {
   fi
 
   # Canonicalize the project root once. Used by Gate 2 escape check.
+  # Delegates to _breadcrumb_migrate_canonicalize (extracted helper) so tests
+  # can stub the canonicalizer to simulate /bin/realpath failure end-to-end.
   local canon_root
-  if command -v /bin/realpath >/dev/null 2>&1; then
-    canon_root=$(/bin/realpath "$root" 2>/dev/null)
-  fi
-  if [ -z "$canon_root" ]; then
-    canon_root=$(cd "$root" 2>/dev/null && pwd -P)
-  fi
+  canon_root=$(_breadcrumb_migrate_canonicalize "$root") || canon_root=""
   if [ -z "$canon_root" ]; then
     # Cannot canonicalize root — fail-safe, do nothing.
     return 0
@@ -680,10 +717,10 @@ breadcrumb_migrate() {
     # Strip trailing newline injected via filesystem (defense against shells
     # that allow newline in filenames).
     name_norm="${name%$'\n'}"
-    # LC_ALL=C is environment-scoped to this comparison via a subshell-free
-    # idiom — bash's `case` is byte-mode without locale interpretation when
-    # LC_COLLATE is C. We set LC_ALL=C for the duration of the comparison via
-    # an inline export, then unset.
+    # The pattern `.active-conversation` is a literal byte sequence — no
+    # metacharacters, no character classes, no locale-sensitive collation —
+    # so bash's `case` matches byte-for-byte regardless of $LC_COLLATE /
+    # $LC_ALL. No locale wrapping needed for correctness.
     case "$name_norm" in
       .active-conversation)
         printf '%s\n' "MIGRATE: preserve carve-out $entry" >&2
@@ -744,15 +781,9 @@ breadcrumb_migrate() {
 
     # Project-root prefix check (escape detection). Same logic as
     # resolve_breadcrumb_path:189-203 (prefix-with-trailing-slash).
+    # Delegates to _breadcrumb_migrate_canonicalize so tests can stub it.
     target="${canon_root}/${legacy_content}"
-    canon_target=""
-    if command -v /bin/realpath >/dev/null 2>&1; then
-      canon_target=$(/bin/realpath "$target" 2>/dev/null)
-    fi
-    if [ -z "$canon_target" ]; then
-      # Pure-shell fallback. Only works if the target exists.
-      canon_target=$(cd "$target" 2>/dev/null && pwd -P)
-    fi
+    canon_target=$(_breadcrumb_migrate_canonicalize "$target") || canon_target=""
 
     if [ -z "$canon_target" ]; then
       # BOTH realpath and cd-fallback failed. Two reasons:

@@ -2084,17 +2084,23 @@ test_migrate_orphan_filename_shape() {
   local root ok=1 stderr
   root=$(_mk_migrate_fixture) || { fail "test_migrate_orphan_filename_shape" "mktemp failed"; return; }
   # Each of these has otherwise-valid content that does NOT resolve to a folder
-  # (orphan branch candidate). Filename shape MUST reject:
+  # (orphan branch candidate). Filename shape MUST reject all 6 shapes per the
+  # plan spec (line 846): the regex ^\.active-[a-z][a-z0-9-]{0,31}$ rejects
+  # uppercase, leading-digit, empty-suffix, dot/traversal, and shell-meta:
   printf 'somewhere\n' > "$root/.active-FAKE"            # uppercase
   printf 'somewhere\n' > "$root/.active-Foo"             # mixed case
   printf 'somewhere\n' > "$root/.active-99research"      # leading digit
   : > "$root/.active-"                                   # empty suffix
+  printf 'somewhere\n' > "$root/.active-.."              # path-traversal in basename
+  printf 'somewhere\n' > "$root/.active-foo;bar"         # shell metacharacter in basename
   PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
   stderr=$(cat /tmp/pr-test-stderr)
   [ -e "$root/.active-FAKE" ] || ok=0
   [ -e "$root/.active-Foo" ] || ok=0
   [ -e "$root/.active-99research" ] || ok=0
   [ -e "$root/.active-" ] || ok=0
+  [ -e "$root/.active-.." ] || ok=0
+  [ -e "$root/.active-foo;bar" ] || ok=0
   # Must see at least one MIGRATE: log line proving migrate ran.
   echo "$stderr" | grep -q "MIGRATE:" || ok=0
   rm -rf "$root"
@@ -2257,92 +2263,66 @@ test_migrate_uses_rm_f_dash_dash() {
 
 # AC: when /bin/realpath fails (or pure-shell fallback fails), migrate
 # fail-safes — does NOT delete and logs `MIGRATE: skip realpath-unavailable`.
+#
+# Behavioral test: source the helper, override the
+# _breadcrumb_migrate_canonicalize internal helper with a stub that succeeds
+# for the project root (so the function passes its own root-canonicalize
+# step) but fails for any other input (so the inner target canonicalize
+# fails). Combined with a target that EXISTS on disk (so the orphan branch
+# is NOT taken via `[ ! -e "$target" ]`), this drives the function down the
+# `MIGRATE: skip realpath-unavailable` code path.
 test_migrate_realpath_failure_fail_safe() {
-  local root stderr unreadable_dir
+  local root canon_root stderr ok=1
   root=$(_mk_migrate_fixture) || { fail "test_migrate_realpath_failure_fail_safe" "mktemp failed"; return; }
-  # We trigger the fail-safe path by creating a target that EXISTS (so the
-  # orphan branch is not taken — `[ ! -e "$target" ]` returns false) but where
-  # BOTH /bin/realpath AND `cd && pwd -P` fail. The portable way to make cd
-  # fail on an existing path is mode 0000 (no execute permission), which
-  # prevents cd into the directory. We then ALSO need /bin/realpath to fail —
-  # macOS /bin/realpath does not require x perm on the target dir to resolve
-  # the path, so it will succeed. To force realpath failure, we override the
-  # PATH lookup via `command -v` would be ideal, but the helper calls
-  # /bin/realpath by absolute path. Instead, we run the helper inside a bash
-  # subshell with `realpath()` shell-function that fails — but that doesn't
-  # override `/bin/realpath`. The cleanest approach is to PATCH the helper
-  # call site by SOURCEing the helper and then redefining /bin/realpath would
-  # not work either. We use a different approach: build a sandboxed PATH-only
-  # bash invocation where /bin is not on PATH — but /bin/realpath is called
-  # via absolute path in the helper, bypassing PATH.
-  #
-  # Pragmatic fallback: if realpath is not available (impossible to simulate
-  # without root), the helper uses cd-fallback. We can simulate
-  # cd-fallback-failure with mode 0000 on the target dir AND remove
-  # /bin/realpath from `command -v` lookup by setting PATH to /usr/bin only
-  # (since command -v /bin/realpath ALWAYS finds /bin/realpath because
-  # `command -v` checks the literal path when given an absolute path).
-  #
-  # The honest test: we construct a target that is a regular FILE (not a dir).
-  # `/bin/realpath FILE` succeeds and returns the file's canonical path.
-  # `[ -d "$canon_target" ]` returns false. The next branch is Gate 3a (orphan)
-  # which checks `[ ! -d "$canon_target" ]` — true — and goes to orphan-delete.
-  # This is NOT the realpath-unavailable path.
-  #
-  # The cleanest portable test: the AC says "fixture stubs /bin/realpath to
-  # fail." We emulate by overriding PATH AND injecting a wrapper. Since
-  # /bin/realpath is called by absolute path, we cannot override via PATH.
-  # We resort to verifying the IMPLEMENTATION handles the edge case via a
-  # static-grep check on the helper body: it must contain the literal
-  # `MIGRATE: skip realpath-unavailable` string AND a code path that emits it
-  # when canon_target is empty AND target exists.
+  # canon_root: pre-compute the canonical form of $root so the stub can echo
+  # it on the first call (the helper canonicalizes the root via the SAME
+  # helper function it uses for targets — we must let that one succeed).
+  canon_root=$(/bin/realpath "$root" 2>/dev/null) || canon_root=$(cd "$root" && pwd -P)
+  # Seed an existing target folder under canon_root. Legacy content points to
+  # it. With NO stub, the helper would canonicalize it successfully and hit
+  # Gate 3b (no-agreement, since we don't write a per-PID file). With the
+  # stub, the inner canonicalize fails AND `[ -e "$target" ]` is true (folder
+  # exists) → realpath-unavailable branch fires.
+  mkdir -p "$root/Research/features/foo"
+  printf 'Research/features/foo\n' > "$root/.active-research"
+
+  # Run breadcrumb_migrate with the stub. The stub returns the canonical root
+  # for the root call (matched by exact string equality), and returns 1 for
+  # everything else.
+  PROJECT_ROOT="$root" bash -c '
+    source "'"$HELPER"'"
+    _breadcrumb_migrate_canonicalize() {
+      if [ "$1" = "'"$root"'" ] || [ "$1" = "'"$canon_root"'" ]; then
+        printf "%s\n" "'"$canon_root"'"
+        return 0
+      fi
+      return 1
+    }
+    breadcrumb_migrate
+  ' 2>/tmp/pr-test-stderr
+  stderr=$(cat /tmp/pr-test-stderr)
+
+  # Primary behavioral assertion: legacy file MUST be preserved AND stderr
+  # MUST contain the exact realpath-unavailable line.
+  [ -e "$root/.active-research" ] || ok=0
+  echo "$stderr" | grep -q "MIGRATE: skip realpath-unavailable $root/.active-research" || ok=0
+
+  # Secondary (redundant) static-grep: source must still emit the literal
+  # log message somewhere in the breadcrumb_migrate body. Keeps the prior
+  # contract auditable even if behavioral plumbing regresses.
   local body
   body=$(awk '
     /^breadcrumb_migrate\(\)/ { in_func=1 }
     in_func { print }
     in_func && /^}/ { in_func=0; exit }
   ' "$HELPER")
-  if [ -z "$body" ]; then
-    fail "test_migrate_realpath_failure_fail_safe" "breadcrumb_migrate function not found"
-    rm -rf "$root"
-    return
-  fi
-  # The helper must emit "MIGRATE: skip realpath-unavailable" somewhere in its
-  # body, AND that emission must be guarded by a check on the target's
-  # existence (so it ONLY fires when realpath fails despite target existing,
-  # i.e., not for plain-orphan cases).
-  if echo "$body" | grep -q "MIGRATE: skip realpath-unavailable"; then
-    : # The literal log message is present.
-  else
-    fail "test_migrate_realpath_failure_fail_safe" "helper body does not emit MIGRATE: skip realpath-unavailable"
-    rm -rf "$root"
-    return
-  fi
-  # Behavioral test: also exercise the runtime path. We craft a fixture where
-  # /bin/realpath fails on a non-existent path AND the orphan-branch is
-  # explicitly NOT entered because the target IS resolvable via a parent that
-  # exists but lacks read permission. A directory with mode 0000 cannot be
-  # entered via cd (so cd-fallback fails) but `/bin/realpath` on macOS still
-  # resolves. Since we can't easily make BOTH fail at runtime, the static-grep
-  # above is the canonical proof; the runtime check below confirms the helper
-  # at least does not crash on edge inputs.
-  unreadable_dir="$root/unreadable"
-  mkdir -p "$unreadable_dir/leaf"
-  chmod 000 "$unreadable_dir"
-  printf 'unreadable/leaf\n' > "$root/.active-research"
-  PROJECT_ROOT="$root" bash -c "source '$HELPER'; breadcrumb_migrate" 2>/tmp/pr-test-stderr
-  stderr=$(cat /tmp/pr-test-stderr)
-  chmod 700 "$unreadable_dir"
-  # The legacy file MUST be preserved — chmod 000 makes BOTH realpath and cd
-  # fall through, so we should hit the realpath-unavailable branch. (On systems
-  # where /bin/realpath bypasses x-perm, the file may be deleted via Gate 3b
-  # no-agreement instead — also a SKIP outcome, just a different reason. We
-  # assert the file is preserved and SOME MIGRATE: skip is logged.)
+  echo "$body" | grep -q "MIGRATE: skip realpath-unavailable" || ok=0
+
   rm -rf "$root"
-  if [ -n "$stderr" ] && echo "$stderr" | grep -q "MIGRATE:"; then
-    pass "test_migrate_realpath_failure_fail_safe (helper emits the realpath-unavailable log line and handles edge inputs)"
+  if [ "$ok" -eq 1 ]; then
+    pass "test_migrate_realpath_failure_fail_safe"
   else
-    fail "test_migrate_realpath_failure_fail_safe" "stderr=$stderr"
+    fail "test_migrate_realpath_failure_fail_safe" "stderr='$stderr' file_present=$([ -e "$root/.active-research" ] && echo y || echo n)"
   fi
 }
 
