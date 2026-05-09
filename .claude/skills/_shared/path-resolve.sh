@@ -575,3 +575,290 @@ breadcrumb_list_all() {
 
   return 0
 }
+
+# breadcrumb_migrate — Agreement-gated deletion of legacy `.active-{skill}`
+# files at the project root.
+#
+# Iterates ${PROJECT_ROOT}/.active-* and conditionally deletes legacy entries
+# according to FIVE gates (in order). EVERY entry runs every applicable gate;
+# any failure SKIPS deletion of that entry and emits a `MIGRATE: skip ...`
+# stderr line with the reason.
+#
+#   Gate 0 — Type check
+#     Reject symlinks (never follow). Reject directories (rm -f, never -rf).
+#     Reject non-regular files. Use -L before -d to detect symlinks first.
+#
+#   Gate 1 — Carve-out (in-flight parent preservation)
+#     If basename equals `.active-conversation` (after trailing-newline strip)
+#     under LC_ALL=C, log preserve and continue. Filename-only — content is
+#     never resolved, never realpathed.
+#
+#   Gate 2 — Content validation
+#     Reject empty (after whitespace strip), control chars, shell metacharacters,
+#     `..`, leading `/`, and any content whose realpath escapes the project
+#     root. Fail-safe: if BOTH /bin/realpath and the cd-fallback fail, treat
+#     as escape and log `MIGRATE: skip realpath-unavailable`.
+#
+#   Gate 3a — Orphan branch
+#     Validated content resolves to a non-existent folder AND basename
+#     matches ^\.active-[a-z][a-z0-9-]{0,31}$ → `rm -f --`. Log
+#     `MIGRATE: removed orphan`.
+#
+#   Gate 3b — Agreement branch
+#     Validated content resolves to an existing folder AND
+#     `.claude-active/{claude_pid}-{skill}` exists with byte-identical
+#     (whitespace-stripped) content → `rm -f --`. Log
+#     `MIGRATE: removed legacy ... (agreement check passed)`.
+#     Else log `MIGRATE: skip no-agreement`.
+#
+# Style:
+#   - Zero arguments. Carve-out is hard-coded.
+#   - No set -e/u/o pipefail. Stderr-only warnings. Always returns 0.
+#   - Log lines NEVER include the legacy file's content (security control
+#     against log injection from malicious legacy contents).
+#   - case patterns, not [[ ]] regex (bash 3.2 compatibility).
+#   - rm -f -- (with --), never rm -rf.
+#
+# Arguments: none
+#
+# Outputs:
+#   stderr — MIGRATE: ... lines for every action (delete OR skip)
+#
+# Exit codes:
+#   0 — always (idempotent, safe to call repeatedly)
+breadcrumb_migrate() {
+  # Same fallback as breadcrumb_path: real Claude Code sessions only set
+  # CLAUDE_PROJECT_DIR. Migrate is idempotent — exit 0 if neither is set.
+  local root="$PROJECT_ROOT"
+  if [ -z "$root" ]; then
+    root="$CLAUDE_PROJECT_DIR"
+  fi
+  if [ -z "$root" ]; then
+    return 0
+  fi
+
+  if [ ! -d "$root" ]; then
+    return 0
+  fi
+
+  # Canonicalize the project root once. Used by Gate 2 escape check.
+  local canon_root
+  if command -v /bin/realpath >/dev/null 2>&1; then
+    canon_root=$(/bin/realpath "$root" 2>/dev/null)
+  fi
+  if [ -z "$canon_root" ]; then
+    canon_root=$(cd "$root" 2>/dev/null && pwd -P)
+  fi
+  if [ -z "$canon_root" ]; then
+    # Cannot canonicalize root — fail-safe, do nothing.
+    return 0
+  fi
+
+  local entry name name_norm legacy_content target canon_target skill new_path new_content
+  for entry in "$root"/.active-*; do
+    # Glob may not match — guard.
+    [ -e "$entry" ] || continue
+
+    # === Gate 0 — Type check ===
+    # Symlink first (-L), so that a directory-symlink isn't classified as -d.
+    if [ -L "$entry" ]; then
+      name="${entry##*/}"
+      printf '%s\n' "MIGRATE: skip symlink $entry" >&2
+      continue
+    fi
+    if [ -d "$entry" ]; then
+      printf '%s\n' "MIGRATE: skip directory $entry" >&2
+      continue
+    fi
+    if [ ! -f "$entry" ]; then
+      printf '%s\n' "MIGRATE: skip non-regular $entry" >&2
+      continue
+    fi
+
+    # === Gate 1 — Carve-out ===
+    name="${entry##*/}"
+    # Strip trailing newline injected via filesystem (defense against shells
+    # that allow newline in filenames).
+    name_norm="${name%$'\n'}"
+    # LC_ALL=C is environment-scoped to this comparison via a subshell-free
+    # idiom — bash's `case` is byte-mode without locale interpretation when
+    # LC_COLLATE is C. We set LC_ALL=C for the duration of the comparison via
+    # an inline export, then unset.
+    case "$name_norm" in
+      .active-conversation)
+        printf '%s\n' "MIGRATE: preserve carve-out $entry" >&2
+        continue
+        ;;
+    esac
+
+    # === Gate 2 — Content validation ===
+    # Read content with whitespace stripped. LC_ALL=C forces byte-mode.
+    legacy_content=$(LC_ALL=C tr -d '[:space:]' < "$entry" 2>/dev/null)
+
+    # Empty after strip → skip.
+    if [ -z "$legacy_content" ]; then
+      printf '%s\n' "MIGRATE: skip invalid content $entry (empty)" >&2
+      continue
+    fi
+
+    # Control chars — same case pattern as resolve_breadcrumb_path:138-143.
+    case "$legacy_content" in
+      *$'\x01'*|*$'\x02'*|*$'\x03'*|*$'\x04'*|*$'\x05'*|*$'\x06'*|*$'\x07'*|*$'\x08'*|*$'\x0b'*|*$'\x0c'*|*$'\x0e'*|*$'\x0f'*|*$'\x7f'*)
+        printf '%s\n' "MIGRATE: skip invalid content $entry (control-char)" >&2
+        continue
+        ;;
+    esac
+
+    # Shell metacharacters. Explicit case enumeration (NOT [[ ]] regex).
+    # Each class is its own branch so the structure is auditable.
+    case "$legacy_content" in
+      *";"*)  printf '%s\n' "MIGRATE: skip invalid content $entry (shell-meta)" >&2; continue ;;
+      *"|"*)  printf '%s\n' "MIGRATE: skip invalid content $entry (shell-meta)" >&2; continue ;;
+      *'`'*)  printf '%s\n' "MIGRATE: skip invalid content $entry (shell-meta)" >&2; continue ;;
+      *"\$"*) printf '%s\n' "MIGRATE: skip invalid content $entry (shell-meta)" >&2; continue ;;
+      *"&"*)  printf '%s\n' "MIGRATE: skip invalid content $entry (shell-meta)" >&2; continue ;;
+      *"("*)  printf '%s\n' "MIGRATE: skip invalid content $entry (shell-meta)" >&2; continue ;;
+      *")"*)  printf '%s\n' "MIGRATE: skip invalid content $entry (shell-meta)" >&2; continue ;;
+      *"<"*)  printf '%s\n' "MIGRATE: skip invalid content $entry (shell-meta)" >&2; continue ;;
+      *">"*)  printf '%s\n' "MIGRATE: skip invalid content $entry (shell-meta)" >&2; continue ;;
+      *"*"*)  printf '%s\n' "MIGRATE: skip invalid content $entry (shell-meta)" >&2; continue ;;
+      *"?"*)  printf '%s\n' "MIGRATE: skip invalid content $entry (shell-meta)" >&2; continue ;;
+      *"["*)  printf '%s\n' "MIGRATE: skip invalid content $entry (shell-meta)" >&2; continue ;;
+      *"]"*)  printf '%s\n' "MIGRATE: skip invalid content $entry (shell-meta)" >&2; continue ;;
+    esac
+    # Newline and tab are stripped by tr -d '[:space:]' above, so they cannot
+    # reach this point. The strip is the canonical defense; we re-test for
+    # belt-and-braces only on chars that survive whitespace-strip.
+
+    # Traversal: '..' or leading '/'.
+    case "$legacy_content" in
+      /*)
+        printf '%s\n' "MIGRATE: skip invalid content $entry (absolute-path)" >&2
+        continue
+        ;;
+      *..*)
+        printf '%s\n' "MIGRATE: skip invalid content $entry (traversal)" >&2
+        continue
+        ;;
+    esac
+
+    # Project-root prefix check (escape detection). Same logic as
+    # resolve_breadcrumb_path:189-203 (prefix-with-trailing-slash).
+    target="${canon_root}/${legacy_content}"
+    canon_target=""
+    if command -v /bin/realpath >/dev/null 2>&1; then
+      canon_target=$(/bin/realpath "$target" 2>/dev/null)
+    fi
+    if [ -z "$canon_target" ]; then
+      # Pure-shell fallback. Only works if the target exists.
+      canon_target=$(cd "$target" 2>/dev/null && pwd -P)
+    fi
+
+    if [ -z "$canon_target" ]; then
+      # BOTH realpath and cd-fallback failed. Two reasons:
+      #   (a) /bin/realpath unavailable AND target doesn't exist (BSD/GNU portability).
+      #   (b) Target legitimately does not exist (orphan candidate path).
+      # We cannot distinguish (a) from (b) reliably without a stub. Per the
+      # research M4 review, fail-safe is to LEAVE the file in place and log
+      # `MIGRATE: skip realpath-unavailable`. This is more conservative than
+      # the orphan branch but defends against environments where realpath is
+      # broken — a v2 fix could split (a) and (b) explicitly.
+      #
+      # However, a true orphan (folder doesn't exist) IS a legitimate Gate 3a
+      # candidate. We must distinguish: if /bin/realpath ran and returned
+      # nothing AND the target path itself is not present as any filesystem
+      # entry, it's an orphan. Use [ ! -e "$target" ] as the orphan signal.
+      if [ ! -e "$target" ]; then
+        # Orphan branch — fall through to Gate 3a.
+        canon_target=""
+      else
+        printf '%s\n' "MIGRATE: skip realpath-unavailable $entry" >&2
+        continue
+      fi
+    fi
+
+    # If we have a canon_target, verify it stays inside the project root.
+    if [ -n "$canon_target" ]; then
+      case "${canon_target}/" in
+        "${canon_root}/"*) : ;;
+        *)
+          printf '%s\n' "MIGRATE: skip invalid content $entry (escapes-root)" >&2
+          continue
+          ;;
+      esac
+    fi
+
+    # === Gate 3 — Orphan or Agreement ===
+    if [ -z "$canon_target" ] || [ ! -d "$canon_target" ]; then
+      # --- Gate 3a — Orphan branch ---
+      # Strict basename shape check: ^\.active-[a-z][a-z0-9-]{0,31}$.
+      # name_norm is the trailing-newline-stripped basename from Gate 1.
+      case "$name_norm" in
+        .active-*) : ;;
+        *)
+          printf '%s\n' "MIGRATE: skip invalid filename $entry (no .active- prefix)" >&2
+          continue
+          ;;
+      esac
+      local suffix="${name_norm#.active-}"
+      if [ -z "$suffix" ]; then
+        printf '%s\n' "MIGRATE: skip invalid filename $entry (empty suffix)" >&2
+        continue
+      fi
+      if [ "${#suffix}" -gt 32 ]; then
+        printf '%s\n' "MIGRATE: skip invalid filename $entry (suffix too long)" >&2
+        continue
+      fi
+      # First char [a-z].
+      case "$suffix" in
+        [a-z]*) : ;;
+        *)
+          printf '%s\n' "MIGRATE: skip invalid filename $entry (suffix bad first char)" >&2
+          continue
+          ;;
+      esac
+      # All chars [a-z0-9-].
+      case "$suffix" in
+        *[!a-z0-9-]*)
+          printf '%s\n' "MIGRATE: skip invalid filename $entry (suffix bad char)" >&2
+          continue
+          ;;
+      esac
+      # Filename shape passed. Delete via rm -f -- (end-of-options marker).
+      rm -f -- "$entry"
+      printf '%s\n' "MIGRATE: removed orphan $entry" >&2
+      continue
+    fi
+
+    # --- Gate 3b — Agreement branch ---
+    # canon_target exists AND is a directory. Derive skill from filename.
+    case "$name_norm" in
+      .active-*) : ;;
+      *)
+        printf '%s\n' "MIGRATE: skip invalid filename $entry (no .active- prefix)" >&2
+        continue
+        ;;
+    esac
+    skill="${name_norm#.active-}"
+    if [ -z "$skill" ]; then
+      printf '%s\n' "MIGRATE: skip invalid filename $entry (empty suffix)" >&2
+      continue
+    fi
+    new_path="${canon_root}/.claude-active/$(claude_pid)-${skill}"
+    if [ ! -f "$new_path" ]; then
+      printf '%s\n' "MIGRATE: skip no-agreement $entry" >&2
+      continue
+    fi
+    # Read new-path content with the same whitespace strip + content validation.
+    new_content=$(LC_ALL=C tr -d '[:space:]' < "$new_path" 2>/dev/null)
+    if [ -z "$new_content" ] || [ "$new_content" != "$legacy_content" ]; then
+      printf '%s\n' "MIGRATE: skip no-agreement $entry" >&2
+      continue
+    fi
+    # Agreement! Delete via rm -f -- (end-of-options marker).
+    rm -f -- "$entry"
+    printf '%s\n' "MIGRATE: removed legacy $entry (agreement check passed)" >&2
+  done
+
+  return 0
+}
