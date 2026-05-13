@@ -150,7 +150,7 @@ else
 fi
 
 # AC: Migration message printed
-if echo "$T1_OUTPUT" | grep -q "First run detected"; then
+if echo "$T1_OUTPUT" | grep -q "First run for"; then
   assert "First run: prints migration message" "pass"
 else
   assert "First run: prints migration message" "fail" "output: $(echo "$T1_OUTPUT" | head -10)"
@@ -227,7 +227,7 @@ T3_OUTPUT=$(SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$T1_DIRS" \
   bash "$REPO_ROOT/bin/serious-update" 2>&1) || T3_EXIT=$?
 
 # AC: No migration message on second run
-if echo "$T3_OUTPUT" | grep -q "First run detected"; then
+if echo "$T3_OUTPUT" | grep -q "First run for"; then
   assert "Second run: no migration message" "fail" "Still printing migration message"
 else
   assert "Second run: no migration message" "pass"
@@ -309,7 +309,7 @@ T5_OUTPUT=$(SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$T5_DIRS" \
   bash "$REPO_ROOT/bin/serious-update" 2>&1) || T5_EXIT=$?
 
 # AC: Migration message with 0 existing files
-if echo "$T5_OUTPUT" | grep -q "First run detected"; then
+if echo "$T5_OUTPUT" | grep -q "First run for"; then
   assert "Empty migration: prints first run message" "pass"
 else
   assert "Empty migration: prints first run message" "fail" "output: $(echo "$T5_OUTPUT" | head -5)"

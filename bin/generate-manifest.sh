@@ -74,15 +74,27 @@ def add_file(source_rel, ownership, dest, merge_key=None):
         entry['merge_key'] = merge_key
     files[source_rel] = entry
 
-# 1. Walk .claude/skills/serious-*/
+# 1. Walk .claude/skills/ — include any directory with a SKILL.md file.
+# This relaxes the previous serious-only filter so the 18 advertised
+# knowledge skills (hooks, MCP, subagents, etc.) actually ship to users.
+# Hardcoded skip for serious-prospect-research: contains internal
+# CloudGeometry/AI-MSL sales positioning that should not be distributed.
+# NOTE: do not rename this directory without updating the skip below;
+# the dependency is intentional and replaces a per-skill distribute opt-out
+# mechanism that would have been over-engineered for a single excluded skill
+# (see Research/features/install-bug-fixes/implementation_plan.md).
 skills_dir = os.path.join(repo_root, '.claude', 'skills')
 if os.path.isdir(skills_dir):
     for skill_name in sorted(os.listdir(skills_dir)):
-        if not skill_name.startswith('serious-'):
-            continue
+        if skill_name == '_shared':
+            continue  # handled by section 1b below
+        if skill_name == 'serious-prospect-research':
+            continue  # internal sales content — not distributed
         skill_dir = os.path.join(skills_dir, skill_name)
         if not os.path.isdir(skill_dir):
             continue
+        if not os.path.isfile(os.path.join(skill_dir, 'SKILL.md')):
+            continue  # not a skill — skip silently
         for dirpath, dirnames, filenames in os.walk(skill_dir):
             dirnames.sort()
             for fname in sorted(filenames):

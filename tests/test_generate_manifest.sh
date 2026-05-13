@@ -238,6 +238,90 @@ fi
 rm -rf "$NO_GIT_DIR"
 
 echo ""
+
+# ===============================================================
+# install-bug-fixes Task 3 — relax serious-only filter, hardcode prospect-research skip
+# ===============================================================
+echo "--- install-bug-fixes Task 3: filter relaxation + hardcoded prospect-research skip ---"
+echo ""
+
+# Regenerate against a fresh tmp path so we don't disturb the in-tree manifest.
+BF3_TMPMANI=$(mktemp -t bf3manifest.XXXXXX)
+MANIFEST_PATH="$BF3_TMPMANI" bash "$REPO_ROOT/bin/generate-manifest.sh" "$REPO_ROOT" >/dev/null 2>&1
+
+# BF3.A: filter excludes serious-prospect-research entirely.
+BF3_PROSPECT_COUNT=$(python3 -c "import json; d=json.load(open('$BF3_TMPMANI')); print(len([k for k in d['files'] if 'serious-prospect-research' in k]))")
+if [ "$BF3_PROSPECT_COUNT" -eq 0 ]; then
+  assert "BF3.A: regenerated manifest excludes serious-prospect-research entirely" "pass"
+else
+  assert "BF3.A: regenerated manifest excludes serious-prospect-research entirely" "fail" "found $BF3_PROSPECT_COUNT entries"
+fi
+
+# BF3.B: filter includes all 18 advertised knowledge skills.
+BF3_MISSING=""
+for s in agent-teams checkpointing chrome-integration fast-mode headless-mode hooks \
+         keybindings mcp-integration output-styles permissions plan-mode plugins \
+         remote-control scheduled-tasks skills-and-commands status-line subagents worktrees; do
+  if ! python3 -c "import json,sys; d=json.load(open('$BF3_TMPMANI')); k='.claude/skills/$s/SKILL.md'; sys.exit(0 if k in d['files'] else 1)"; then
+    BF3_MISSING="$BF3_MISSING $s"
+  fi
+done
+if [ -z "$BF3_MISSING" ]; then
+  assert "BF3.B: all 18 knowledge skills present in manifest" "pass"
+else
+  assert "BF3.B: all 18 knowledge skills present in manifest" "fail" "missing:$BF3_MISSING"
+fi
+
+# BF3.C: total SKILL.md entries = 31 (13 public serious-* + 18 knowledge).
+BF3_SKILLMD_COUNT=$(python3 -c "import json; d=json.load(open('$BF3_TMPMANI')); print(len([k for k in d['files'] if k.endswith('SKILL.md')]))")
+if [ "$BF3_SKILLMD_COUNT" -eq 31 ]; then
+  assert "BF3.C: regenerated manifest has exactly 31 SKILL.md entries (13 + 18)" "pass"
+else
+  assert "BF3.C: regenerated manifest has exactly 31 SKILL.md entries (13 + 18)" "fail" "got $BF3_SKILLMD_COUNT"
+fi
+
+# BF3.D: filter excludes skill-shaped directories without a SKILL.md (silent skip).
+BF3_FAKE_REPO=$(mktemp -d)
+cp -R "$REPO_ROOT/.claude" "$BF3_FAKE_REPO/.claude"
+mkdir -p "$BF3_FAKE_REPO/.claude/skills/fake-skill-no-md"
+echo "// not a skill — has no SKILL.md" > "$BF3_FAKE_REPO/.claude/skills/fake-skill-no-md/random.txt"
+( cd "$BF3_FAKE_REPO" && git init -q && git config user.email "t@t" && git config user.name "t" && git add -A && git commit -q -m "init" )
+BF3_FAKE_MANI=$(mktemp -t bf3fakemanifest.XXXXXX)
+MANIFEST_PATH="$BF3_FAKE_MANI" bash "$REPO_ROOT/bin/generate-manifest.sh" "$BF3_FAKE_REPO" >/dev/null 2>&1
+BF3_FAKE_COUNT=$(python3 -c "import json; d=json.load(open('$BF3_FAKE_MANI')); print(len([k for k in d['files'] if 'fake-skill-no-md' in k]))")
+if [ "$BF3_FAKE_COUNT" -eq 0 ]; then
+  assert "BF3.D: filter excludes skill dirs without SKILL.md" "pass"
+else
+  assert "BF3.D: filter excludes skill dirs without SKILL.md" "fail" "got $BF3_FAKE_COUNT entries"
+fi
+rm -rf "$BF3_FAKE_REPO" "$BF3_FAKE_MANI"
+
+# BF3.E: _shared is still routed through section 1b.
+BF3_SHARED_COUNT=$(python3 -c "import json; d=json.load(open('$BF3_TMPMANI')); print(len([k for k in d['files'] if '_shared/' in k]))")
+if [ "$BF3_SHARED_COUNT" -gt 0 ]; then
+  assert "BF3.E: _shared still routed through section 1b" "pass"
+else
+  assert "BF3.E: _shared still routed through section 1b" "fail" "got $BF3_SHARED_COUNT _shared entries"
+fi
+
+# BF3.F: scope-lock anti-creep — no `distribute:` frontmatter was added.
+BF3_DIST_FRONTMATTER=$( { grep -rl '^distribute:' "$REPO_ROOT/.claude/skills/" 2>/dev/null || true; } | wc -l | tr -d ' ')
+if [ "$BF3_DIST_FRONTMATTER" -eq 0 ]; then
+  assert "BF3.F: no per-skill distribute frontmatter added (scope-lock honored)" "pass"
+else
+  assert "BF3.F: no per-skill distribute frontmatter added (scope-lock honored)" "fail" "found $BF3_DIST_FRONTMATTER files"
+fi
+
+# BF3.G: no .distribution-banlist file created (scope-lock).
+if [ ! -f "$REPO_ROOT/.distribution-banlist" ]; then
+  assert "BF3.G: no .distribution-banlist file created (scope-lock honored)" "pass"
+else
+  assert "BF3.G: no .distribution-banlist file created (scope-lock honored)" "fail"
+fi
+
+rm -f "$BF3_TMPMANI"
+
+echo ""
 echo "=== Generate Manifest Tests Complete: $ERRORS error(s) ==="
 [ "$ERRORS" -gt 0 ] && exit 1
 exit 0

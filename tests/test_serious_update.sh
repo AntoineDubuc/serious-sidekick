@@ -47,6 +47,10 @@ setup_sidekick_home() {
   mkdir -p "$home_dir/bin"
   cp "$REPO_ROOT/bin/serious-update" "$home_dir/bin/serious-update"
   chmod +x "$home_dir/bin/serious-update"
+  # bin/generate-manifest.sh is required for the auto-regen-on-pull path
+  # added in install-bug-fixes Task 1 (research.md#Finding-1 part 2 option a).
+  cp "$REPO_ROOT/bin/generate-manifest.sh" "$home_dir/bin/generate-manifest.sh"
+  chmod +x "$home_dir/bin/generate-manifest.sh"
 
   # Copy .claude directory
   if [ -d "$REPO_ROOT/.claude" ]; then
@@ -194,7 +198,10 @@ echo ""
 echo "--- Task 2: Git pull + manifest reading ---"
 echo ""
 
-# AC2.5: Corrupt manifest should fail
+# AC2.5 (REVISED post Task 1 install-bug-fixes): Corrupt manifest is auto-healed
+# by regen-on-pull (research.md#Finding-1 part 2 option a). The manifest is
+# regenerated from sources after every successful pull, so a corrupt manifest in
+# the working tree is replaced with a fresh, valid one.
 TASK2_BASE="$TMP_DIR/task2"
 setup_sidekick_home "$TASK2_BASE"
 
@@ -207,13 +214,14 @@ add_remote_commit "$SETUP_HOME" "$SETUP_REMOTE" "post-corrupt"
 
 CORRUPT_EXIT=0
 CORRUPT_OUTPUT=$(SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$TMP_DIR/nowhere1 $TMP_DIR/nowhere2 $TMP_DIR/nowhere3" bash "$REPO_ROOT/bin/serious-update" 2>&1) || CORRUPT_EXIT=$?
-if [ "$CORRUPT_EXIT" -eq 1 ]; then
-  assert "AC2.5: Corrupt manifest.json exits 1" "pass"
+if [ "$CORRUPT_EXIT" -eq 0 ] && python3 -m json.tool "$SETUP_HOME/manifest.json" >/dev/null 2>&1; then
+  assert "AC2.5: Corrupt manifest.json auto-healed by regen-on-pull" "pass"
 else
-  assert "AC2.5: Corrupt manifest.json exits 1" "fail" "exit=$CORRUPT_EXIT"
+  assert "AC2.5: Corrupt manifest.json auto-healed by regen-on-pull" "fail" "exit=$CORRUPT_EXIT"
 fi
 
-# NT2.1: Missing manifest.json
+# NT2.1 (REVISED post Task 1 install-bug-fixes): Missing manifest is auto-recreated
+# by regen-on-pull. Same auto-heal contract as AC2.5.
 TASK2B_BASE="$TMP_DIR/task2b"
 setup_sidekick_home "$TASK2B_BASE"
 
@@ -223,10 +231,10 @@ add_remote_commit "$SETUP_HOME" "$SETUP_REMOTE" "post-remove"
 
 NOMANI_EXIT=0
 NOMANI_OUTPUT=$(SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$TMP_DIR/nowhere4 $TMP_DIR/nowhere5 $TMP_DIR/nowhere6" bash "$REPO_ROOT/bin/serious-update" 2>&1) || NOMANI_EXIT=$?
-if [ "$NOMANI_EXIT" -eq 1 ]; then
-  assert "NT2.1: Missing manifest.json exits 1" "pass"
+if [ "$NOMANI_EXIT" -eq 0 ] && [ -f "$SETUP_HOME/manifest.json" ] && python3 -m json.tool "$SETUP_HOME/manifest.json" >/dev/null 2>&1; then
+  assert "NT2.1: Missing manifest.json auto-recreated by regen-on-pull" "pass"
 else
-  assert "NT2.1: Missing manifest.json exits 1" "fail" "exit=$NOMANI_EXIT"
+  assert "NT2.1: Missing manifest.json auto-recreated by regen-on-pull" "fail" "exit=$NOMANI_EXIT"
 fi
 
 echo ""
@@ -624,6 +632,234 @@ if [ "$NOGLOBAL_FILES" -eq 0 ]; then
   assert "AC8.5: --no-global skips global dirs (no files written)" "pass"
 else
   assert "AC8.5: --no-global skips global dirs" "fail" "Found $NOGLOBAL_FILES files"
+fi
+
+echo ""
+
+# ===============================================================
+# install-bug-fixes Task 1 — new tests for the regen-on-pull pipeline
+# ===============================================================
+echo "--- install-bug-fixes Task 1: regen-on-pull, dry-run parity, SKIPPED clause ---"
+echo ""
+
+# test_dryrun_sha256_parity — --diff shows SKIP for files whose source hash
+# diverged from the manifest, matching the real run's silent-skip behavior.
+TASK_BF1A="$TMP_DIR/bf1a"
+setup_sidekick_home "$TASK_BF1A"
+# Stomp on generate-manifest.sh so regen-on-pull is suppressed (we want to test
+# the pre-regen state where the manifest is stale relative to sources).
+rm -f "$SETUP_HOME/bin/generate-manifest.sh"
+# Edit a SKILL.md so its hash diverges from the in-tree manifest.
+echo "" >> "$SETUP_HOME/.claude/skills/serious-code/SKILL.md"
+add_remote_commit "$SETUP_HOME" "$SETUP_REMOTE" "Diverged hash for dry-run parity test"
+
+BF1A_DIRS=$(setup_target_dirs "$TMP_DIR/bf1a_targets")
+DRYRUN_OUTPUT=$(SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$BF1A_DIRS" bash "$REPO_ROOT/bin/serious-update" --diff 2>&1) || true
+if echo "$DRYRUN_OUTPUT" | grep -q "SKIP.*hash mismatch.*would be skipped"; then
+  assert "BF1.A: --diff shows SKIP for hash-mismatched files" "pass"
+else
+  assert "BF1.A: --diff shows SKIP for hash-mismatched files" "fail" "Output did not contain SKIP/hash mismatch line"
+fi
+
+# test_dir_report_shows_skipped_clause — when regen can't run AND there are
+# mismatches, the per-dir summary line surfaces the skipped count instead of
+# silently lying about success.
+TASK_BF1B="$TMP_DIR/bf1b"
+setup_sidekick_home "$TASK_BF1B"
+rm -f "$SETUP_HOME/bin/generate-manifest.sh"
+echo "" >> "$SETUP_HOME/.claude/skills/serious-code/SKILL.md"
+add_remote_commit "$SETUP_HOME" "$SETUP_REMOTE" "Diverged hash for SKIPPED clause test"
+
+BF1B_DIRS=$(setup_target_dirs "$TMP_DIR/bf1b_targets")
+SKIPPED_OUTPUT=$(SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$BF1B_DIRS" bash "$REPO_ROOT/bin/serious-update" 2>&1) || true
+if echo "$SKIPPED_OUTPUT" | grep -q "SKIPPED (hash mismatch — see stderr)"; then
+  assert "BF1.B: per-dir summary shows SKIPPED clause when mismatches occur" "pass"
+else
+  assert "BF1.B: per-dir summary shows SKIPPED clause when mismatches occur" "fail" "Output: $SKIPPED_OUTPUT"
+fi
+
+# test_no_skipped_clause_on_clean_run — when there are zero mismatches (regen
+# either healed everything OR all files were already in sync), the SKIPPED
+# clause is absent — no clutter on the happy path.
+TASK_BF1C="$TMP_DIR/bf1c"
+setup_sidekick_home "$TASK_BF1C"
+add_remote_commit "$SETUP_HOME" "$SETUP_REMOTE" "Clean-run check"
+
+BF1C_DIRS=$(setup_target_dirs "$TMP_DIR/bf1c_targets")
+CLEAN_OUTPUT=$(SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$BF1C_DIRS" bash "$REPO_ROOT/bin/serious-update" 2>&1) || true
+if ! echo "$CLEAN_OUTPUT" | grep -q "SKIPPED (hash mismatch"; then
+  assert "BF1.C: clean run does NOT show SKIPPED clause" "pass"
+else
+  assert "BF1.C: clean run does NOT show SKIPPED clause" "fail" "Unexpected SKIPPED clause: $CLEAN_OUTPUT"
+fi
+
+# test_do_git_pull_handles_regen_failure — stub generate-manifest.sh to exit 1.
+# Expect serious-update to exit 1 and stderr to contain "manifest regeneration failed".
+TASK_BF1D="$TMP_DIR/bf1d"
+setup_sidekick_home "$TASK_BF1D"
+# Replace generate-manifest.sh with a stub that exits 1.
+cat > "$SETUP_HOME/bin/generate-manifest.sh" << 'STUB'
+#!/bin/bash
+echo "stub regen failure" >&2
+exit 1
+STUB
+chmod +x "$SETUP_HOME/bin/generate-manifest.sh"
+add_remote_commit "$SETUP_HOME" "$SETUP_REMOTE" "Regen failure test"
+
+BF1D_DIRS=$(setup_target_dirs "$TMP_DIR/bf1d_targets")
+REGEN_FAIL_EXIT=0
+REGEN_FAIL_OUTPUT=$(SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$BF1D_DIRS" bash "$REPO_ROOT/bin/serious-update" 2>&1) || REGEN_FAIL_EXIT=$?
+if [ "$REGEN_FAIL_EXIT" -eq 1 ] && echo "$REGEN_FAIL_OUTPUT" | grep -q "manifest regeneration failed"; then
+  assert "BF1.D: do_git_pull exits 1 when regen fails" "pass"
+else
+  assert "BF1.D: do_git_pull exits 1 when regen fails" "fail" "exit=$REGEN_FAIL_EXIT, output: $REGEN_FAIL_OUTPUT"
+fi
+
+# test_do_git_pull_handles_invalid_json — stub generate-manifest.sh to exit 0
+# but emit malformed JSON. Expect serious-update to exit 1 and the original
+# manifest to remain untouched (no half-installed garbage).
+TASK_BF1E="$TMP_DIR/bf1e"
+setup_sidekick_home "$TASK_BF1E"
+ORIG_MANIFEST_HASH=$(shasum -a 256 "$SETUP_HOME/manifest.json" | awk '{print $1}')
+cat > "$SETUP_HOME/bin/generate-manifest.sh" << 'STUB'
+#!/bin/bash
+# Stub: exits 0 but emits broken JSON to MANIFEST_PATH
+echo '{not valid json' > "${MANIFEST_PATH:-/dev/null}"
+echo "stub emitted malformed json" >&2
+exit 0
+STUB
+chmod +x "$SETUP_HOME/bin/generate-manifest.sh"
+add_remote_commit "$SETUP_HOME" "$SETUP_REMOTE" "Invalid JSON test"
+
+BF1E_DIRS=$(setup_target_dirs "$TMP_DIR/bf1e_targets")
+INVALID_JSON_EXIT=0
+INVALID_JSON_OUTPUT=$(SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$BF1E_DIRS" bash "$REPO_ROOT/bin/serious-update" 2>&1) || INVALID_JSON_EXIT=$?
+POST_MANIFEST_HASH=$(shasum -a 256 "$SETUP_HOME/manifest.json" | awk '{print $1}')
+if [ "$INVALID_JSON_EXIT" -eq 1 ] \
+   && echo "$INVALID_JSON_OUTPUT" | grep -q "manifest regeneration failed" \
+   && [ "$ORIG_MANIFEST_HASH" = "$POST_MANIFEST_HASH" ] \
+   && [ ! -f "$SETUP_HOME/manifest.json.new" ]; then
+  assert "BF1.E: do_git_pull rejects malformed JSON, leaves original intact" "pass"
+else
+  assert "BF1.E: do_git_pull rejects malformed JSON, leaves original intact" "fail" \
+    "exit=$INVALID_JSON_EXIT orig=$ORIG_MANIFEST_HASH post=$POST_MANIFEST_HASH new_exists=$([ -f $SETUP_HOME/manifest.json.new ] && echo yes || echo no)"
+fi
+
+# test_comment_at_line_268_updated — verify the misleading "supply-chain
+# hardening" comment was replaced (research.md#Finding-9).
+if grep -q "self-consistency check (sources must match the in-tree manifest" "$REPO_ROOT/bin/serious-update"; then
+  assert "BF1.F: SHA-256 comment updated to 'self-consistency check'" "pass"
+else
+  assert "BF1.F: SHA-256 comment updated to 'self-consistency check'" "fail"
+fi
+if grep -q "supply-chain hardening" "$REPO_ROOT/bin/serious-update"; then
+  assert "BF1.G: misleading 'supply-chain hardening' comment removed" "fail"
+else
+  assert "BF1.G: misleading 'supply-chain hardening' comment removed" "pass"
+fi
+
+# Static control-flow checks for the no-regen-on-X paths.
+# Use `|| true` to keep set -euo pipefail happy when grep finds no match.
+ROLLBACK_LINE=$(grep -n '\[ "\$ROLLBACK" = "true" \]' "$REPO_ROOT/bin/serious-update" | head -1 | cut -d: -f1 || true)
+CHECK_LINE=$(grep -n '\[ "\$CHECK_ONLY" = "true" \]' "$REPO_ROOT/bin/serious-update" | head -1 | cut -d: -f1 || true)
+PULL_LINE=$(grep -n 'pull_output=\$(do_git_pull)' "$REPO_ROOT/bin/serious-update" | head -1 | cut -d: -f1 || true)
+EXIT1_LINE=$(grep -n 'log_audit "ERROR git pull failed"' "$REPO_ROOT/bin/serious-update" | head -1 | cut -d: -f1 || true)
+REGEN_LINE=$(grep -n 'MANIFEST_PATH="\$SIDEKICK_HOME/manifest.json.new"' "$REPO_ROOT/bin/serious-update" | head -1 | cut -d: -f1 || true)
+
+# test_rollback_no_regen — --rollback returns BEFORE do_git_pull is called.
+if [ -n "$ROLLBACK_LINE" ] && [ -n "$PULL_LINE" ] && [ "$ROLLBACK_LINE" -lt "$PULL_LINE" ]; then
+  assert "BF1.H: --rollback returns before do_git_pull (regen never runs)" "pass"
+else
+  assert "BF1.H: --rollback returns before do_git_pull (regen never runs)" "fail" "rollback_line=$ROLLBACK_LINE pull_line=$PULL_LINE"
+fi
+
+# test_check_no_regen — --check returns BEFORE do_git_pull is called.
+if [ -n "$CHECK_LINE" ] && [ -n "$PULL_LINE" ] && [ "$CHECK_LINE" -lt "$PULL_LINE" ]; then
+  assert "BF1.I: --check returns before do_git_pull (regen never runs)" "pass"
+else
+  assert "BF1.I: --check returns before do_git_pull (regen never runs)" "fail" "check_line=$CHECK_LINE pull_line=$PULL_LINE"
+fi
+
+# test_pull_failure_no_regen — git-pull failure causes do_git_pull to exit 1
+# BEFORE the regen block is reached.
+if [ -n "$EXIT1_LINE" ] && [ -n "$REGEN_LINE" ] && [ "$EXIT1_LINE" -lt "$REGEN_LINE" ]; then
+  assert "BF1.J: pull-failure exits 1 before regen block (regen never runs on pull failure)" "pass"
+else
+  assert "BF1.J: pull-failure exits 1 before regen block (regen never runs on pull failure)" "fail" "exit1_line=$EXIT1_LINE regen_line=$REGEN_LINE"
+fi
+
+echo ""
+
+# ===============================================================
+# install-bug-fixes Task 2 — REPO_ROOT fallback for SIDEKICK_HOME
+# ===============================================================
+echo "--- install-bug-fixes Task 2: REPO_ROOT fallback for SIDEKICK_HOME ---"
+echo ""
+
+# BF2.A: line 55 reads exactly the new fallback expression.
+if grep -qF 'SIDEKICK_HOME="${SERIOUS_SIDEKICK_HOME:-$REPO_ROOT}"' "$REPO_ROOT/bin/serious-update"; then
+  assert "BF2.A: SIDEKICK_HOME defaults to REPO_ROOT (was \$HOME/.serious-sidekick)" "pass"
+else
+  assert "BF2.A: SIDEKICK_HOME defaults to REPO_ROOT (was \$HOME/.serious-sidekick)" "fail"
+fi
+
+# BF2.B: old default text removed.
+if grep -q 'SIDEKICK_HOME="\${SERIOUS_SIDEKICK_HOME:-\$HOME/\.serious-sidekick}"' "$REPO_ROOT/bin/serious-update"; then
+  assert "BF2.B: old \$HOME/.serious-sidekick fallback removed" "fail" "old fallback still present"
+else
+  assert "BF2.B: old \$HOME/.serious-sidekick fallback removed" "pass"
+fi
+
+# BF2.C: SERIOUS_SIDEKICK_HOME env var still overrides REPO_ROOT (parameter expansion default-or-override semantics).
+# We verify this by running the script with an explicit env var pointing to a non-default location and confirming
+# it doesn't try to resolve REPO_ROOT instead.
+TASK_BF2C="$TMP_DIR/bf2c"
+setup_sidekick_home "$TASK_BF2C"
+BF2C_DIRS=$(setup_target_dirs "$TMP_DIR/bf2c_targets")
+add_remote_commit "$SETUP_HOME" "$SETUP_REMOTE" "BF2.C env-override test"
+# Use a SECOND sidekick home as the env-var override target. If the env var is honored,
+# serious-update will fail because the env-var path doesn't have a manifest. If REPO_ROOT
+# silently shadows the env var, the test would pass spuriously.
+DUMMY_HOME="$TMP_DIR/bf2c_dummy"
+mkdir -p "$DUMMY_HOME"
+BF2C_EXIT=0
+SERIOUS_SIDEKICK_HOME="$DUMMY_HOME" SERIOUS_TARGET_DIRS="$BF2C_DIRS" bash "$REPO_ROOT/bin/serious-update" >/dev/null 2>&1 || BF2C_EXIT=$?
+if [ "$BF2C_EXIT" -ne 0 ]; then
+  assert "BF2.C: SERIOUS_SIDEKICK_HOME env var overrides REPO_ROOT" "pass"
+else
+  assert "BF2.C: SERIOUS_SIDEKICK_HOME env var overrides REPO_ROOT" "fail" "expected non-zero exit, got 0"
+fi
+
+# BF2.D: when REPO_ROOT resolves to a path that's NOT a directory, the existing
+# validation at lines 107-111 still fires. We can't easily simulate "REPO_ROOT
+# resolves to non-dir" because the candidate loop verifies lib/serious-common.sh
+# exists; instead we verify the validation block exists.
+if grep -q 'ERROR: Serious Sidekick home not found' "$REPO_ROOT/bin/serious-update"; then
+  assert "BF2.D: SIDEKICK_HOME existence check still present (defends against bad REPO_ROOT)" "pass"
+else
+  assert "BF2.D: SIDEKICK_HOME existence check still present (defends against bad REPO_ROOT)" "fail"
+fi
+
+echo ""
+
+# ===============================================================
+# install-bug-fixes Task 4 — reword opaque first-run message
+# ===============================================================
+echo "--- install-bug-fixes Task 4: first-run message reword ---"
+echo ""
+
+# BF4.A: new message text is present.
+if grep -q "First run for \$dir: scanned \$migrated_count existing manifest-matched file(s) (preserved). Proceeding with install." "$REPO_ROOT/bin/serious-update"; then
+  assert "BF4.A: new first-run message present (scanned + preserved + Proceeding)" "pass"
+else
+  assert "BF4.A: new first-run message present (scanned + preserved + Proceeding)" "fail"
+fi
+
+# BF4.B: old opaque "Built initial state from N existing files" text removed.
+if grep -q "Built initial state from" "$REPO_ROOT/bin/serious-update"; then
+  assert "BF4.B: old 'Built initial state' message removed" "fail"
+else
+  assert "BF4.B: old 'Built initial state' message removed" "pass"
 fi
 
 echo ""

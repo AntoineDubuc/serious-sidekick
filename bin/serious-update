@@ -52,7 +52,11 @@ fi
 source "$REPO_ROOT/lib/serious-common.sh"
 
 # --- Defaults ---
-SIDEKICK_HOME="${SERIOUS_SIDEKICK_HOME:-$HOME/.serious-sidekick}"
+# Default SIDEKICK_HOME to the BASH_SOURCE-resolved REPO_ROOT (above) so that
+# custom-location installs survive past the first invocation without requiring
+# the user to re-export SERIOUS_SIDEKICK_HOME on every run (research.md#Finding-3).
+# An explicit SERIOUS_SIDEKICK_HOME env var still overrides.
+SIDEKICK_HOME="${SERIOUS_SIDEKICK_HOME:-$REPO_ROOT}"
 if [ -n "${SERIOUS_TARGET_DIRS:-}" ]; then
   IFS=' ' read -ra TARGET_DIRS <<< "$SERIOUS_TARGET_DIRS"
 else
@@ -143,6 +147,22 @@ do_git_pull() {
 
   local new_commit
   new_commit=$(get_current_commit)
+
+  # Auto-regenerate manifest from the just-pulled sources (research.md#Finding-1
+  # part 2 option a). Without this, dev-time edits to source files mismatch the
+  # in-tree manifest and silently get skipped at distribution time.
+  # Pipeline: regen → JSON-validity check → atomic rename. Any failure exits 1.
+  if [ -x "$SIDEKICK_HOME/bin/generate-manifest.sh" ]; then
+    if ! MANIFEST_PATH="$SIDEKICK_HOME/manifest.json.new" \
+         bash "$SIDEKICK_HOME/bin/generate-manifest.sh" "$SIDEKICK_HOME" >/dev/null 2>&1 \
+       || ! python3 -m json.tool "$SIDEKICK_HOME/manifest.json.new" >/dev/null 2>&1 \
+       || ! mv "$SIDEKICK_HOME/manifest.json.new" "$SIDEKICK_HOME/manifest.json" 2>/dev/null; then
+      echo "ERROR: manifest regeneration failed after git pull" >&2
+      log_audit "ERROR manifest regen failed after git pull"
+      rm -f "$SIDEKICK_HOME/manifest.json.new"
+      exit 1
+    fi
+  fi
 
   echo "$old_commit"
   echo "$new_commit"
@@ -237,6 +257,17 @@ distribute_to_dir() {
         fi
 
         if [ "$dry_run" = "true" ]; then
+          # Run the same SHA-256 self-consistency check the real run runs, so
+          # --diff doesn't lie about what would land. Mismatch → SKIP preview.
+          if [ -n "$sha256" ]; then
+            local dryrun_actual_hash
+            dryrun_actual_hash=$(hash_file "$source_path" 2>/dev/null || echo "")
+            if [ -n "$dryrun_actual_hash" ] && [ "$dryrun_actual_hash" != "$sha256" ]; then
+              echo "  SKIP  $dest (hash mismatch — would be skipped at real-run time)"
+              hash_mismatches=$((hash_mismatches + 1))
+              continue
+            fi
+          fi
           if [ -f "$dest_path" ]; then
             local current_hash
             current_hash=$(hash_file "$dest_path" 2>/dev/null || echo "")
@@ -265,7 +296,7 @@ distribute_to_dir() {
           continue
         }
 
-        # SHA-256 verification (supply-chain hardening — research.md Finding 7)
+        # SHA-256 self-consistency check (sources must match the in-tree manifest — does NOT defend against upstream tamper, see research.md#Finding-9)
         if [ -n "$sha256" ]; then
           local actual_hash
           actual_hash=$(hash_file "$source_path" 2>/dev/null || echo "")
@@ -637,7 +668,7 @@ if [ "$NO_GLOBAL" != "true" ] && [ "$DIFF_ONLY" != "true" ]; then
       migrated_count=$(do_migrate "$dir" "$MANIFEST_ENTRIES" "$NEW_COMMIT" 2>&1)
       # Only print if migrated_count is a number (not an error message)
       if [[ "$migrated_count" =~ ^[0-9]+$ ]]; then
-        echo "First run detected for $dir. Built initial state from $migrated_count existing files."
+        echo "First run for $dir: scanned $migrated_count existing manifest-matched file(s) (preserved). Proceeding with install."
       fi
     fi
   done
@@ -665,7 +696,10 @@ else
       echo "=== $dir ==="
     fi
 
-    result=$(distribute_to_dir "$dir" "$MANIFEST_ENTRIES" "$DIFF_ONLY" "$NEW_COMMIT" "$OLD_COMMIT" 2>&1)
+    # Capture stdout only — let stderr flow through so HASH MISMATCH lines
+    # remain visible to the user (per research.md#Finding-1; previously the
+    # `2>&1` here swallowed them, hiding the silent-drop bug).
+    result=$(distribute_to_dir "$dir" "$MANIFEST_ENTRIES" "$DIFF_ONLY" "$NEW_COMMIT" "$OLD_COMMIT")
 
     # Parse the last line for counts
     last_line=$(echo "$result" | tail -1)
@@ -682,11 +716,13 @@ else
     dir_new=$(echo "$last_line" | sed -n 's/.*new=\([0-9]*\).*/\1/p')
     dir_current=$(echo "$last_line" | sed -n 's/.*current=\([0-9]*\).*/\1/p')
     dir_errors=$(echo "$last_line" | sed -n 's/.*errors=\([0-9]*\).*/\1/p')
+    dir_hash_mismatches=$(echo "$last_line" | sed -n 's/.*hash_mismatches=\([0-9]*\).*/\1/p')
 
     dir_updated=${dir_updated:-0}
     dir_new=${dir_new:-0}
     dir_current=${dir_current:-0}
     dir_errors=${dir_errors:-0}
+    dir_hash_mismatches=${dir_hash_mismatches:-0}
 
     TOTAL_UPDATED=$((TOTAL_UPDATED + dir_updated))
     TOTAL_NEW=$((TOTAL_NEW + dir_new))
@@ -696,7 +732,11 @@ else
       DIRS_OK=$((DIRS_OK + 1))
     fi
 
-    DIR_REPORTS+=("$dir  $dir_updated updated, $dir_new new, $dir_current current")
+    if [ "$dir_hash_mismatches" -gt 0 ]; then
+      DIR_REPORTS+=("$dir  $dir_updated updated, $dir_new new, $dir_current current, $dir_hash_mismatches SKIPPED (hash mismatch — see stderr)")
+    else
+      DIR_REPORTS+=("$dir  $dir_updated updated, $dir_new new, $dir_current current")
+    fi
   done
 fi
 
