@@ -60,7 +60,36 @@ SIDEKICK_HOME="${SERIOUS_SIDEKICK_HOME:-$REPO_ROOT}"
 if [ -n "${SERIOUS_TARGET_DIRS:-}" ]; then
   IFS=' ' read -ra TARGET_DIRS <<< "$SERIOUS_TARGET_DIRS"
 else
-  TARGET_DIRS=("$HOME/.claude" "$HOME/.claude-work" "$HOME/.claude-alex")
+  # Auto-detection (install-ux-detect-dirs Plan 1).
+  # When SERIOUS_TARGET_DIRS is unset, validate HOME, then pick only ~/.claude*
+  # dirs that already exist. The three candidate dirnames (claude, claude-work,
+  # claude-alex) are a fixed allowlist — never derived from runtime input.
+  if [ ! -d "${HOME:-}" ]; then
+    echo "ERROR: HOME is not set or not a directory; cannot determine default target directories. Set SERIOUS_TARGET_DIRS to bypass." >&2
+    exit 1
+  fi
+  TARGET_DIRS=()
+  for _dd_name in claude claude-work claude-alex; do
+    _dd_path="$HOME/.$_dd_name"
+    # Include real dirs AND dangling symlinks. [ -d ] follows symlinks, so a
+    # broken symlink returns false; [ -L ] catches it. Including dangling
+    # symlinks lets distribute_to_dir WARN about them (it has the distinct
+    # dangling-symlink message) instead of silently skipping at auto-detect.
+    if [ -d "$_dd_path" ] || [ -L "$_dd_path" ]; then
+      TARGET_DIRS+=("$_dd_path")
+    fi
+  done
+  unset _dd_path
+  # Empty-slate fallback: the canonical Claude dir is the single defensible
+  # default. The directory will be created lazily at distribute time (after
+  # flag parsing) so that read-only flags like --help, --check, --diff
+  # don't create directories as a side effect.
+  EMPTY_SLATE_FALLBACK=false
+  if [ ${#TARGET_DIRS[@]} -eq 0 ]; then
+    EMPTY_SLATE_FALLBACK=true
+    TARGET_DIRS=("$HOME/.claude")
+  fi
+  unset _dd_name
 fi
 
 # --- Flag parsing ---
@@ -122,6 +151,39 @@ log_audit() {
   local timestamp
   timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   echo "$timestamp $entry" >> "$AUDIT_LOG"
+}
+
+# --- Migration warning (install-ux-detect-dirs Plan 1) ---
+# When a previously-distributed-to non-canonical profile dir (.claude-work or
+# .claude-alex) no longer exists on disk, emit a one-time NOTE telling the user
+# the dir was previously a target. Suppressed by per-dir marker files.
+#
+# Detection uses an anchored grep against the structured "DISTRIBUTE-DIR dir=..."
+# log entries written below — a loose substring match would be a log-poisoning
+# surface. Marker filenames come from a fixed allowlist (claude-work, claude-alex)
+# — never derived from runtime input.
+emit_migration_warnings() {
+  # Only run when auto-detecting (env var bypasses)
+  [ -n "${SERIOUS_TARGET_DIRS:-}" ] && return 0
+  [ ! -d "${HOME:-}" ] && return 0
+  [ ! -f "$AUDIT_LOG" ] && return 0
+
+  local _dd_name _dd_target _dd_marker
+  for _dd_name in claude-work claude-alex; do
+    _dd_target="$HOME/.$_dd_name"
+    # If the dir still exists, no migration warning needed.
+    [ -d "$_dd_target" ] && continue
+    # If marker already written, skip (one-shot semantics).
+    _dd_marker="$SIDEKICK_HOME/migration-warned-$_dd_name"
+    [ -f "$_dd_marker" ] && continue
+    # Anchored grep against structured DISTRIBUTE-DIR entries written below.
+    # Pattern matches: "<ISO timestamp> DISTRIBUTE-DIR dir=<HOME>/.<name>$"
+    if grep -qE "^[0-9-]+T[0-9:]+Z DISTRIBUTE-DIR dir=$HOME/\\.$_dd_name\$" "$AUDIT_LOG" 2>/dev/null; then
+      printf '%s\n' "NOTE: ~/.$_dd_name was previously distributed to but no longer exists. To re-include it, create the directory or set SERIOUS_TARGET_DIRS." >&2
+      touch "$_dd_marker" 2>/dev/null || true
+    fi
+  done
+  unset _dd_name _dd_target _dd_marker
 }
 
 # --- Git operations ---
@@ -229,12 +291,19 @@ distribute_to_dir() {
   local hash_mismatches=0
   local file_hashes="{}"
 
+  # Skip-with-warning instead of silent mkdir -p (install-ux-detect-dirs Plan 1).
+  # Dangling-symlink check first (distinct from missing-dir) for diagnostic clarity.
+  if [ -L "$target_dir" ] && [ ! -e "$target_dir" ]; then
+    local _link_target
+    _link_target=$(readlink "$target_dir" 2>/dev/null | LC_ALL=C tr -d '\000-\037\177')
+    printf '%s\n' "WARNING: target directory is a dangling symlink, skipping: $target_dir (broken link to: '$_link_target')" >&2
+    echo "updated=0 new=0 current=0 skipped=0 errors=0 hash_mismatches=0"
+    return 0
+  fi
   if [ ! -d "$target_dir" ]; then
-    mkdir -p "$target_dir" 2>/dev/null || {
-      echo "ERROR: Cannot create target directory: $target_dir" >&2
-      echo "updated=0 new=0 current=0 skipped=0 errors=1"
-      return 1
-    }
+    printf '%s\n' "WARNING: target directory does not exist, skipping: $target_dir" >&2
+    echo "updated=0 new=0 current=0 skipped=0 errors=0 hash_mismatches=0"
+    return 0
   fi
 
   while IFS=$'\t' read -r src ownership dest sha256 merge_key; do
@@ -635,6 +704,11 @@ fi
 
 # Regular update (or --diff)
 
+# Migration warnings (install-ux-detect-dirs Plan 1) — emit one-time NOTEs for
+# previously-distributed dirs that no longer exist. Runs only in the auto-detect
+# branch and only when an audit log exists.
+emit_migration_warnings
+
 # Step 1: Git pull
 pull_output=$(do_git_pull)
 OLD_COMMIT=$(echo "$pull_output" | head -1)
@@ -675,6 +749,16 @@ if [ "$NO_GLOBAL" != "true" ] && [ "$DIFF_ONLY" != "true" ]; then
 fi
 
 # Step 4: Distribute to target dirs
+# Lazy empty-slate mkdir (install-ux-detect-dirs Plan 1): only create the
+# canonical ~/.claude/ if we're actually about to distribute (skip on --diff
+# preview to keep it read-only).
+if [ "${EMPTY_SLATE_FALLBACK:-false}" = "true" ] && [ "$DIFF_ONLY" != "true" ] && [ "$NO_GLOBAL" != "true" ]; then
+  mkdir -p "$HOME/.claude" 2>/dev/null || {
+    echo "ERROR: Cannot create canonical default ~/.claude directory" >&2
+    exit 1
+  }
+fi
+
 if [ "$NO_GLOBAL" = "true" ]; then
   echo "Skipping global directories (--no-global)."
   TOTAL_DIRS=0
@@ -736,6 +820,14 @@ else
       DIR_REPORTS+=("$dir  $dir_updated updated, $dir_new new, $dir_current current, $dir_hash_mismatches SKIPPED (hash mismatch — see stderr)")
     else
       DIR_REPORTS+=("$dir  $dir_updated updated, $dir_new new, $dir_current current")
+    fi
+
+    # Per-dir audit entry (install-ux-detect-dirs Plan 1) — used by the
+    # migration-warning detector on subsequent runs to know that this dir was
+    # previously a distribution target. Skipped when the dir didn't exist
+    # (distribute_to_dir would have warned).
+    if [ "$DIFF_ONLY" != "true" ] && [ -d "$dir" ]; then
+      log_audit "DISTRIBUTE-DIR dir=$dir"
     fi
   done
 fi

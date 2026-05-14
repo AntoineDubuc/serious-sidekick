@@ -862,6 +862,348 @@ else
   assert "BF4.B: old 'Built initial state' message removed" "pass"
 fi
 
+# ===============================================================
+# DD (Detect-Dirs) section — install-ux-detect-dirs Plan 1
+# ===============================================================
+# Tests that the TARGET_DIRS default auto-detects existing ~/.claude*
+# dirs instead of hardcoding three. Tests that distribute_to_dir skips
+# missing dirs with a WARNING instead of silently mkdir -p'ing them.
+# Tests dangling-symlink handling and the migration-warning marker file.
+echo ""
+echo "--- DD: install-ux-detect-dirs (Plan 1) ---"
+echo ""
+
+# Helper: run serious-update against an isolated TEST_HOME.
+# Returns exit code; captures stdout/stderr to caller-supplied files.
+# Args: $1=test_home, $2=stdout_file, $3=stderr_file, $4=optional_env_var_setup
+run_dd_update() {
+  local test_home="$1"
+  local stdout_file="$2"
+  local stderr_file="$3"
+  local task_base="$4"
+
+  setup_sidekick_home "$task_base"
+  add_remote_commit "$SETUP_HOME" "$SETUP_REMOTE" "DD seed commit"
+
+  local exit_code=0
+  HOME="$test_home" SERIOUS_SIDEKICK_HOME="$SETUP_HOME" \
+    bash "$REPO_ROOT/bin/serious-update" \
+    1>"$stdout_file" 2>"$stderr_file" || exit_code=$?
+  return $exit_code
+}
+
+# DD.1: test_dd_autodetect_single_profile
+# Only ~/.claude/ pre-exists in TEST_HOME. After serious-update:
+#   - ~/.claude/ should have files distributed
+#   - ~/.claude-work/ should NOT exist
+#   - ~/.claude-alex/ should NOT exist
+DD_BASE_1="$TMP_DIR/dd_single"
+DD_HOME_1="$DD_BASE_1/test-home"
+mkdir -p "$DD_HOME_1/.claude"
+DD_EXIT_1=0
+run_dd_update "$DD_HOME_1" "$DD_BASE_1/stdout.txt" "$DD_BASE_1/stderr.txt" "$DD_BASE_1" || DD_EXIT_1=$?
+
+if [ -d "$DD_HOME_1/.claude" ] && [ ! -e "$DD_HOME_1/.claude-work" ] && [ ! -e "$DD_HOME_1/.claude-alex" ]; then
+  assert "test_dd_autodetect_single_profile: only .claude/ written, .claude-work/.claude-alex skipped" "pass"
+else
+  detail="claude=$([ -d "$DD_HOME_1/.claude" ] && echo Y || echo N) work=$([ -e "$DD_HOME_1/.claude-work" ] && echo Y || echo N) alex=$([ -e "$DD_HOME_1/.claude-alex" ] && echo Y || echo N) exit=$DD_EXIT_1"
+  assert "test_dd_autodetect_single_profile: only .claude/ written, .claude-work/.claude-alex skipped" "fail" "$detail"
+fi
+
+# DD.2: test_dd_autodetect_three_profile
+# All three pre-exist. After serious-update: all three should have files distributed.
+DD_BASE_2="$TMP_DIR/dd_three"
+DD_HOME_2="$DD_BASE_2/test-home"
+mkdir -p "$DD_HOME_2/.claude" "$DD_HOME_2/.claude-work" "$DD_HOME_2/.claude-alex"
+DD_EXIT_2=0
+run_dd_update "$DD_HOME_2" "$DD_BASE_2/stdout.txt" "$DD_BASE_2/stderr.txt" "$DD_BASE_2" || DD_EXIT_2=$?
+
+# At least the canonical content file should land in each pre-existing dir
+if [ -f "$DD_HOME_2/.claude/agents/serious-code-implementer.md" ] \
+   && [ -f "$DD_HOME_2/.claude-work/agents/serious-code-implementer.md" ] \
+   && [ -f "$DD_HOME_2/.claude-alex/agents/serious-code-implementer.md" ]; then
+  assert "test_dd_autodetect_three_profile: all three pre-existing dirs received distribution" "pass"
+else
+  detail="claude=$([ -f "$DD_HOME_2/.claude/agents/serious-code-implementer.md" ] && echo Y || echo N) work=$([ -f "$DD_HOME_2/.claude-work/agents/serious-code-implementer.md" ] && echo Y || echo N) alex=$([ -f "$DD_HOME_2/.claude-alex/agents/serious-code-implementer.md" ] && echo Y || echo N)"
+  assert "test_dd_autodetect_three_profile: all three pre-existing dirs received distribution" "fail" "$detail"
+fi
+
+# DD.3: test_dd_autodetect_empty_slate
+# No ~/.claude* pre-exist. After serious-update:
+#   - ~/.claude/ should be created (canonical fallback)
+#   - ~/.claude-work/ should NOT exist
+#   - ~/.claude-alex/ should NOT exist
+DD_BASE_3="$TMP_DIR/dd_empty"
+DD_HOME_3="$DD_BASE_3/test-home"
+mkdir -p "$DD_HOME_3"
+DD_EXIT_3=0
+run_dd_update "$DD_HOME_3" "$DD_BASE_3/stdout.txt" "$DD_BASE_3/stderr.txt" "$DD_BASE_3" || DD_EXIT_3=$?
+
+if [ -d "$DD_HOME_3/.claude" ] && [ ! -e "$DD_HOME_3/.claude-work" ] && [ ! -e "$DD_HOME_3/.claude-alex" ]; then
+  assert "test_dd_autodetect_empty_slate: only .claude/ created (canonical fallback)" "pass"
+else
+  detail="claude=$([ -d "$DD_HOME_3/.claude" ] && echo Y || echo N) work=$([ -e "$DD_HOME_3/.claude-work" ] && echo Y || echo N) alex=$([ -e "$DD_HOME_3/.claude-alex" ] && echo Y || echo N) exit=$DD_EXIT_3"
+  assert "test_dd_autodetect_empty_slate: only .claude/ created (canonical fallback)" "fail" "$detail"
+fi
+
+# DD.4: test_dd_dangling_symlink
+# ~/.claude is a dangling symlink. After serious-update:
+#   - distinct dangling-symlink WARNING on stderr
+#   - no file is written through the dangling symlink
+DD_BASE_4="$TMP_DIR/dd_dangling"
+DD_HOME_4="$DD_BASE_4/test-home"
+mkdir -p "$DD_HOME_4"
+ln -s "/nonexistent/path/$$" "$DD_HOME_4/.claude"
+DD_EXIT_4=0
+run_dd_update "$DD_HOME_4" "$DD_BASE_4/stdout.txt" "$DD_BASE_4/stderr.txt" "$DD_BASE_4" || DD_EXIT_4=$?
+
+# Check for distinct dangling-symlink warning (NOT just "does not exist")
+DD4_STDERR=$(cat "$DD_BASE_4/stderr.txt" 2>/dev/null || echo "")
+if echo "$DD4_STDERR" | grep -q "dangling symlink"; then
+  assert "test_dd_dangling_symlink: distinct dangling-symlink WARNING emitted" "pass"
+else
+  assert "test_dd_dangling_symlink: distinct dangling-symlink WARNING emitted" "fail" "stderr did not contain 'dangling symlink': $DD4_STDERR"
+fi
+
+# DD.5: test_dd_envvar_overrides_autodetect
+# SERIOUS_TARGET_DIRS set → auto-detect bypassed, env var honored
+DD_BASE_5="$TMP_DIR/dd_envvar"
+DD_HOME_5="$DD_BASE_5/test-home"
+DD_TARGET_5="$DD_BASE_5/explicit-target"
+mkdir -p "$DD_HOME_5" "$DD_TARGET_5"
+setup_sidekick_home "$DD_BASE_5"
+add_remote_commit "$SETUP_HOME" "$SETUP_REMOTE" "DD5 seed"
+DD_EXIT_5=0
+HOME="$DD_HOME_5" SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$DD_TARGET_5" \
+  bash "$REPO_ROOT/bin/serious-update" \
+  1>"$DD_BASE_5/stdout.txt" 2>"$DD_BASE_5/stderr.txt" || DD_EXIT_5=$?
+
+# The explicit target dir should have content; the auto-detect dirs should not be touched.
+if [ -f "$DD_TARGET_5/agents/serious-code-implementer.md" ] \
+   && [ ! -e "$DD_HOME_5/.claude" ] \
+   && [ ! -e "$DD_HOME_5/.claude-work" ] \
+   && [ ! -e "$DD_HOME_5/.claude-alex" ]; then
+  assert "test_dd_envvar_overrides_autodetect: env var honored, auto-detect bypassed" "pass"
+else
+  detail="target=$([ -f "$DD_TARGET_5/agents/serious-code-implementer.md" ] && echo Y || echo N) home_claude=$([ -e "$DD_HOME_5/.claude" ] && echo Y || echo N) exit=$DD_EXIT_5"
+  assert "test_dd_envvar_overrides_autodetect: env var honored, auto-detect bypassed" "fail" "$detail"
+fi
+
+# DD.6: test_dd_envvar_with_missing_dir_warns
+# SERIOUS_TARGET_DIRS=/foo where /foo doesn't exist:
+#   - WARNING about missing dir on stderr
+#   - /foo NOT created
+#   - script exits 0 (skip is not error)
+DD_BASE_6="$TMP_DIR/dd_envvar_missing"
+DD_HOME_6="$DD_BASE_6/test-home"
+DD_MISSING_6="$DD_BASE_6/never-create-me-$$"
+mkdir -p "$DD_HOME_6"
+setup_sidekick_home "$DD_BASE_6"
+add_remote_commit "$SETUP_HOME" "$SETUP_REMOTE" "DD6 seed"
+DD_EXIT_6=0
+HOME="$DD_HOME_6" SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$DD_MISSING_6" \
+  bash "$REPO_ROOT/bin/serious-update" \
+  1>"$DD_BASE_6/stdout.txt" 2>"$DD_BASE_6/stderr.txt" || DD_EXIT_6=$?
+
+DD6_STDERR=$(cat "$DD_BASE_6/stderr.txt" 2>/dev/null || echo "")
+DD6_STDOUT=$(cat "$DD_BASE_6/stdout.txt" 2>/dev/null || echo "")
+DD6_COMBINED="$DD6_STDOUT$DD6_STDERR"
+if echo "$DD6_COMBINED" | grep -q "WARNING.*does not exist" \
+   && [ ! -e "$DD_MISSING_6" ] \
+   && [ "$DD_EXIT_6" -eq 0 ]; then
+  assert "test_dd_envvar_with_missing_dir_warns: WARNING emitted, dir not created, exit 0" "pass"
+else
+  detail="warning=$(echo "$DD6_COMBINED" | grep -c "WARNING.*does not exist") missing_created=$([ -e "$DD_MISSING_6" ] && echo Y || echo N) exit=$DD_EXIT_6"
+  assert "test_dd_envvar_with_missing_dir_warns: WARNING emitted, dir not created, exit 0" "fail" "$detail"
+fi
+
+# DD.7: test_dd_empty_home_errors
+# HOME='' AND SERIOUS_TARGET_DIRS unset → exit 1, error message about HOME
+DD_BASE_7="$TMP_DIR/dd_empty_home"
+mkdir -p "$DD_BASE_7"
+setup_sidekick_home "$DD_BASE_7"
+DD_EXIT_7=0
+HOME="" SERIOUS_SIDEKICK_HOME="$SETUP_HOME" \
+  bash "$REPO_ROOT/bin/serious-update" \
+  1>"$DD_BASE_7/stdout.txt" 2>"$DD_BASE_7/stderr.txt" || DD_EXIT_7=$?
+
+DD7_STDERR=$(cat "$DD_BASE_7/stderr.txt" 2>/dev/null || echo "")
+if [ "$DD_EXIT_7" -eq 1 ] && echo "$DD7_STDERR" | grep -q "HOME"; then
+  assert "test_dd_empty_home_errors: exit 1 with HOME error message" "pass"
+else
+  assert "test_dd_empty_home_errors: exit 1 with HOME error message" "fail" "exit=$DD_EXIT_7 stderr_has_HOME=$(echo "$DD7_STDERR" | grep -c HOME)"
+fi
+
+# DD.8: test_dd_migration_warning_one_shot
+# TEST_HOME with audit log showing prior write to .claude-work, but .claude-work no longer exists.
+# First invocation: NOTE printed, marker file written.
+# Second invocation: NOTE NOT printed (suppressed by marker).
+# Audit log lives at $SIDEKICK_HOME/update.log; marker co-located there.
+DD_BASE_8="$TMP_DIR/dd_migration"
+DD_HOME_8="$DD_BASE_8/test-home"
+mkdir -p "$DD_HOME_8/.claude"
+
+setup_sidekick_home "$DD_BASE_8"
+# Pre-seed audit log AT SIDEKICK_HOME (where serious-update actually writes it)
+TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+DD8_LOG="$SETUP_HOME/update.log"
+echo "$TS DISTRIBUTE-DIR dir=$DD_HOME_8/.claude-work" > "$DD8_LOG"
+echo "$TS DISTRIBUTE-DIR dir=$DD_HOME_8/.claude" >> "$DD8_LOG"
+
+add_remote_commit "$SETUP_HOME" "$SETUP_REMOTE" "DD8 seed"
+
+# First invocation
+DD_EXIT_8A=0
+HOME="$DD_HOME_8" SERIOUS_SIDEKICK_HOME="$SETUP_HOME" \
+  bash "$REPO_ROOT/bin/serious-update" \
+  1>"$DD_BASE_8/stdout1.txt" 2>"$DD_BASE_8/stderr1.txt" || DD_EXIT_8A=$?
+
+DD8A_COMBINED=$(cat "$DD_BASE_8/stdout1.txt" "$DD_BASE_8/stderr1.txt" 2>/dev/null || echo "")
+DD8A_HAS_NOTE=$(echo "$DD8A_COMBINED" | grep -c "NOTE.*claude-work" 2>/dev/null | head -1 || true)
+DD8A_HAS_NOTE=${DD8A_HAS_NOTE:-0}
+DD8A_HAS_MARKER=$([ -f "$SETUP_HOME/migration-warned-claude-work" ] && echo 1 || echo 0)
+
+# Second invocation
+add_remote_commit "$SETUP_HOME" "$SETUP_REMOTE" "DD8 seed 2"
+DD_EXIT_8B=0
+HOME="$DD_HOME_8" SERIOUS_SIDEKICK_HOME="$SETUP_HOME" \
+  bash "$REPO_ROOT/bin/serious-update" \
+  1>"$DD_BASE_8/stdout2.txt" 2>"$DD_BASE_8/stderr2.txt" || DD_EXIT_8B=$?
+
+DD8B_COMBINED=$(cat "$DD_BASE_8/stdout2.txt" "$DD_BASE_8/stderr2.txt" 2>/dev/null || echo "")
+DD8B_HAS_NOTE=$(echo "$DD8B_COMBINED" | grep -c "NOTE.*claude-work" 2>/dev/null | head -1 || true)
+DD8B_HAS_NOTE=${DD8B_HAS_NOTE:-0}
+
+if [ "$DD8A_HAS_NOTE" -ge 1 ] && [ "$DD8A_HAS_MARKER" -eq 1 ] && [ "$DD8B_HAS_NOTE" -eq 0 ]; then
+  assert "test_dd_migration_warning_one_shot: NOTE on first run, marker written, suppressed on second" "pass"
+else
+  assert "test_dd_migration_warning_one_shot: NOTE on first run, marker written, suppressed on second" "fail" "first_note=$DD8A_HAS_NOTE marker=$DD8A_HAS_MARKER second_note=$DD8B_HAS_NOTE"
+fi
+
+# DD.9: test_dd_first_run_only_for_present_dirs
+# .claude/ exists, .claude-work/ doesn't, no audit-log evidence of prior write to .claude-work.
+# Expectation: NO migration NOTE printed (no prior-write evidence = no NOTE).
+DD_BASE_9="$TMP_DIR/dd_first_run"
+DD_HOME_9="$DD_BASE_9/test-home"
+mkdir -p "$DD_HOME_9/.claude"
+
+setup_sidekick_home "$DD_BASE_9"
+# Audit log at SIDEKICK_HOME mentions ONLY .claude, NOT .claude-work
+TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+echo "$TS DISTRIBUTE-DIR dir=$DD_HOME_9/.claude" > "$SETUP_HOME/update.log"
+
+add_remote_commit "$SETUP_HOME" "$SETUP_REMOTE" "DD9 seed"
+
+DD_EXIT_9=0
+HOME="$DD_HOME_9" SERIOUS_SIDEKICK_HOME="$SETUP_HOME" \
+  bash "$REPO_ROOT/bin/serious-update" \
+  1>"$DD_BASE_9/stdout.txt" 2>"$DD_BASE_9/stderr.txt" || DD_EXIT_9=$?
+
+DD9_COMBINED=$(cat "$DD_BASE_9/stdout.txt" "$DD_BASE_9/stderr.txt" 2>/dev/null || echo "")
+DD9_HAS_NOTE=$(echo "$DD9_COMBINED" | grep -c "NOTE.*claude-work" 2>/dev/null | head -1 || true)
+DD9_HAS_NOTE=${DD9_HAS_NOTE:-0}
+if [ "$DD9_HAS_NOTE" -eq 0 ]; then
+  assert "test_dd_first_run_only_for_present_dirs: no migration NOTE without prior-write evidence" "pass"
+else
+  assert "test_dd_first_run_only_for_present_dirs: no migration NOTE without prior-write evidence" "fail" "unexpected NOTE count: $DD9_HAS_NOTE"
+fi
+
+# DD.10: test_dd_marker_filename_is_allowlisted
+# Verify (via source-code grep) that the migration-marker filename is built
+# from a fixed allowlist of three string literals, NOT from runtime basename
+# derivation. The allowlist may be expressed as a `case` statement or as a
+# bash `for X in literal literal literal` loop — both are acceptable as long
+# as the literals are the only source of {dirname}.
+SU_SRC="$REPO_ROOT/bin/serious-update"
+# Pattern 1: case statement
+P1=$(grep -cE 'case .* in[[:space:]]*claude\|claude-work\|claude-alex\)' "$SU_SRC" 2>/dev/null | head -1 || true)
+P1=${P1:-0}
+# Pattern 2: for loop with literals (the implementation we use)
+P2=$(grep -cE 'for [a-zA-Z_]+ in claude-work claude-alex' "$SU_SRC" 2>/dev/null | head -1 || true)
+P2=${P2:-0}
+# Pattern 3: explicit array of literals
+P3=$(grep -cE '"claude-work"[[:space:]]+"claude-alex"' "$SU_SRC" 2>/dev/null | head -1 || true)
+P3=${P3:-0}
+# AND: must NOT use basename to derive the marker filename
+P_BASENAME=$(grep -cE 'migration-warned.*\$\(basename' "$SU_SRC" 2>/dev/null | head -1 || true)
+P_BASENAME=${P_BASENAME:-0}
+if [ "$((P1 + P2 + P3))" -gt 0 ] && [ "$P_BASENAME" -eq 0 ]; then
+  assert "test_dd_marker_filename_is_allowlisted: source uses fixed allowlist (no basename derivation)" "pass"
+else
+  assert "test_dd_marker_filename_is_allowlisted: source uses fixed allowlist (no basename derivation)" "fail" "case=$P1 for=$P2 array=$P3 basename_misuse=$P_BASENAME"
+fi
+
+# Negative tests (anti-creep)
+# NT.DD.1: No new file added to bin/ other than the modified bin/serious-update + bin/generate-manifest.sh
+NEW_BIN_FILES_RAW=$(cd "$REPO_ROOT" && git diff --name-only main -- bin/ 2>/dev/null || echo "")
+if [ -z "$NEW_BIN_FILES_RAW" ]; then
+  NEW_BIN_FILES=0
+else
+  NEW_BIN_FILES=$(echo "$NEW_BIN_FILES_RAW" | grep -vE '^bin/(serious-update|generate-manifest\.sh)$' | wc -l | tr -d ' ' || true)
+  [ -z "$NEW_BIN_FILES" ] && NEW_BIN_FILES=0
+fi
+if [ "$NEW_BIN_FILES" -eq 0 ]; then
+  assert "NT.DD.1: no new file added to bin/" "pass"
+else
+  assert "NT.DD.1: no new file added to bin/" "fail" "new bin/ files detected: $NEW_BIN_FILES"
+fi
+
+# NT.DD.2: --help text unchanged from baseline
+HELP_AFTER=$(SERIOUS_SIDEKICK_HOME="$TMP_DIR" bash "$REPO_ROOT/bin/serious-update" --help 2>&1 || true)
+HELP_BEFORE_FILE="$REPO_ROOT/Research/features/install-ux-detect-dirs/evidence/assets/help_before.txt"
+if [ -f "$HELP_BEFORE_FILE" ] && [ "$HELP_AFTER" = "$(cat "$HELP_BEFORE_FILE")" ]; then
+  assert "NT.DD.2: --help text unchanged from baseline" "pass"
+else
+  assert "NT.DD.2: --help text unchanged from baseline" "fail" "diff detected vs baseline"
+fi
+
+# NT.DD.3: No change to install.sh
+INSTALL_DIFF_RAW=$(cd "$REPO_ROOT" && git diff --stat main -- install.sh 2>/dev/null || echo "")
+INSTALL_DIFF=$(echo "$INSTALL_DIFF_RAW" | grep -c . 2>/dev/null || true)
+[ -z "$INSTALL_DIFF_RAW" ] && INSTALL_DIFF=0
+if [ "$INSTALL_DIFF" -eq 0 ]; then
+  assert "NT.DD.3: no change to install.sh" "pass"
+else
+  assert "NT.DD.3: no change to install.sh" "fail" "install.sh changes detected"
+fi
+
+# NT.DD.4: No change to receipt formatting (the "Serious Sidekick updated to ..." block)
+# Verify no edits to the receipt-printing lines or DIR_REPORTS format.
+RECEIPT_DIFF_RAW=$(cd "$REPO_ROOT" && git diff main -- bin/serious-update 2>/dev/null || echo "")
+RECEIPT_CHANGES=$(echo "$RECEIPT_DIFF_RAW" | grep -cE '^[+-].*("Serious Sidekick updated to|"Audit log:|DIR_REPORTS\+=)' 2>/dev/null | head -1 || true)
+RECEIPT_CHANGES=${RECEIPT_CHANGES:-0}
+if [ "$RECEIPT_CHANGES" -eq 0 ]; then
+  assert "NT.DD.4: no change to receipt formatting" "pass"
+else
+  assert "NT.DD.4: no change to receipt formatting" "fail" "$RECEIPT_CHANGES receipt-line edits"
+fi
+
+# NT.DD.5: SERIOUS_TARGET_DIRS env-var override path still present
+if grep -q 'SERIOUS_TARGET_DIRS' "$REPO_ROOT/bin/serious-update"; then
+  assert "NT.DD.5: SERIOUS_TARGET_DIRS env var override still works" "pass"
+else
+  assert "NT.DD.5: SERIOUS_TARGET_DIRS env var override still works" "fail" "env var reference missing"
+fi
+
+# NT.DD.6: No new --target-dir flag added
+if grep -qE '\-\-target-dir' "$REPO_ROOT/bin/serious-update"; then
+  assert "NT.DD.6: no --target-dir flag added (deferred to future plan)" "fail" "flag found"
+else
+  assert "NT.DD.6: no --target-dir flag added (deferred to future plan)" "pass"
+fi
+
+# NT.DD.7: --help on a blank-slate machine does NOT create ~/.claude as side effect
+# (Empty-slate fallback must be lazy — gated on actual distribution intent.)
+DD_BASE_NT7=$(mktemp -d -t nt-dd-7-helpsideeffect.XXXXXX)
+HOME="$DD_BASE_NT7" SERIOUS_SIDEKICK_HOME="$DD_BASE_NT7/sidekick" \
+  bash "$REPO_ROOT/bin/serious-update" --help >/dev/null 2>&1 || true
+if [ -e "$DD_BASE_NT7/.claude" ]; then
+  assert "NT.DD.7: --help does not create ~/.claude on blank-slate (read-only contract)" "fail" ".claude was created"
+else
+  assert "NT.DD.7: --help does not create ~/.claude on blank-slate (read-only contract)" "pass"
+fi
+rm -rf "$DD_BASE_NT7"
+
 echo ""
 echo "=== serious-update Tests Complete: $ERRORS error(s) ==="
 
