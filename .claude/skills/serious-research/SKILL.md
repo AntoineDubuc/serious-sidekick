@@ -844,21 +844,37 @@ Update `.meta.md` with final timestamps.
 
 ## Phase 6: Handoff
 
-Report to the user:
+The user is a busy PM. Report in the PM voice from `.claude/output-styles/PM-voice.md`. The full technical detail already lives in `research.md` (and `report.html` for deep mode) — the chat reply is a translation, not a record.
 
-**For quick mode:**
-- The folder path where everything lives
-- A brief summary of findings (3-5 sentences)
-- The personas that reviewed and what they improved
-- Recommended next step (usually: `/serious-plan`)
+**Structure for the chat reply (both modes):**
 
-**For deep mode:**
-- The folder path and instruction to open `report.html` in a browser
-- Grade distribution summary (e.g., "12 claims: 4A, 5B, 2C, 1F")
-- Adversarial results (e.g., "8 claims tested: 6 held, 2 weakened, 0 disproved")
-- QA pass rate
-- Personas that reviewed
-- Recommended next step (usually: `/serious-plan`)
+1. **What this does** — one sentence. What we now know that we didn't know before. Plain English. No grade letters in this sentence, no "thread N", no folder paths.
+2. **What I need from you** — one ask, usually "approve the next step or open the report first". Numbered list only if there are exactly two distinct asks.
+3. **What you need to set up first** — only if the user has to do something before the next step (rare). Skip otherwise.
+4. **Question** — one line. Almost always: "Move to the plan, or want to read the report first?"
+
+**Banned in the Phase 6 chat reply:**
+
+- Folder paths or file names visible in chat. ("on disk" / "in the report" instead of `Research/features/{slug}/`.)
+- Status banners ("Research threads launched...", "Adversarial complete...").
+- Grade distribution numbers as a headline ("13A, 6B, 4C..."). If a confidence headline matters, translate: "two-thirds of the underlying assumptions held under attack."
+- Persona names dumped verbatim ("Senior Engineer, Devil's Advocate, PM Empathy reviewed"). Translate to what they did: "An adversarial review caught two corrections."
+- Slash commands as next-step jargon. "Move to the plan" instead of "Run `/serious-plan`."
+
+**Mode differences:**
+
+- **Quick mode:** No `report.html` exists. The chat reply can mention "the full notes are on disk if you want them" without naming a path.
+- **Deep mode:** Mention the report is openable in a browser. Still no path in chat. The user already knows where their research folder is — they invoked the skill.
+
+**Reference example (deep-mode handoff that hits the voice):**
+
+> What this does: We did the deep research on how to fix the skill voice. The full plan and the trade-offs are on disk now. Two-thirds of the underlying assumptions held under attack; the rest are now updated. The fix is achievable.
+>
+> What I need from you twice:
+> 1. Approve the next step (build the plan, or pick the lighter version).
+> 2. Glance at the open-on-disk report for the one piece I flagged as "I'm not certain about" — the hook mechanic.
+>
+> Question: Move to building the plan, or open the report first?
 
 ### Upstream Traceability Verification — MANDATORY GATE
 

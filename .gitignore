@@ -2,6 +2,25 @@
 .env
 .env.*
 
+# Credentials / keys (defense-in-depth)
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+id_rsa*
+*_rsa
+*_dsa
+*_ecdsa
+*_ed25519
+known_hosts
+credentials.json
+service-account*.json
+secrets.*
+*.secret
+.aws/
+.ssh/
+
 # Python
 .venv/
 __pycache__/
@@ -20,6 +39,7 @@ Thumbs.db
 
 # Workflow breadcrumbs (active workflow tracking)
 .active-*
+.claude-active/
 
 # Session context (personal, not for template consumers)
 context.md
@@ -30,3 +50,15 @@ Research/
 # Diagnostic outcome logs (not a security control — see _shared/log-outcome.sh)
 .claude/logs/*.log
 .claude/logs/*.log.*
+
+# Default-deny everything else under .claude/ (closes the class of "future files get tracked by default")
+.claude/*
+!.claude/settings.json
+!.claude/skills/
+!.claude/agents/
+!.claude/hooks/
+!.claude/output-styles/
+!.claude/CLAUDE.md
+
+# Root-level research report dump from /serious-research deep mode
+/report.html
