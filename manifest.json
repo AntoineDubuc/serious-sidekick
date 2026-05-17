@@ -95,6 +95,11 @@
       "ownership": "template",
       "sha256": "f1b6f7f5347993eac1e7d6356d2b7ae920aee9bb4fadf4fd076f8dd6377250e7"
     },
+    ".claude/skills/_shared/voice-reminder.sh": {
+      "dest": "skills/_shared/voice-reminder.sh",
+      "ownership": "template",
+      "sha256": "d8781b1d7041ff5d3c47d5ed3042d6656df56aebcffe550f6c95110b39def66c"
+    },
     ".claude/skills/agent-teams/SKILL.md": {
       "dest": "skills/agent-teams/SKILL.md",
       "ownership": "template",
@@ -198,7 +203,7 @@
     ".claude/skills/serious-conversation/SKILL.md": {
       "dest": "skills/serious-conversation/SKILL.md",
       "ownership": "template",
-      "sha256": "6f3b73f16f37702b1bb04df518f34d31541a9c2fb49728765512cfaee4c88d25"
+      "sha256": "6c991c5642189da42339deea835eca6bebf32ce7d578465ae4bbcee12c390302"
     },
     ".claude/skills/serious-conversation/hooks/capture-conversation.sh": {
       "dest": "skills/serious-conversation/hooks/capture-conversation.sh",
@@ -416,6 +421,6 @@
       "sha256": "c65b3acedb85cee57151957f0ace6e9261a81f693e5cc17466032693a95f139d"
     }
   },
-  "generated_from_commit": "e9fee9d6df579fc3de79f1e89f5f4aef161da537",
+  "generated_from_commit": "79e607e84a79dab9c74f323878ff975c2fc24670",
   "version": 1
 }
