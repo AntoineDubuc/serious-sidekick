@@ -1,8 +1,71 @@
-# Claude Code Changelog (v2.1.87 — v2.1.108)
+# Claude Code Changelog (v2.1.87 — v2.1.143)
 
-> Covers 14 releases over ~17 days (March 29 — April 14, 2026).
-> Skipped/internal builds: v2.1.88, v2.1.93, v2.1.95, v2.1.99, v2.1.100 (empty republish), v2.1.102, v2.1.103, v2.1.104, v2.1.106.
-> Big releases in this window: v2.1.105 (PreCompact hook, `monitors` manifest key, skill description cap 250→1536) and v2.1.108 (`/recap`, built-in slash commands via Skill tool, 1-hour prompt caching).
+> Covers ~50 releases over ~48 days (March 29 — May 16, 2026).
+> Earlier window (v2.1.87 — v2.1.108) detailed per-version below.
+> Later window (v2.1.109 — v2.1.143) condensed in the §A summary that follows because 35 versions in 32 days would dwarf the file otherwise. Big releases in the new window: **v2.1.111** (`/ultrareview`, `/less-permission-prompts`, Opus 4.7 xhigh effort), **v2.1.117** (fork-subagent toggle exposed externally; default effort raised; 1M context for Opus 4.7), **v2.1.118** (vim visual mode, named themes, hooks invoking MCP tools, fork-subagent generally available), **v2.1.121** (PostToolUse `updatedToolOutput` for all tools), **v2.1.126** (gateway model discovery, `claude project purge`), **v2.1.139** (`claude agents` view, `/goal` command, hook `args:` exec form, hook `continueOnBlock`), **v2.1.143** (`claude agents` flags + PowerShell rollout). Original v2.1.87 — v2.1.108 entries continue below.
+
+---
+
+## §A — v2.1.109 through v2.1.143: condensed summary (April 14 — May 16, 2026)
+
+This section is the digest. Full per-version detail lives at the official Anthropic changelog: <https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md>. Items below are filtered for impact on Serious Sidekick. Skipped versions (no relevant entries or VS-Code-only / Windows-only fixes): v2.1.115, v2.1.124, v2.1.125, v2.1.127, v2.1.130, v2.1.134, v2.1.135, v2.1.137, v2.1.138.
+
+### Headline features (impact-ranked for this project)
+
+| # | Feature | Version | Why it matters |
+|--:|---------|:--------|----------------|
+| 1 | **`claude agents` view + `claude agents` flags** | v2.1.139, v2.1.141, v2.1.142, v2.1.143 | "A single list of every Claude Code session — running, blocked on you, or done." Direct overlap with `/serious-status`. Now accepts `--add-dir`, `--settings`, `--mcp-config`, `--plugin-dir`, `--permission-mode`, `--model`, `--effort`, `--dangerously-skip-permissions`. Background sessions become a real workflow surface. |
+| 2 | **`/goal` command** | v2.1.139 | "Set a completion condition and Claude keeps working across turns until it's met." Works in interactive, `-p`, and Remote Control. Live overlay shows elapsed/turns/tokens. Direct competition / collaboration with our multi-phase `/serious-code`. |
+| 3 | **PostToolUse `hookSpecificOutput.updatedToolOutput` for all tools** | v2.1.121 | Replaces the MCP-only `updatedMCPToolOutput`. **Critical caveat:** the voice-retrofit research found this is silently dropped at runtime for built-in tools including the Agent tool (Issue #54196, OPEN as of 2026-05-16). When fixed, sub-agent output translation becomes possible without per-call-site rewrites. |
+| 4 | **Fork subagents (`context: fork`) generally available** | v2.1.117 (external builds via env var), v2.1.118 (general) | "Forked subagents can now be enabled on external builds by setting `CLAUDE_CODE_FORK_SUBAGENT=1`" then generally available. Roadmap #3 (compound quick skills) effort drops from M to S. |
+| 5 | **Hook `args: string[]` exec form** | v2.1.139 | "Spawns the command directly without a shell, so path placeholders never need quoting." Refactor target for existing hooks that currently shell-escape inputs. |
+| 6 | **Hook `continueOnBlock` for PostToolUse** | v2.1.139 | "Set to `true` to feed the hook's rejection reason back to Claude and continue the turn." Replaces the awkward exit-2+stderr pattern in PostToolUse hooks. Voice-validator hook design can use this. |
+| 7 | **`/ultrareview` for code review in the cloud** | v2.1.111, `claude ultrareview` CLI in v2.1.120 | "Comprehensive code review in the cloud using parallel multi-agent analysis and critique." Already referenced in CLAUDE.md. CI-callable since v2.1.120. |
+| 8 | **`/less-permission-prompts` skill** | v2.1.111 | Scans transcripts for common read-only Bash/MCP calls and proposes a prioritized allowlist for `.claude/settings.json`. Complements existing onboarding work. |
+| 9 | **Hooks can invoke MCP tools (`type: "mcp_tool"`)** | v2.1.118 | "Hooks can now invoke MCP tools directly." Hook-based integrations gain a new affordance. |
+| 10 | **`Skill(name *)` wildcard permission rules** | v2.1.139 | "The wildcard form now works as a prefix match." Cleaner permission rules for the `/serious-*` family. |
+| 11 | **1M-context Opus 4.7 context window fix** | v2.1.117 | "Computing against a 200K context window instead of Opus 4.7's native 1M" — fixed. Long `/serious-code` runs no longer autocompact early. |
+| 12 | **`xhigh` effort + interactive `/effort` slider** | v2.1.111, v2.1.139 (`effort.level` in hook input) | New effort tier between `high` and `max` for Opus 4.7. Hooks now see effort level. |
+| 13 | **Native binary CLI** | v2.1.113 | "Spawn a native Claude Code binary (via a per-platform optional dependency) instead of bundled JavaScript." Faster startup; no Serious Sidekick action needed. |
+| 14 | **`claude project purge`** | v2.1.126 | Deletes all Claude Code state for a project (transcripts, tasks, file history, config entry) with `--dry-run`, `-y`, `-i`, `--all`. Useful for testing the install flow. |
+| 15 | **Subagent skill discovery via Skill tool** | v2.1.133 | "Fixed subagents not discovering project, user, or plugin skills via the Skill tool." Sub-agents can now reach skills again. |
+| 16 | **`/loop` improvements** | v2.1.113, v2.1.140 | Esc cancels pending wakeups, redundant wakeups suppressed when background tasks notify on completion. |
+| 17 | **`--from-pr` accepts GitLab and Bitbucket** | v2.1.119 | "GitLab merge-request, Bitbucket pull-request, and GitHub Enterprise PR URLs." `/ultrareview` and related flows widen beyond GitHub. |
+| 18 | **`autoMode.hard_deny` rules** | v2.1.136 | "Auto mode classifier rules that block unconditionally regardless of user intent or allow exceptions." Tighter unattended-mode safety. |
+| 19 | **PostToolUseFailure hook event** | v2.1.119 | Distinct from PostToolUse; fires only on tool failure. Cleaner separation. |
+| 20 | **Hooks: `effort.level` in JSON input + `$CLAUDE_EFFORT` env** | v2.1.133 | Hooks now see and propagate effort level. |
+| 21 | **Plugin dependency enforcement** | v2.1.143 | "`claude plugin disable` now refuses when another enabled plugin depends on the target." Affects any future plugin packaging of Serious Sidekick. |
+| 22 | **`worktree.baseRef` setting** | v2.1.133 | Choose `fresh` (origin/default) or `head` (local HEAD) for `--worktree`, `EnterWorktree`, agent isolation. Affects `/serious-code` worktree behavior. |
+
+### Notable smaller items
+
+- **Plugin ecosystem matured** (v2.1.117–v2.1.143): dependency resolution, projected context cost in marketplace browser, `claude plugin prune`, `--plugin-url`, `.zip` plugin archives, themes/monitors moved to `experimental`. Plugin distribution of Serious Sidekick now plausible.
+- **Background sessions** (`/bg`, `claude --bg`, `←`-detach): persisted flags across retire/wake for `--dangerously-skip-permissions`, `--allow-dangerously-skip-permissions`, `--fallback-model`, `--mcp-config`, `--settings`, `--add-dir`, `--plugin-dir`, `--strict-mcp-config`. Empty idle background sessions auto-retire after 5 min.
+- **`CLAUDE_CODE_SESSION_ID` env var** (v2.1.132): Bash tool subprocesses get the session ID. Useful for skill-internal logging tied to the parent session.
+- **`Bash(touch *)`, `Bash(mkdir *)` allow rules honored** (v2.1.126): regression fix; relevant to TDD-gate hook permissioning.
+- **`autoAllowBashIfSandboxed` honors shell expansions** (v2.1.139).
+- **PreToolUse hook `additionalContext` no longer dropped on tool failure** (v2.1.110).
+- **`/ultrareview` parallelized + diffstat** (v2.1.113).
+- **Stop hooks: 8-block infinite-loop cap with `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP` override** (v2.1.143). Material for our voice-validator hook design.
+- **Memory leaks**: multiple fixed (v2.1.121: many images, `/usage` 2GB leak, long-running tools failing to emit progress; v2.1.117: idle re-render loop). No Serious Sidekick action.
+- **Security**: bash deny rules now match `env`/`sudo`/`watch`/`ionice`/`setsid` wrappers (v2.1.113); `Bash(find:*)` no longer auto-approves `-exec`/`-delete` (v2.1.113); macOS `/private/{etc,var,tmp,home}` treated as dangerous removal targets under `Bash(rm:*)` (v2.1.113).
+- **Spinner / UX**: thinking spinner shows progress inline (v2.1.116); long-thinking spinner turns amber after 10s (v2.1.141).
+- **OpenTelemetry**: agent_id / parent_agent_id headers and OTEL attributes (v2.1.139); `claude_code.skill_activated` carries `invocation_trigger` (v2.1.126); `claude_code.at_mention` event (v2.1.122).
+
+### Items that did NOT ship (still pending from current ROADMAP)
+
+- **`paths:` globs for skill auto-loading (ROADMAP #5)** — Not in any v2.1.109–v2.1.143 changelog entry. Still researched-only.
+- **`FileChanged` hooks for drift detection (ROADMAP #6)** — Not in any changelog entry. Still researched-only.
+- **`defer` + `PermissionDenied` hooks (ROADMAP #4)** — Not in any changelog entry. Still pending. (Related: `PermissionRequest` hook bugs around `updatedInput` and `setMode:'bypassPermissions'` were fixed in v2.1.110.)
+
+### Impact on Serious Sidekick (cross-cutting)
+
+1. **ROADMAP #3 (compound quick skills)** drops from M to S effort because fork-subagents are now generally available externally without env-var gating (v2.1.117 → v2.1.118).
+2. **ROADMAP #8 (auto-detection skill invocation)** is now broadly enabled — `claude agents` view + `/goal` together cover most of what the original roadmap item was asking for. Reassess whether it remains its own item or merges with new `claude agents` integration work.
+3. **`claude agents` view is a NEW potential roadmap item**: integrate `/serious-status` with it, or build on top of it instead of competing.
+4. **`/goal` is a NEW potential roadmap item**: use it to drive `/serious-code` unattended execution; replaces some of the per-phase approval ceremony.
+5. **Voice-retrofit research's Issue #54196 dependency** (PostToolUse `updatedToolOutput` broken at runtime) is now confirmed via the v2.1.121 changelog entry. When fixed, the retrofit's Phase 3 sub-agent translation simplifies considerably.
+6. **ROADMAP #1 (Monitor tool)** — still REASSESS. No new info in this window beyond the v2.1.105 `monitors` manifest key already noted.
 
 ---
 

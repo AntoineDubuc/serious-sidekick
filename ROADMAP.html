@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Serious Sidekick — Product Roadmap</title>
+<style>
+  :root {
+    --bg: #0a0e14;
+    --bg-elev: #131922;
+    --bg-card: #171f2c;
+    --bg-card-hover: #1c2638;
+    --bg-pre: #0d1219;
+    --fg: #e6edf3;
+    --fg-dim: #9aa4b2;
+    --fg-faint: #6b7588;
+    --border: #232c3d;
+    --border-strong: #2d3a52;
+    --accent: #7aa9ff;
+    --accent-bg: rgba(122, 169, 255, 0.08);
+    --accent-strong: #a6c5ff;
+    --success: #5fd97a;
+    --warn: #f5b342;
+    --danger: #ff7a7a;
+    --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.02);
+    --shadow-hover: 0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(122,169,255,0.15);
+  }
+  :root[data-theme="light"] {
+    --bg: #fafbfc;
+    --bg-elev: #ffffff;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f5f7fa;
+    --bg-pre: #f0f2f5;
+    --fg: #1c2128;
+    --fg-dim: #57606a;
+    --fg-faint: #8b949e;
+    --border: #d8dee4;
+    --border-strong: #adb5bd;
+    --accent: #2d6cdf;
+    --accent-bg: rgba(45, 108, 223, 0.08);
+    --accent-strong: #1e4fa0;
+    --success: #1a7f37;
+    --warn: #bf8700;
+    --danger: #cf222e;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-hover: 0 4px 16px rgba(0,0,0,0.1);
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    margin: 0;
+    padding: 0;
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.2s, color 0.2s;
+  }
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 28px 80px 28px;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-size: 2.1em;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.02em;
+  }
+  h2 {
+    font-size: 1.35em;
+    font-weight: 600;
+    margin: 2.2em 0 0.6em 0;
+    letter-spacing: -0.01em;
+    color: var(--fg);
+  }
+  h2 .subtitle {
+    font-size: 0.7em;
+    font-weight: 400;
+    color: var(--fg-dim);
+    margin-left: 8px;
+  }
+  h3 {
+    font-size: 1.05em;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+    color: var(--fg);
+  }
+  p { margin: 0.6em 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    background: var(--bg-pre);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    color: var(--fg);
+  }
+  .meta {
+    color: var(--fg-dim);
+    font-size: 0.92em;
+    margin-top: 4px;
+  }
+  .meta strong { color: var(--fg); font-weight: 600; }
+  .theme-toggle {
+    background: var(--bg-elev);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.85em;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .theme-toggle:hover {
+    background: var(--bg-card);
+    border-color: var(--border-strong);
+  }
+  .intro {
+    color: var(--fg-dim);
+    font-size: 0.96em;
+    margin: 20px 0 8px 0;
+    padding: 14px 18px;
+    background: var(--bg-elev);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+  }
+  .section-now {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    box-shadow: var(--shadow);
+    transition: box-shadow 0.2s, border-color 0.2s, background 0.15s;
+  }
+  .card:hover {
+    box-shadow: var(--shadow-hover);
+    border-color: var(--border-strong);
+  }
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-num {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--accent-bg);
+    color: var(--accent-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.95em;
+  }
+  .card-title {
+    font-size: 1.08em;
+    font-weight: 600;
+    margin: 0;
+    flex: 1;
+  }
+  .card-row {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 14px;
+    padding: 8px 0;
+  }
+  .card-row + .card-row {
+    border-top: 1px dashed var(--border);
+  }
+  .card-label {
+    font-size: 0.78em;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--fg-faint);
+    font-weight: 600;
+    padding-top: 2px;
+  }
+  .card-value {
+    color: var(--fg);
+    font-size: 0.97em;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 0.93em;
+    background: var(--bg-elev);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  th, td {
+    padding: 12px 14px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--border);
+  }
+  tr:last-child td { border-bottom: none; }
+  th {
+    background: var(--bg-card);
+    font-weight: 600;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--fg-dim);
+  }
+  td.num {
+    color: var(--fg-faint);
+    font-weight: 600;
+    width: 38px;
+    text-align: center;
+  }
+  td.title { font-weight: 600; width: 240px; }
+  .pill {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 12px;
+    font-size: 0.78em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .pill-now { background: rgba(95, 217, 122, 0.12); color: var(--success); }
+  .pill-soon { background: rgba(245, 179, 66, 0.12); color: var(--warn); }
+  .pill-watch { background: rgba(122, 169, 255, 0.12); color: var(--accent); }
+  .pill-killed { background: rgba(255, 122, 122, 0.12); color: var(--danger); }
+  .recently-shipped {
+    margin-top: 36px;
+    padding: 20px 22px;
+    background: var(--bg-elev);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .recently-shipped h2 {
+    margin-top: 0;
+    font-size: 1.15em;
+  }
+  .shipped-item {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .shipped-item:last-child { border-bottom: none; }
+  .shipped-date {
+    color: var(--fg-faint);
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .shipped-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .shipped-detail {
+    color: var(--fg-dim);
+    font-size: 0.93em;
+  }
+  footer {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    color: var(--fg-faint);
+    font-size: 0.85em;
+    text-align: center;
+  }
+  footer a { color: var(--fg-dim); }
+  @media (max-width: 700px) {
+    .container { padding: 24px 16px 60px 16px; }
+    h1 { font-size: 1.7em; }
+    .card-row { grid-template-columns: 1fr; gap: 4px; }
+    .card-label { font-size: 0.75em; }
+    table { font-size: 0.88em; }
+    th, td { padding: 9px 10px; }
+    td.title { width: auto; }
+  }
+  @media print {
+    :root { --bg: #fff; --bg-elev: #fff; --bg-card: #fff; --bg-pre: #f5f5f5; --fg: #000; --fg-dim: #333; --fg-faint: #555; --border: #ccc; --shadow: none; --shadow-hover: none; }
+    body { font-size: 11pt; }
+    .theme-toggle { display: none; }
+    .container { padding: 0; max-width: none; }
+    .card, .recently-shipped, table { page-break-inside: avoid; }
+    a { color: #000; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div>
+    <h1>Serious Sidekick — Product Roadmap</h1>
+    <p class="meta">
+      <strong>Last updated:</strong> 2026-05-17 &nbsp;·&nbsp;
+      <strong>Current version:</strong> v1.8.0 &nbsp;·&nbsp;
+      <strong>Claude Code:</strong> v2.1.143
+    </p>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">☀ Light</button>
+</header>
+
+<div class="intro">
+  The April roadmap had eight engineer-ranked features. Since then, Claude Code shipped two big features that move the rest of the list around (an agent-view screen and a "keep working until done" command), and we shipped the first phase of the PM-voice retrofit. Below is the rewritten list, sorted by <strong>what the user feels</strong> — not what's easiest to build.
+</div>
+
+<h2>Now <span class="subtitle">— the next two months of work</span></h2>
+
+<div class="section-now">
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">1</div>
+      <h3 class="card-title">One-click install</h3>
+      <span class="pill pill-now">Now</span>
+    </div>
+    <div class="card-row">
+      <div class="card-label">What it does for the user</div>
+      <div class="card-value">Anyone with Claude Code can add Serious Sidekick by typing one command instead of cloning a repo and running a shell script. Updates become one command too. Today the install flow filters out most non-engineers — this opens the door.</div>
+    </div>
+    <div class="card-row">
+      <div class="card-label">What it costs us</div>
+      <div class="card-value">Medium-large. Repackage the file layout into the Claude-Code-native plugin format, set up a tiny marketplace, write a migration path for existing users.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">2</div>
+      <h3 class="card-title">Finish the voice retrofit</h3>
+      <span class="pill pill-now">Now</span>
+    </div>
+    <div class="card-row">
+      <div class="card-label">What it does for the user</div>
+      <div class="card-value">Today only the research-summary handoff speaks in PM voice. The next phase rewrites the worst chat replies in the other thirteen workflows — the code per-task reports, the plan reveals, the review verdicts, all the status banners — so every reply, not just one, is human-readable.</div>
+    </div>
+    <div class="card-row">
+      <div class="card-label">What it costs us</div>
+      <div class="card-value">6-8 hours of edits to the playbooks. Optional follow-on: a small translation worker for the four highest-volume moments (another 5-7 hours).</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">3</div>
+      <h3 class="card-title">One screen for all your workflows</h3>
+      <span class="pill pill-now">Now</span>
+    </div>
+    <div class="card-row">
+      <div class="card-label">What it does for the user</div>
+      <div class="card-value">Claude Code now ships a "one screen for every session" view. Right now our workflow-status command lives separately and tells you about your active workflows in a different place. Either we sit on top of the new screen and feed it our workflow info, or our status command starts looking outdated next to it.</div>
+    </div>
+    <div class="card-row">
+      <div class="card-label">What it costs us</div>
+      <div class="card-value">Medium. Either pipe our workflow data into the new view, or deprecate our own status command and rely on the built-in. Open question on which is cleaner.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">4</div>
+      <h3 class="card-title">Walk-away mode for the code workflow</h3>
+      <span class="pill pill-now">Now</span>
+    </div>
+    <div class="card-row">
+      <div class="card-label">What it does for the user</div>
+      <div class="card-value">Tell the code workflow "fix this bug and don't come back until tests pass." Walk away. Come back to a working fix instead of fifty approval prompts. Today, even for low-risk work, you sit through "Go?" between every phase. This adds an unattended option for runs where you trust the plan.</div>
+    </div>
+    <div class="card-row">
+      <div class="card-label">What it costs us</div>
+      <div class="card-value">Medium. Wire the code workflow into Claude Code's new "keep working until condition met" command, with a clean fail-safe that drops back to manual gating if anything goes red.</div>
+    </div>
+  </div>
+
+</div>
+
+<h2>Soon <span class="subtitle">— next quarter, depends on Anthropic shipping</span></h2>
+
+<table>
+  <thead>
+    <tr>
+      <th class="num">#</th>
+      <th class="title">What we ship</th>
+      <th>What it does for the user</th>
+      <th>What we're waiting on</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="num">5</td>
+      <td class="title">Quick-skills (two-step recipes)</td>
+      <td>Light-weight skills for the operational work between builds: ingest a video and discuss it, audit your workflows for stuck items, check your skills for inconsistencies. Three steps, no full ceremony.</td>
+      <td>Nothing — Anthropic shipped the underlying capability. Effort dropped from a week to two days. Bumped down only because items 1-4 hit more pain.</td>
+    </tr>
+    <tr>
+      <td class="num">6</td>
+      <td class="title">Skills that only load when relevant</td>
+      <td>Some skills load on every session even when they're irrelevant. Anthropic is expected to add a way to scope skills to file patterns ("only load this when I'm editing TypeScript"). Smaller context, faster sessions.</td>
+      <td>Anthropic to ship file-pattern skill scoping. No new info in the last month.</td>
+    </tr>
+    <tr>
+      <td class="num">7</td>
+      <td class="title">Catch stale plans automatically</td>
+      <td>If you write research on Monday, plan on Tuesday, and someone edits the research file Wednesday before you code, today nothing warns you. This adds a one-line warning when the source has shifted under a downstream plan.</td>
+      <td>Anthropic to ship file-change hooks. Still waiting.</td>
+    </tr>
+    <tr>
+      <td class="num">8</td>
+      <td class="title">Safe unattended mode for risky operations</td>
+      <td>Headless runs today are all-or-nothing — either nothing prompts and dangerous ops fly through, or every prompt blocks the run. This adds a middle path: dangerous operations pause, harmless denials auto-retry.</td>
+      <td>Anthropic to ship two new hook types (pause-on-dangerous + retry-on-deny). Still waiting.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Watching <span class="subtitle">— track-only, not actively building</span></h2>
+
+<table>
+  <thead>
+    <tr>
+      <th class="num">#</th>
+      <th class="title">Item</th>
+      <th>What changes when this resolves</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="num">9</td>
+      <td class="title">Anthropic Issue #54196</td>
+      <td>When Anthropic fixes the broken hook that should rewrite tool output, the voice retrofit gets ~10x simpler — sub-agent output gets translated at the seam instead of per-call-site in every playbook.</td>
+    </tr>
+    <tr>
+      <td class="num">10</td>
+      <td class="title">Interactive diagrams</td>
+      <td>Third-party canvas tool for live editable diagrams during research and planning. Nice-to-have, our existing static-image generator covers most cases. Ship when someone asks for it.</td>
+    </tr>
+    <tr>
+      <td class="num">11</td>
+      <td class="title">Event-driven progress monitoring</td>
+      <td>Replace the "wake up every five seconds and check" loop with event-driven notifications. Works fine today; small optimization, low priority.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Killed / merged</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th class="title">Item</th>
+      <th>What happened</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="title"><span class="pill pill-killed">Killed</span> Cold-read enforcement</td>
+      <td>Abandoned 2026-04-14 after the plan failed review twice with the same pattern. Revisit only if observability logs show this is a real problem.</td>
+    </tr>
+    <tr>
+      <td class="title"><span class="pill pill-watch">Merged</span> Auto-detect skill invocation</td>
+      <td>Partly obsoleted by Claude Code's new agent-view screen and "keep working until done" command, which together cover most of the original need. Folded into items 3 and 4 above.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="recently-shipped">
+  <h2>Recently shipped</h2>
+
+  <div class="shipped-item">
+    <div class="shipped-date">2026-05-16 · commit 736ef45</div>
+    <div class="shipped-title">PM-voice retrofit (Phase 1) + .gitignore hardening</div>
+    <div class="shipped-detail">
+      Canonical voice rule, a system-prompt style that points at it, and the research-summary handoff rewritten in PM voice instead of dumping grade letters and file paths. Plus a tightened ignore file: credentials covered, future Claude Code state files default-denied, the new workflow-tracking directory caught. <strong>Phases 2-4 are still pending</strong> (rewrite the worst chat replies in the other 13 workflows, add a translation worker for the four highest-volume moments, polish the edge cases).
+    </div>
+  </div>
+
+  <div class="shipped-item">
+    <div class="shipped-date">2026-04-14 · v1.8.0</div>
+    <div class="shipped-title">Observability spike — silent failures become visible</div>
+    <div class="shipped-detail">
+      Every workflow hook now logs its outcome to a TSV file. Diagnostic only (not a security control). Shipped after a panel agreed: "measure first, harden later." The 9-plan observability roadmap was abandoned — follow-on work will be written from real log data, not research speculation.
+    </div>
+  </div>
+
+  <div class="shipped-item">
+    <div class="shipped-date">2026-04-12</div>
+    <div class="shipped-title">Dispatch audit trail + supply-chain hardening</div>
+    <div class="shipped-detail">
+      Every agent dispatch is logged. The completion report warns if any task ran fewer than 5 agents. Three supply-chain attack vectors closed in the install/update flow, with 32 new security tests. End-to-end verified by running the full code workflow.
+    </div>
+  </div>
+
+  <div class="shipped-item">
+    <div class="shipped-date">2026-04-12</div>
+    <div class="shipped-title">Live status line during code workflow</div>
+    <div class="shipped-detail">
+      A second line in your terminal footer shows where you are in the active code run — phase, task, agent state — so you can glance at the screen and know what's happening without scrolling through logs.
+    </div>
+  </div>
+</div>
+
+<footer>
+  Full engineer-readable roadmap with detailed rationale, dependencies, and the original ranked list: see <a href="ROADMAP.md">ROADMAP.md</a>.
+</footer>
+
+</div>
+
+<script>
+  function applyTheme(theme) {
+    if (theme === 'dark') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+    localStorage.setItem('roadmap-theme', theme);
+    const btn = document.getElementById('theme-btn');
+    btn.textContent = theme === 'dark' ? '☀ Light' : '☾ Dark';
+  }
+  function toggleTheme() {
+    const current = localStorage.getItem('roadmap-theme') || 'dark';
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+  }
+  applyTheme(localStorage.getItem('roadmap-theme') || 'dark');
+</script>
+</body>
+</html>

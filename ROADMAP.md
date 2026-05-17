@@ -1,21 +1,45 @@
 # Serious Sidekick — Product Roadmap
 
-> **Last updated:** 2026-04-14 · **Current version:** v1.8.0 · **Claude Code:** v2.1.108 (latest) / substantive releases: v2.1.105 (PreCompact hook, monitors manifest key, skill desc cap 250→1536) and v2.1.108 (built-in slash commands via Skill tool, /recap, 1-hour prompt caching)
+> **Last updated:** 2026-05-16 · **Current version:** v1.8.0 · **Claude Code:** v2.1.143 (latest) / new substantive releases since last update: v2.1.111 (`/ultrareview`, `/less-permission-prompts`, xhigh effort), v2.1.117 (fork-subagent externally enabled, 1M-context Opus 4.7 fix, default effort raised), v2.1.118 (hooks invoke MCP tools, fork-subagent GA), v2.1.121 (PostToolUse `updatedToolOutput` for all tools — but broken at runtime, see Issue #54196), v2.1.126 (gateway model discovery, `claude project purge`), v2.1.139 (`claude agents` view, `/goal` command, hook `args:` exec form, hook `continueOnBlock`). See §A of `CLAUDE_CODE_CHANGELOG.md` for the condensed digest.
 
 ---
 
-## What's Next — 8 Features, Ranked
+## What's Next
 
-| # | Feature | Why it matters | Impact | Effort | Status |
-|--:|---------|----------------|:------:|:------:|:------:|
-| **1** | **Monitor tool integration** | `/serious-code` polls evidence dirs with `sleep 5`. Monitor + `stdbuf -oL tail -F` replaces this with event-driven updates. Integration pattern verified (T2 spike). **⚠️ Reassess:** v2.1.105 adds first-class `monitors` manifest key for plugins — may obsolete or reshape this. | High | M | **REASSESS** |
-| **2** | **Cold-read enforcement** | ~~PreToolUse/Read hook logs opens and fails the verdict on violations.~~ **ABANDONED 2026-04-14.** Plan failed `/serious-review` twice with identical pattern. Panel-endorsed decision to revisit only if observability log shows cold-read violations actually happen. See `Research/features/cold-read-enforcement/` (status: abandoned). | — | — | **ABANDONED** |
-| **3** | **Compound "quick skills"** | The serious pipeline is heavy by design. But operational work (ingest a video, audit artifacts, lint skills) needs 2-3 chained commands without TDD overhead. `context: fork` enables lightweight orchestrator skills. 5 candidates identified. | Med-High | M | **NEW** |
-| **4** | **`defer` + `PermissionDenied` hooks** | Unlocks unattended `/serious-code` runs. `defer` pauses on dangerous ops; `PermissionDenied` auto-retries safe denials. Critical for CI/headless and enterprise. | Med-High | M | **NEW** |
-| **5** | **`paths:` globs for skill auto-loading** | 18 auto-loader skills load via description matching. Scoping to file patterns (`paths: ["*.ts"]`) cuts context cost. Quick win, medium risk — needs empirical test on one skill first. | Medium | S | **RESEARCHED** |
-| **6** | **`FileChanged` hooks for drift detection** | If research.md changes between `/serious-plan` and `/serious-code`, the plan silently goes stale. Notification-only hook catches this. | Medium | S | **RESEARCHED** |
-| **7** | **Excalidraw MCP for workflow diagrams** | Interactive diagrams via MCP server. Claude draws, screenshots, self-assesses, iterates. Complements `/serious-bananas` (static images) with editable output. | Medium | S | **NEW** |
-| **8** | **Auto-detection skill invocation** | Skills fire contextually without slash commands ("bug in auth" → `/serious-research`). **⚠️ Upstream unblocked in v2.1.108:** model can now discover and invoke built-in slash commands via the Skill tool. User-defined slash commands (our `/serious-*` family) are likely the next expansion. Effort drops from XL to M. | High | M | **RESEARCH** |
+The April roadmap had eight engineer-ranked features. Since then, Claude Code shipped two big features that move the rest of the list around (`claude agents` and `/goal`), and we shipped the first phase of the PM-voice retrofit. Below is the rewritten "next" list, sorted by **what the user feels** — not what's easiest to build.
+
+### Now (the next two months of work — sorted by what the user feels)
+
+| # | What we ship | What it does for the user | What it costs us |
+|--:|--------------|---------------------------|------------------|
+| 1 | **One-click install** | Anyone with Claude Code can add Serious Sidekick by typing one command instead of cloning a repo and running a shell script. Updates become one command too. Today the install flow filters out most non-engineers — this opens the door. | Medium-large. Repackage the file layout into the Claude-Code-native plugin format, set up a tiny marketplace, write a migration path for existing users. |
+| 2 | **Finish the voice retrofit** | Today only the research-summary handoff speaks in PM voice. The next phase rewrites the worst chat replies in the other thirteen workflows — `/serious-code` per-task reports, `/serious-plan` reveals, `/serious-review` verdicts, all the status banners — so every reply, not just one, is human-readable. | 6-8 hours of edits to the playbooks. Optional follow-on: a small translation worker for the four highest-volume moments (another 5-7 hours). |
+| 3 | **One screen for all your workflows** | Claude Code now ships a "one screen for every session" view (`claude agents`). Right now our `/serious-status` lives separately and tells you about your active workflows in a different place. Either we sit on top of the new screen and feed it our workflow info, or our status command starts looking outdated next to it. | Medium. Either pipe `/serious-status` data into the new view, or deprecate `/serious-status` and rely on the built-in. Open question on which is cleaner. |
+| 4 | **Walk-away mode for `/serious-code`** | Tell `/serious-code` "fix this bug and don't come back until tests pass." Walk away. Come back to a working fix instead of fifty approval prompts. Today, even for low-risk work, you sit through "Go?" between every phase. This adds an unattended option for runs where you trust the plan. | Medium. Wire `/serious-code` into Claude Code's new "keep working until condition met" command, with a clean fail-safe that drops back to manual gating if anything goes red. |
+
+### Soon (the next quarter — depends on Anthropic shipping)
+
+| # | What we ship | What it does for the user | What we're waiting on |
+|--:|--------------|---------------------------|----------------------|
+| 5 | **Quick-skills (two-step recipes)** | Light-weight skills for the operational work between builds: ingest a video and discuss it, audit your workflows for stuck breadcrumbs, lint your skills for inconsistencies. Three steps, no TDD, no plan. Fast tools for the housekeeping the heavy pipeline doesn't fit. | Nothing — Anthropic shipped the underlying capability already. Effort dropped from a week to two days. Bumped down only because items 1-4 hit more pain. |
+| 6 | **Skills that only load when relevant** | Today some skills load on every session even when they're irrelevant. Anthropic is expected to add a way to scope skills to file patterns ("only load this when I'm editing TypeScript"). Smaller context, faster sessions, no behavior change for the user. | Anthropic to ship file-pattern skill scoping. No new info in the last month — still waiting. |
+| 7 | **Catch stale plans automatically** | If you write research on Monday, plan on Tuesday, and someone edits the research file Wednesday before you start coding, today nothing warns you. This adds a one-line warning when the source has shifted under a downstream plan. | Anthropic to ship file-change hooks. Still waiting. |
+| 8 | **Safe unattended mode for risky operations** | Today, headless runs are all-or-nothing — either nothing prompts and dangerous ops fly through, or every prompt blocks the run. This adds a middle path: dangerous operations pause and wait for a human, harmless denials auto-retry. | Anthropic to ship two new hook types (pause-on-dangerous + retry-on-deny). Still waiting. |
+
+### Watching (track-only, not actively building)
+
+| # | Item | What changes when this resolves |
+|--:|------|--------------------------------|
+| 9 | **Anthropic Issue #54196** | When Anthropic fixes the broken hook that should rewrite tool output, the voice retrofit gets ~10x simpler — sub-agent output gets translated at the seam instead of per-call-site in every playbook. |
+| 10 | **Interactive diagrams** | Third-party canvas tool (Excalidraw) for live editable diagrams during research and planning. Nice-to-have, our existing static-image generator covers most cases. Ship when someone asks for it. |
+| 11 | **Event-driven progress monitoring** | Replace the `/serious-code` "wake up every five seconds and check" loop with event-driven notifications. Works fine today; small optimization, low priority. |
+
+### Killed / merged
+
+| Item | What happened |
+|------|---------------|
+| **Cold-read enforcement** (was #2) | Abandoned 2026-04-14 after the plan failed review twice with the same pattern. Revisit only if observability logs show this is a real problem. |
+| **Auto-detect skill invocation** (was #8) | Partly obsoleted by Claude Code's new `claude agents` view and `/goal` command, which together cover most of the original need. Folded into items 3 and 4 above. |
 
 **Legend:** S = ≤2 days, M = week, XL = month+. Detailed rationale for each feature in §B–§K below.
 
@@ -25,6 +49,7 @@
 
 | Version / Commit | Date | What shipped |
 |:----------------|:-----|:-------------|
+| `736ef45` | 2026-05-16 | **PM-voice retrofit (Phase 1 of 4 from `Research/features/skill-voice-retrofit/`) + .gitignore hardening.** Canonical voice card at `.claude/skills/_shared/voice-card.md`; PM-voice Output Style at `.claude/output-styles/PM-voice.md` set as default in `.claude/settings.json`; `/serious-research` Phase 6 handoff rewritten to use the PM voice instead of dumping grade distributions, folder paths, and persona names. `CLAUDE.md` now has a "Working with Me" + "stupid salesguy / PM voice (DEFAULT)" section. `.gitignore` gained default-deny under `.claude/*` with explicit un-ignores, a credential-pattern block, and coverage for `.claude-active/` + root `report.html`. Deep research output graded 13A/6B/4C/4D claims; 73% citation pass rate from independent QA; one Anthropic-doc misattribution caught and corrected during verification. **Phases 2-4 still pending** (14 SKILL.md inline rewrites, Haiku translator for high-value touchpoints, UserPromptSubmit reminder + special-case `/serious-conversation` Orchestrator). |
 | v1.8.0 · `2137748` | 2026-04-14 | **Observability spike — silent-pass becomes visible.** `_log_outcome` helper + all 5 hooks instrumented at every exit site. TSV log at `.claude/logs/outcomes.log`. 14 tests. Diagnostic only (NOT a security control). Shipped as spike after panel converged on "measure first, harden later." 9-plan observability roadmap abandoned; follow-on plans will be written from real log data, not research speculation. |
 | *(unstaged)* | 2026-04-12 | **Dispatch audit trail.** PreToolUse/Agent hook logs every agent dispatch to `dispatch_log.md`. Completion report warns if any task dispatched fewer than 5 agents. 47 tests. Input sanitized, file mode 0600. End-to-end verified. |
 | *(unstaged)* | 2026-04-12 | **Karpathy principles — KILLED.** `/serious-conversation` panel (4 personas, 2 rounds, unanimous). Audience mismatch: principles target bare-CLAUDE.md projects, redundant with our mechanical enforcement. Two tactical fixes survived as one-line edits. |
@@ -266,6 +291,95 @@ All 3 Tier 0 spikes are resolved. Feature work is unblocked.
 **Solution.** Session-start hook injects invocation cues based on intent classification. "There's a bug in auth" → offer `/serious-research`. "I know what to build" → offer `/serious-plan`.
 
 **Why backlog.** XL effort, classification is hard, false positives are worse than no automation, AND session-start hooks don't exist as a Claude Code feature yet. Parked until the rest of the top 7 ship and the upstream feature lands.
+
+### L. `claude agents` integration (#12)
+
+**Status: NEW (2026-05-16). Driven by v2.1.139 — v2.1.143 Claude Code releases.**
+
+**The opportunity.** v2.1.139 introduced `claude agents` — "a single list of every Claude Code session — running, blocked on you, or done. Run `claude agents` to get started." v2.1.143 added flags to configure dispatched sessions: `--add-dir`, `--settings`, `--mcp-config`, `--plugin-dir`, `--permission-mode`, `--model`, `--effort`, `--dangerously-skip-permissions`. Background sessions are now a real workflow surface, not just a hack.
+
+**Overlap with `/serious-status`.** Both surface "where are my active workflows." `/serious-status` reads breadcrumbs and frontmatter; `claude agents` reads daemon state. Right now they don't talk to each other — running `/serious-status` doesn't know about background sessions, and `claude agents` doesn't know about active serious workflows.
+
+**Three integration options:**
+
+| Option | What it means | Effort |
+|---|---|---|
+| A. Sit on top | `/serious-status` calls `claude agents --json` (if a JSON output flag exists) and merges results with breadcrumb data | S-M |
+| B. Replace `/serious-status` | Deprecate `/serious-status` in favor of `claude agents`. Move breadcrumb info into session titles or `/rename` | M |
+| C. Build parallel | Keep them separate. Both have their place. | XS (no change) |
+
+**Why #12.** High impact on workflow visibility for the user, no upstream blockers (features shipped), Medium effort. Option A is the safest first step.
+
+**Open questions:**
+- Does `claude agents` have a `--json` or scriptable output mode? (Need to check v2.1.143 docs.)
+- Can a breadcrumb be promoted into an actual background-session entry?
+- What's the right naming convention so the user can read the merged list?
+
+### M. `/goal`-driven unattended `/serious-code` (#13)
+
+**Status: NEW (2026-05-16). Driven by v2.1.139.**
+
+**The opportunity.** v2.1.139 introduced `/goal`: "Set a completion condition and Claude keeps working across turns until it's met. Works in interactive, `-p`, and Remote Control. Shows live elapsed/turns/tokens as an overlay panel."
+
+**Where this fits.** `/serious-code` currently runs phase-by-phase with manual "Go" approval between phases. For trusted execution paths (low-risk plans, well-verified research, mature codebases), the manual gating is friction. `/goal` provides a structured way to say "run the plan to completion" with a clear stop condition — without going to `--dangerously-skip-permissions`.
+
+**Proposed integration:**
+- `/serious-code --autonomous` flag wraps the execution in a `/goal` with completion condition = "all phases pass, all evidence files present, no FAILED tasks."
+- Falls back to manual gating if any phase produces FAILED tasks (so the user sees the failure rather than walking back to dozens of green-passing phases).
+- Live `/goal` overlay shows elapsed/turns/tokens — replaces some of the live status line work from v1.8.
+
+**Why #13.** High impact (removes the largest friction from `/serious-code`), Medium effort, no upstream dependencies. Pairs naturally with `claude --bg` (run `/serious-code` in a backgrounded session, attach later) and `claude agents` (see all autonomous runs).
+
+**Open questions:**
+- How does `/goal` interact with per-task gate hooks (verify-completion-gate, TDD-gate)?
+- What happens if a gate hook returns exit-2 inside a `/goal` session? Does it count as goal-failure or just retry?
+- Should the completion condition be auto-derived from the plan's evidence schema, or user-provided?
+
+### N. Plugin packaging of Serious Sidekick (#14)
+
+**Status: NEW (2026-05-16). Driven by plugin-ecosystem maturity across v2.1.117 — v2.1.143.**
+
+**The opportunity.** Plugin features shipped in this window: dependency enforcement (v2.1.143), projected context cost in `/plugin` marketplace browse pane (v2.1.143), `claude plugin prune` (v2.1.121), `--plugin-url` for `.zip` archives (v2.1.129), plugin auto-installing missing dependencies on `--reload` (v2.1.117), themes shipping via `themes/` directory (v2.1.118). The Plugin distribution path is now mature enough to be the primary install method instead of `install.sh`.
+
+**What this would change for users:** Today's install is a shell script that copies files into `~/.claude/skills/`, `~/.claude/agents/`, `~/.claude/hooks/`, etc. New users have to clone the repo, run `./install.sh`, and trust that it doesn't break anything. As a plugin: `claude plugin install serious-sidekick` and the user is done. Updates become `claude plugin update`. Uninstall becomes `claude plugin uninstall serious-sidekick`.
+
+**What this would change for development:** A `plugin.json` manifest declares the skills, hooks, agents, monitors, themes, and output styles. `marketplace.json` registers the plugin source (this GitHub repo). The `install.sh` flow becomes a thin "bootstrap your marketplace" shim or goes away entirely.
+
+**Why #14.** Med-High impact (install friction is the biggest barrier to adoption), Medium-Large effort (need to refactor file layout, validate dependencies, set up marketplace), no upstream blockers.
+
+**Open questions:**
+- Does the current `manifest.json` already conform to plugin manifest expectations, or is it a custom schema?
+- How does plugin packaging interact with the project-local `.claude/skills/` directory that `/serious-init` creates?
+- What's the right marketplace? Self-host on this GitHub repo, or aim for an official Anthropic marketplace once that exists?
+- Backward compatibility: how do existing `install.sh` users migrate without breaking their setup?
+
+### O. Watch Anthropic Issue #54196 (#15)
+
+**Status: WATCH (2026-05-16). Track-only.**
+
+**The dependency.** v2.1.121 shipped: "PostToolUse hooks can now replace tool output for all tools via `hookSpecificOutput.updatedToolOutput` (previously MCP-only)." But Anthropic's own GitHub Issue #54196 (OPEN as of 2026-05-16, multiple reproducers across macOS and Ubuntu, versions v2.1.121–v2.1.123) reports the field is silently dropped at runtime for built-in tools including the Agent/Task tool.
+
+**Why it matters here.** The voice-retrofit research (`Research/features/skill-voice-retrofit/`) found that sub-agent output translation is the single highest-leverage improvement available — but cannot be implemented today via PostToolUse because the field doesn't actually rewrite the tool output. The retrofit's Phase 3 (Haiku translator for high-value touchpoints) currently has to spawn the translator from inside the skill prose instead of intercepting tool results.
+
+**When the bug is fixed:** Phase 3 simplifies from "rewrite call-sites in 14 skills" to "add one PostToolUse hook that translates Agent tool results into PM voice before the parent sees them." That's a ~10x reduction in retrofit work.
+
+**Tracking strategy.** Check the issue when we hit a related Claude Code release. No active polling — that's the kind of busywork CLAUDE.md says not to do.
+
+### P. Voice retrofit follow-through (#16)
+
+**Status: SHIPPED PARTIAL (2026-05-16, commit `736ef45`). Phases 2-4 pending.**
+
+Phase 1 of the voice retrofit shipped today. The research output at `Research/features/skill-voice-retrofit/` defines four phases; Phase 1 is the system-prompt + Output Style + one-skill-handoff retrofit. Phases 2-4 remain optional.
+
+**Phase 2 (6-8 hours).** Inline-rewrite the worst "Tell the user:" blocks in the remaining 13 SKILL.md files. ~95 slop instructions catalogued; the worst 10 per skill account for most chat-surface damage. Highest-value next step if drift becomes observable after Phase 1 settles.
+
+**Phase 3 (5-7 hours).** Add a Haiku-powered `voice-translator` sub-agent. Wire it into 3-4 highest-value touchpoints (research handoff, plan reveal, code per-task report, review verdict). ~$0.003 per call, +1-3s latency.
+
+**Phase 4 (2-3 hours).** Polish — UserPromptSubmit reminder hook with `<system-reminder>` injection, special-case `/serious-conversation` Orchestrator (switch default to single-recommendation), special-case `/serious-status` and `/serious-abandon` wrap-up prose.
+
+**Falsification gate before Phase 2.** Pick 5 historical slop examples from the user's reference complaints. If the Phase-1 retrofit catches or avoids fewer than 4/5, stop and re-evaluate — more layers won't help. Build the test fixture before doing more work.
+
+**Why optional.** Phase 1 covers ~60-70% of daily pain (per the research). The user explicitly asked for the lighter cut. Phases 2-4 ship only if Phase 1 measurement shows meaningful residual slop.
 
 ---
 
