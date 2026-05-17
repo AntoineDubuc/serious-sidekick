@@ -290,31 +290,32 @@ If frontmatter has a `parent:` field and the parent was the same skill type (rev
 
 <!-- voice-retrofit: rewritten; thread-1 line: 251 -->
 
-Display the verdict to the user in PM voice. No "PASS-WITH-CONDITIONS", no "{N} Critical and {M} Major findings", no `review_verdict.md` file path in chat.
+**Present the verdict via the voice-translator sub-agent.**
 
-**If passed:**
+This is one of the four highest-value PM-voice touchpoints. Spawn the `voice-translator` sub-agent via the Agent tool. Pass a structured payload (NOT a temp file). Translator returns the chat reply in PM voice; emit it verbatim.
+
+Dispatch protocol:
+1. **Build the payload** as a structured prompt-string argument to the Agent tool. Include:
+   - Trusted fields (unwrapped, semantic): `event: review-verdict`, `mode: {passed|passed-with-conditions|failed|override}`, `recommended_next: {code|fix-then-code|rescope}`.
+   - Untrusted fields (each wrapped in `<payload>...</payload>` tags): `findings` (the worst issue in one sentence, OR the conditions to watch for, OR "all clean"), `upstream_decisions_needed` (what the user has to decide).
+2. **Spawn `voice-translator`** with a 10-second timeout. NO retry on transient errors.
+3. **Emit the translator's output verbatim** — no prefix, no suffix, no editing.
+4. **If the translator returns `TRANSLATOR_ERROR: <reason>`** or times out (10s wall clock) or the Agent tool errors (5xx, 429, network), emit the hard-coded fallback based on the mode:
+
+   - **passed:** "What this does: review came back clean — ready to build. Question: start?"
+   - **passed-with-conditions:** "What this does: review found some things to watch for, but nothing blocking. Question: proceed with caution?"
+   - **failed:** "What this does: review found real issues — recommend we fix them first. Question: walk through them?"
+   - **override:** "What this does: you decided to proceed despite the review. Noted. Question: ready to build?"
+
+   Do NOT retry the translator. One attempt per touchpoint.
+
+The full review verdict (with all reviewer reports, severity breakdown, conditions) lives in the on-disk `review_verdict.md` file. The user sees the translator's plain-English summary.
+
+Reference example (for the operator to compare against when the translator behaves oddly):
 
 > What this does: the plan is solid — ready to build.
 >
 > Question: start building?
-
-**If passed with conditions:**
-
-> What this does: the plan works, but there are {N} things to watch for during the build — I'll flag each one when we hit it. {one-sentence summary of the biggest one.}
->
-> Question: ready to build, with those in mind?
-
-**If failed:**
-
-> What this does: the plan has {N} real issues — the biggest is {one-sentence summary}. The full breakdown is saved locally if you want detail.
->
-> Question: fix it together (recommended), ship anyway, or rethink the plan?
-
-**If overridden:**
-
-> What this does: you decided to ship the plan despite the review's concerns. That's noted on the plan itself.
->
-> Question: ready to build?
 
 ---
 

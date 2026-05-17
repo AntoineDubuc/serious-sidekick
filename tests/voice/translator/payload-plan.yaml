@@ -1,0 +1,11 @@
+# Synthetic payload for /serious-plan Phase 3 presentation translator test.
+event: plan-presentation
+mode: single-plan
+recommended_next: review
+untrusted_fields:
+  findings: |
+    <payload>11 tasks total; estimated 22-26 hours. 5 acceptance criteria with security tags (Task 3 wire validator, Task 5 input sanitization, Task 7 secret redaction). Inline QA Protocol embedded per v6 template. 3 tasks marked HIGH risk.</payload>
+  file_paths: |
+    <payload>Research/features/auth-flow/implementation_plan.md, Research/features/auth-flow/_extracted_items.md</payload>
+  upstream_decisions_needed: |
+    <payload>None. Plan is ready to review. Reviewer agents will run cold-read against the plan.</payload>

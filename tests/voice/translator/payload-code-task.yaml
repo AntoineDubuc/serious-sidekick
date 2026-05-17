@@ -1,0 +1,11 @@
+# Synthetic payload for /serious-code per-task report translator test.
+event: code-task-report
+mode: in-progress
+recommended_next: continue-or-pause
+untrusted_fields:
+  findings: |
+    <payload>Task 3 (Phase 2 inline rewrites) complete. Implementer wrote 14 files across 14 SKILL.md. Reviewer GREEN, Test-Runner PASS 14/14, Runtime-Checker PASS 7/7, QA PASS 3/3. Completion Gate verified all ACs. evidence/task_03/gate_passed.md written.</payload>
+  file_paths: |
+    <payload>.claude/skills/serious-*/SKILL.md (14 files modified), Research/features/skill-voice-retrofit/evidence/task_03/</payload>
+  user_actions: |
+    <payload>Approve continuation to Task 4 (Phase 4a Orchestrator default rewrite).</payload>

@@ -54,13 +54,12 @@ else
   assert "lint exits 0 on synced tree" "fail" "exit=$EC; output:\n$(cat /tmp/lint-out.txt)"
 fi
 
-# AC13: lint reports exactly 24 surfaces
+# AC13: lint reports exactly 25 surfaces (was 24 in Task 1; Task 3 added voice-translator)
 SURFACE_COUNT=$(grep -cE '^Checked: ' /tmp/lint-out.txt || true)
-# Also accept summary line "Surfaces: 24"
-if [ "$SURFACE_COUNT" = "24" ] || grep -qE 'Surfaces?:?\s*24\b|24 surfaces' /tmp/lint-out.txt; then
-  assert "lint reports exactly 24 surfaces" "pass"
+if [ "$SURFACE_COUNT" = "25" ] || grep -qE 'Surfaces?:?\s*25\b|25 surfaces' /tmp/lint-out.txt; then
+  assert "lint reports exactly 25 surfaces" "pass"
 else
-  assert "lint reports exactly 24 surfaces" "fail" "got count=$SURFACE_COUNT, output:\n$(cat /tmp/lint-out.txt)"
+  assert "lint reports exactly 25 surfaces" "fail" "got count=$SURFACE_COUNT, output:\n$(cat /tmp/lint-out.txt)"
 fi
 
 # AC11 negative: introduce drift in one SKILL.md → lint exits 1

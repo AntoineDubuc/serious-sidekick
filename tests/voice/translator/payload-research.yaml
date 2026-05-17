@@ -1,0 +1,12 @@
+# Synthetic payload for /serious-research Phase 6 handoff translator test.
+# Trusted fields (unwrapped, semantic) + untrusted fields (wrapped in <payload> tags).
+event: research-handoff
+mode: deep
+recommended_next: plan
+untrusted_fields:
+  findings: |
+    <payload>13 claims graded across 4 angles. Adversarial review tested 12; 8 held, 3 weakened, 1 disproved. QA citation pass rate 92%. Personas reviewed: Senior Engineer, Devil's Advocate, PM Empathy. Senior Engineer flagged 2 edge cases the threads missed.</payload>
+  file_paths: |
+    <payload>Research/features/auth-flow/research.md, Research/features/auth-flow/report.html, Research/features/auth-flow/evidence/</payload>
+  user_actions: |
+    <payload>None required immediately. User can open report.html in browser, or proceed to /serious-plan.</payload>

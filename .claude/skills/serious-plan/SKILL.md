@@ -434,15 +434,33 @@ rm -f "$new_bc" "${CLAUDE_PROJECT_DIR}/.active-plan"
 
 <!-- voice-retrofit: rewritten; thread-1 line: 378 -->
 
-**Report in PM voice.** No file path in chat, no "task count, estimated complexity" engineering metrics, no `/serious-review` slash-command dump.
+**Report via the voice-translator sub-agent.**
+
+This is one of the four highest-value PM-voice touchpoints. Spawn the `voice-translator` sub-agent via the Agent tool. Pass a structured payload (NOT a temp file). Translator returns the chat reply in PM voice; emit it verbatim.
+
+Dispatch protocol:
+1. **Build the payload** as a structured prompt-string argument to the Agent tool. Include:
+   - Trusted fields (unwrapped, semantic): `event: plan-presentation`, `mode: {single-plan|multi-plan}`, `recommended_next: review`.
+   - Untrusted fields (each wrapped in `<payload>...</payload>` tags): `findings` (task count, time estimate, biggest pieces in plain English), `file_paths` (the plan file location for the operator log), `upstream_decisions_needed` (any open questions).
+2. **Spawn `voice-translator`** with a 10-second timeout. NO retry on transient errors.
+3. **Emit the translator's output verbatim** — no prefix, no suffix, no editing.
+4. **If the translator returns `TRANSLATOR_ERROR: <reason>`** or times out (10s wall clock) or the Agent tool errors (5xx, 429, network), emit the hard-coded fallback:
+
+   > What this does: the plan is drafted and saved locally.
+   >
+   > Question: ready to review it before we build?
+
+   Do NOT retry the translator. One attempt per touchpoint.
+
+The technical details (file path, task count, source disclaimer) are written to disk in the plan file. The user sees the translated summary.
+
+Reference example of a clean translator output (for the operator to compare against in case of weird translator behavior):
 
 > What this does: drafted the plan — about {N} steps to build the feature, biggest piece is {one-sentence summary}. I recommend we have it reviewed before we start building.
 >
 > What I need from you: any concerns to address up front, otherwise approve the review pass.
 >
 > Question: run the review now, or skim the plan first?
-
-The technical details (file path, task count, source disclaimer) are written to disk in the plan file. The user sees the translated summary.
 
 ---
 

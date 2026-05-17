@@ -1,0 +1,11 @@
+# Synthetic payload for /serious-review verdict-reveal translator test.
+event: review-verdict
+mode: pass-with-conditions
+recommended_next: code
+untrusted_fields:
+  findings: |
+    <payload>3 reviewers ran. Anti-Slop Auditor: 1 Major (hedge language in Task 5 AC2). Structural Reviewer: PASS clean. Security Mind: PASS-WITH-CONDITIONS (1 Critical resolved during round 2). 4 rounds total. Plan ready for /serious-code.</payload>
+  file_paths: |
+    <payload>Research/features/auth-flow/review_verdict.md, Research/features/auth-flow/implementation_plan.md</payload>
+  upstream_decisions_needed: |
+    <payload>None. Plan passes. Conditions documented in review_verdict.md.</payload>

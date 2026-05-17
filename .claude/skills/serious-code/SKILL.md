@@ -758,12 +758,29 @@ If the `source` field points to an `implementation_plan.md` (or `phase_map.md`),
 
 ### 2d. Report to user
 
-Present:
 <!-- voice-retrofit: rewritten; thread-1 line: 644 -->
-<!-- Phase 2d Report-to-user in PM voice. NO file path, NO slash-command dump.
-     Example: "What this does: built the whole feature — {one-sentence description of
-      what works for the user now}. All the tests pass and the {key surface} is wired up.
-      Question: ready to ship it, or want to try it in the live app first?" -->
+
+**Report via the voice-translator sub-agent.**
+
+This is one of the four highest-value PM-voice touchpoints. Spawn the `voice-translator` sub-agent via the Agent tool. Pass a structured payload (NOT a temp file). Translator returns the chat reply in PM voice; emit it verbatim.
+
+Dispatch protocol:
+1. **Build the payload** as a structured prompt-string argument to the Agent tool. Include:
+   - Trusted fields (unwrapped, semantic): `event: code-task-report`, `mode: {in-progress|complete}`, `recommended_next: {continue|verify|ship}`.
+   - Untrusted fields (each wrapped in `<payload>...</payload>` tags): `findings` (what the task built, in plain English), `file_paths` (what got changed — for the operator log), `user_actions` (what the user needs to do next, if anything).
+2. **Spawn `voice-translator`** with a 10-second timeout. NO retry on transient errors.
+3. **Emit the translator's output verbatim** — no prefix, no suffix, no editing.
+4. **If the translator returns `TRANSLATOR_ERROR: <reason>`** or times out (10s wall clock) or the Agent tool errors (5xx, 429, network), emit the hard-coded fallback:
+
+   > What this does: the latest piece of the work is done.
+   >
+   > Question: keep going, or pause here?
+
+   Do NOT retry the translator. One attempt per touchpoint.
+
+The completion report file (full technical detail) lives on disk; the user sees the translator's plain-English summary.
+
+Internal reference for the operator (what the legacy chat dump would have included — provided for the operator's audit log only):
 - Completion report path
 - High-level summary: what was built, all tests passing, evidence collected
 - Any follow-up recommendations

@@ -25,7 +25,8 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Hardcoded allowlist — 24 entries. NOT a glob.
+# Hardcoded allowlist — 25 entries. NOT a glob.
+# Task 3 added the 25th surface (voice-translator agent).
 SURFACES=(
   ".claude/skills/_shared/voice-card.md"
   ".claude/output-styles/PM-voice.md"
@@ -51,9 +52,10 @@ SURFACES=(
   ".claude/agents/serious-review-anti-slop.md"
   ".claude/agents/serious-review-security.md"
   ".claude/agents/serious-review-structural.md"
+  ".claude/agents/voice-translator.md"
 )
 
-EXPECTED_COUNT=24
+EXPECTED_COUNT=25
 if [ "${#SURFACES[@]}" != "$EXPECTED_COUNT" ]; then
   echo "ERROR: hardcoded surface list count is ${#SURFACES[@]}, expected $EXPECTED_COUNT" >&2
   exit 2
