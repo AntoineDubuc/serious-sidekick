@@ -3,42 +3,42 @@
     ".claude/agents/serious-code-implementer.md": {
       "dest": "agents/serious-code-implementer.md",
       "ownership": "template",
-      "sha256": "b9faba5c59c4db504b023e7386b1020ae5ab5d54ed9d44a062ef52b0494e6996"
+      "sha256": "ee5336d3e1454ab925f3b662f0046205a75510dd44aa3827eb3bc751da732321"
     },
     ".claude/agents/serious-code-qa.md": {
       "dest": "agents/serious-code-qa.md",
       "ownership": "template",
-      "sha256": "c1db8b7ba3c3107170eeec46559e2b13ab60f19d582df4a4df98bad3efdc8dce"
+      "sha256": "4870d82601be5d9105cb16e88b35c46cb860e21bd55f5451ff2f90b8d0327ab9"
     },
     ".claude/agents/serious-code-reviewer.md": {
       "dest": "agents/serious-code-reviewer.md",
       "ownership": "template",
-      "sha256": "487c271078eabf33d9f0717e907e3d11d35d43b90c5b2953a97ab5eae63e5227"
+      "sha256": "11bd078d973f97d087e13d77747c3b5ae5aca79b1d73474ae4dad3f19b1a6cb0"
     },
     ".claude/agents/serious-code-runtime-checker.md": {
       "dest": "agents/serious-code-runtime-checker.md",
       "ownership": "template",
-      "sha256": "b2808730e0f891a4f03c966e59c4bb3ba42827306704bf12c302c8e5ac3fddd0"
+      "sha256": "3c5ea474dcf8581f9c1f62efc7dd1e1ae848eb7b25de3b648f02dc22225ec6e0"
     },
     ".claude/agents/serious-code-test-runner.md": {
       "dest": "agents/serious-code-test-runner.md",
       "ownership": "template",
-      "sha256": "10f3904b7d21a0dd0aed62251807b059acdadb8c072701d95139800c120462de"
+      "sha256": "b23b8cfdbd8b23aaf4e16edd3f45f7a68bd261cb890965e595d0807f85c39178"
     },
     ".claude/agents/serious-review-anti-slop.md": {
       "dest": "agents/serious-review-anti-slop.md",
       "ownership": "template",
-      "sha256": "f1d0410f5e1e939b92742acc056bfbb8fb25d3245ebfe7b08040ddfbaeae4fa8"
+      "sha256": "356bea7b15e14854607dac4f556f9414759450ba765b8a780ddcf04c00f848c4"
     },
     ".claude/agents/serious-review-security.md": {
       "dest": "agents/serious-review-security.md",
       "ownership": "template",
-      "sha256": "cfcdacbd1a461f13d0c6af3842b1406715c4b61c895f4bca5cc0aabcbe4b8a7c"
+      "sha256": "480abb0efe99c63c6b4f51a09ceab11515f72c3b8eb31c7df900f1828020d917"
     },
     ".claude/agents/serious-review-structural.md": {
       "dest": "agents/serious-review-structural.md",
       "ownership": "template",
-      "sha256": "d83a7ab2f7fa86792505fd011d0993921103d3a18b27b7ad18089be53eb4adbd"
+      "sha256": "cfa48ec18333e57808480485c38d8c679caa7e19e07f0d2d7f3f77ea2b602d33"
     },
     ".claude/settings.json": {
       "dest": "settings.json",
@@ -84,6 +84,16 @@
       "dest": "skills/_shared/test-hook-susceptibility.sh",
       "ownership": "template",
       "sha256": "d059ce32b2e6876a1bea008770ca41778d87135533f47a5dc0e15c69a7a64542"
+    },
+    ".claude/skills/_shared/voice-card.md": {
+      "dest": "skills/_shared/voice-card.md",
+      "ownership": "template",
+      "sha256": "735970ce6ca3786e15f6283de1cc53f35c6bfd7bd2504bbdce85ccdf5bcb7198"
+    },
+    ".claude/skills/_shared/voice-gate.sh": {
+      "dest": "skills/_shared/voice-gate.sh",
+      "ownership": "template",
+      "sha256": "f1b6f7f5347993eac1e7d6356d2b7ae920aee9bb4fadf4fd076f8dd6377250e7"
     },
     ".claude/skills/agent-teams/SKILL.md": {
       "dest": "skills/agent-teams/SKILL.md",
@@ -158,17 +168,17 @@
     ".claude/skills/serious-abandon/SKILL.md": {
       "dest": "skills/serious-abandon/SKILL.md",
       "ownership": "template",
-      "sha256": "ea770283dc9c3c050fc8336640232605104daf572d8f62ae5f304e1d49c6b812"
+      "sha256": "471fd0ba08f0fa65cf6c6cbfabdca20e99b50783d4d7ff56dae9b76a15cb5ee7"
     },
     ".claude/skills/serious-bananas/SKILL.md": {
       "dest": "skills/serious-bananas/SKILL.md",
       "ownership": "template",
-      "sha256": "756e19614d16d4109eee96635168cb9483717d3013bf302129b80c1614b45257"
+      "sha256": "a18be1a8e1b5a47dfb4fa4eff271d6243a9c8cc0b33b245ac1cbdc6c9fcbc31e"
     },
     ".claude/skills/serious-code/SKILL.md": {
       "dest": "skills/serious-code/SKILL.md",
       "ownership": "template",
-      "sha256": "da8b5258a35d0080a80d10a8e9e8c9f5b14b30c80813dc2c2f62b63a34df111f"
+      "sha256": "078a4684564f33ac136dec3543d030e7a6b39d86b0064d4987338fa55d35efce"
     },
     ".claude/skills/serious-code/hooks/log-dispatch.sh": {
       "dest": "skills/serious-code/hooks/log-dispatch.sh",
@@ -188,7 +198,7 @@
     ".claude/skills/serious-conversation/SKILL.md": {
       "dest": "skills/serious-conversation/SKILL.md",
       "ownership": "template",
-      "sha256": "019bc1e54935f97985175c4c6399f65297b2fccd4d597d3c479bd29041cf3701"
+      "sha256": "76024717180b32c5cb5580abda8e34e396a7bbb1018fa2e33d679bfeca1f64ff"
     },
     ".claude/skills/serious-conversation/hooks/capture-conversation.sh": {
       "dest": "skills/serious-conversation/hooks/capture-conversation.sh",
@@ -248,7 +258,7 @@
     ".claude/skills/serious-debug/SKILL.md": {
       "dest": "skills/serious-debug/SKILL.md",
       "ownership": "template",
-      "sha256": "de6f2f68988ff37e7c1b23d82475b0be5548e7998589f205898d7e879478357a"
+      "sha256": "2a6e04dda881bcefc11628a4761bc8277a99600cd0b2cb5774747c54751bfd1d"
     },
     ".claude/skills/serious-debug/hooks/block-edit-during-investigate.sh": {
       "dest": "skills/serious-debug/hooks/block-edit-during-investigate.sh",
@@ -298,17 +308,17 @@
     ".claude/skills/serious-init/SKILL.md": {
       "dest": "skills/serious-init/SKILL.md",
       "ownership": "template",
-      "sha256": "f18198314d3bd2165cb02aeb7058c68cd7019f447f83608a5ad3178b64ac41ac"
+      "sha256": "b8b848e31a72c278b1cb57c45477c9bf6555ba9d8fffc9b5b146115df1b39ba8"
     },
     ".claude/skills/serious-mock-ups/SKILL.md": {
       "dest": "skills/serious-mock-ups/SKILL.md",
       "ownership": "template",
-      "sha256": "9ec2c83edea2f27ecf97ecc9cebf56904957adfc227c33f0ecb736bc263aceef"
+      "sha256": "268882908b695464759e5e0fab8db16cdad3fe5034b6eb7d8862c3c3bbd66939"
     },
     ".claude/skills/serious-plan/SKILL.md": {
       "dest": "skills/serious-plan/SKILL.md",
       "ownership": "template",
-      "sha256": "e30998f4ecc66e950bdf0c533efae906af929067aa5975f350f1791987921940"
+      "sha256": "9d75e7b9393b157cad76f12fbdc69e33d04df9a68c071902c03c11dc633dcfc7"
     },
     ".claude/skills/serious-plan/hooks/check-extraction.sh": {
       "dest": "skills/serious-plan/hooks/check-extraction.sh",
@@ -323,7 +333,7 @@
     ".claude/skills/serious-research/SKILL.md": {
       "dest": "skills/serious-research/SKILL.md",
       "ownership": "template",
-      "sha256": "a9a3fd9ef03406bb3e17fd324124e635478e1390569e844e95a9817f3ce47e5e"
+      "sha256": "3b5af0483312d2a2e5bade9b7faaef72129f6324c485617eefec8be9d001d345"
     },
     ".claude/skills/serious-research/hooks/capture-research.sh": {
       "dest": "skills/serious-research/hooks/capture-research.sh",
@@ -333,7 +343,7 @@
     ".claude/skills/serious-review/SKILL.md": {
       "dest": "skills/serious-review/SKILL.md",
       "ownership": "template",
-      "sha256": "739d4d95dfba15d4a70c28fec1f36c195296d357c91dab397d49583abc6080d3"
+      "sha256": "e367f21ae7a1224533548c4a4a6fb61a57ebbd0c352bf5bfa54ea96befe8e072"
     },
     ".claude/skills/serious-review/_serious-review-v1-defect-capture.md": {
       "dest": "skills/serious-review/_serious-review-v1-defect-capture.md",
@@ -353,7 +363,7 @@
     ".claude/skills/serious-scope/SKILL.md": {
       "dest": "skills/serious-scope/SKILL.md",
       "ownership": "template",
-      "sha256": "561eb689431776a806d40ba3545853fd08e1da0a08d76c013fe6dcb3520f595a"
+      "sha256": "2e179172e7f5c686b3d5d4aa5d7b154064a70b5a45c0e4175111ee21bbd00613"
     },
     ".claude/skills/serious-scope/hooks/check-manifest.sh": {
       "dest": "skills/serious-scope/hooks/check-manifest.sh",
@@ -363,12 +373,12 @@
     ".claude/skills/serious-status/SKILL.md": {
       "dest": "skills/serious-status/SKILL.md",
       "ownership": "template",
-      "sha256": "831e2306e2ffe057b24fcb67929e94445fd0bb43726d24c358e7bcacbd535e88"
+      "sha256": "2ef1fabea27ea63d63a0cda0f82668e0a11fe8bafe10ec713eec8de77697ab41"
     },
     ".claude/skills/serious-youtube-tldr/SKILL.md": {
       "dest": "skills/serious-youtube-tldr/SKILL.md",
       "ownership": "template",
-      "sha256": "ea93e629da6373fd9f9040efaada3b47d4f4921e717a0754d4f77a72fe63e002"
+      "sha256": "ef7a9d921842fefae8fc914c1bfb1bb8244e536c273873977b964c039a789647"
     },
     ".claude/skills/skills-and-commands/SKILL.md": {
       "dest": "skills/skills-and-commands/SKILL.md",
@@ -393,7 +403,7 @@
     "CLAUDE.md": {
       "dest": "CLAUDE.md",
       "ownership": "user-init",
-      "sha256": "414da689bbfe77305091cbbb19c5b1bae3a1f348258ba18b3f248d1335869e33"
+      "sha256": "06ff3620adee4f6108f459b24578dbcceb15c3122c30ac0eb562f4a0962cfcf4"
     },
     "_anti-rationalization-core.md": {
       "dest": "../_anti-rationalization-core.md",
@@ -406,6 +416,6 @@
       "sha256": "c65b3acedb85cee57151957f0ace6e9261a81f693e5cc17466032693a95f139d"
     }
   },
-  "generated_from_commit": "4823ee827dd55a7c78380ff125e143c7725301d6",
+  "generated_from_commit": "9f9fdd473a4d75b9d7721050122b3a40764caa3b",
   "version": 1
 }

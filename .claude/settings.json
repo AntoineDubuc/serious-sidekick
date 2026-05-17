@@ -216,11 +216,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/verify-completion-gate.sh\"",
-            "timeout": 30
-          },
-          {
-            "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-conversation/hooks/capture-conversation.sh\"",
             "timeout": 30
           },
@@ -242,6 +237,16 @@
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-review/hooks/check-verdict.sh\"",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/_shared/voice-gate.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/verify-completion-gate.sh\"",
             "timeout": 30
           }
         ]

@@ -263,7 +263,7 @@ with open(template_path) as f:
     template = json.load(f)
 
 # Supply-chain hardening: reject templates with unknown top-level keys
-ALLOWED_TOP_LEVEL_KEYS = {'hooks', 'permissions', 'env', 'statusLine'}
+ALLOWED_TOP_LEVEL_KEYS = {'hooks', 'permissions', 'env', 'statusLine', 'outputStyle'}
 extra_keys = set(template.keys()) - ALLOWED_TOP_LEVEL_KEYS
 if extra_keys:
     # Sanitize key names — strip to [a-zA-Z0-9_-] to prevent control-char injection
@@ -276,9 +276,13 @@ def is_serious(command_str):
     The regex MUST anchor both start AND constrain the path after /hooks/ to prevent
     path-traversal attacks (e.g., serious-code/hooks/../../../../tmp/evil.sh).
     Only filenames matching [a-z0-9._-]+\\.sh are accepted after /hooks/.
+
+    Accepts two shapes:
+      (a) .claude/skills/serious-<name>/hooks/<file>.sh — per-skill hook
+      (b) .claude/skills/_shared/<file>.sh — shared hook (voice-gate, log-outcome, etc.)
     \"\"\"
     return bool(re.match(
-        r'^bash \"\\\$CLAUDE_PROJECT_DIR/\\.claude/skills/serious-[a-z-]+/hooks/[a-z0-9._-]+\\.sh\"$',
+        r'^bash \"\\\$CLAUDE_PROJECT_DIR/\\.claude/skills/(serious-[a-z-]+/hooks|_shared)/[a-z0-9._-]+\\.sh\"$',
         command_str
     ))
 

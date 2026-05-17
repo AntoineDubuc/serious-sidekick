@@ -258,8 +258,11 @@ cat > "$TMP_DIR/test_is_serious.py" << 'PYEOF'
 import re, sys
 
 def is_serious(command_str):
+    # Mirrors lib/serious-common.sh. Accepts:
+    #   .claude/skills/serious-<name>/hooks/<file>.sh — per-skill hook
+    #   .claude/skills/_shared/<file>.sh             — shared hook
     return bool(re.match(
-        r'^bash "\$CLAUDE_PROJECT_DIR/\.claude/skills/serious-[a-z-]+/hooks/[a-z0-9._-]+\.sh"$',
+        r'^bash "\$CLAUDE_PROJECT_DIR/\.claude/skills/(serious-[a-z-]+/hooks|_shared)/[a-z0-9._-]+\.sh"$',
         command_str
     ))
 
@@ -420,7 +423,10 @@ else
   assert "ALLOWED_TOP_LEVEL_KEYS defined in lib/serious-common.sh" "fail"
 fi
 
-# AC: Allowlist governance — EXACTLY {hooks, permissions, env, statusLine}
+# AC: Allowlist governance — EXACTLY {hooks, permissions, env, statusLine, outputStyle}
+# outputStyle was added 2026-05-17 for the PM-voice retrofit (commit 736ef45 added the
+# outputStyle key to .claude/settings.json; this task added it to the allowlist so the
+# install-time merge accepts it).
 ALLOWLIST_CHECK=$(python3 -c "
 import re
 with open('$REPO_ROOT/lib/serious-common.sh') as f:
@@ -430,7 +436,7 @@ match = re.search(r\"ALLOWED_TOP_LEVEL_KEYS\s*=\s*\{([^}]+)\}\", content)
 if match:
     raw = match.group(1)
     keys = set(k.strip().strip(\"'\\\"\") for k in raw.split(','))
-    expected = {'hooks', 'permissions', 'env', 'statusLine'}
+    expected = {'hooks', 'permissions', 'env', 'statusLine', 'outputStyle'}
     if keys == expected:
         print('EXACT_MATCH')
     else:
@@ -439,9 +445,9 @@ else:
     print('NOT_FOUND')
 ")
 if [ "$ALLOWLIST_CHECK" = "EXACT_MATCH" ]; then
-  assert "Allowlist governance: exactly {hooks, permissions, env, statusLine}" "pass"
+  assert "Allowlist governance: exactly {hooks, permissions, env, statusLine, outputStyle}" "pass"
 else
-  assert "Allowlist governance: exactly {hooks, permissions, env, statusLine}" "fail" "$ALLOWLIST_CHECK"
+  assert "Allowlist governance: exactly {hooks, permissions, env, statusLine, outputStyle}" "fail" "$ALLOWLIST_CHECK"
 fi
 
 # AC: Error message sanitization — control characters stripped

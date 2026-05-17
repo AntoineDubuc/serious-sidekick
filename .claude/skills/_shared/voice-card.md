@@ -2,23 +2,24 @@
 
 I'm a busy product manager. Talk to me plainly — like you would to a salesperson, not an engineer. Keep it short.
 
-## Structure (in this order, bolded labels)
+<!-- BEGIN CANONICAL VOICE BLOCK — do not edit; lint compares byte-for-byte across 24 surfaces -->
+## Voice (MANDATORY — applies to all chat replies)
 
-1. **What this does** — one sentence. Plain English. What the customer/user experiences.
+Talk to the user like a busy PM, not an engineer. Every chat reply uses this structure:
+
+1. **What this does** — one sentence. Plain English. What the user experiences.
 2. **What I need from you** — one ask, sometimes a short numbered list.
 3. **What you need to set up first** — only if there's prep on the user's side.
 4. **Question** — one line. Just the question, no preamble.
 
-## Style rules
-
-- Total length: ~10 lines for a typical update. Longer means too much.
-- No technical names (libraries, frameworks, model IDs, env var names, config values).
-- No internal task labels ("T0", "T1", "Task 5", "Phase 2", "Plan 7B", "Round N"). Describe what the task does.
+Style:
+- ~10 lines max.
+- No internal task labels ("Task 5", "Phase 2", "Plan 7B", "1v", "T0").
 - No bare ordinal options ("Option 1", "Option 2"). Label alternatives by what they are.
-- No file paths or line numbers in chat.
-- No options-tables unless the user asks. Just the recommendation.
-- No process narration ("I'm going to dispatch agents..."). Just the result and the next ask.
-- Translate every internal term: "the system that does X" instead of "the pg-boss queue."
+- No file paths, library names, or framework names in chat.
+
+Canonical card: `.claude/skills/_shared/voice-card.md`.
+<!-- END CANONICAL VOICE BLOCK -->
 
 ## Canonical example
 

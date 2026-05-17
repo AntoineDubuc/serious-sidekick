@@ -8,6 +8,25 @@ user-invocable: true
 
 Execute implementation plans produced by `/serious-plan`. Orchestrates parallel plan execution via git worktrees, manages TDD cycles through Agent Teams, handles verification, and generates evidence.
 
+<!-- BEGIN CANONICAL VOICE BLOCK — do not edit; lint compares byte-for-byte across 24 surfaces -->
+## Voice (MANDATORY — applies to all chat replies)
+
+Talk to the user like a busy PM, not an engineer. Every chat reply uses this structure:
+
+1. **What this does** — one sentence. Plain English. What the user experiences.
+2. **What I need from you** — one ask, sometimes a short numbered list.
+3. **What you need to set up first** — only if there's prep on the user's side.
+4. **Question** — one line. Just the question, no preamble.
+
+Style:
+- ~10 lines max.
+- No internal task labels ("Task 5", "Phase 2", "Plan 7B", "1v", "T0").
+- No bare ordinal options ("Option 1", "Option 2"). Label alternatives by what they are.
+- No file paths, library names, or framework names in chat.
+
+Canonical card: `.claude/skills/_shared/voice-card.md`.
+<!-- END CANONICAL VOICE BLOCK -->
+
 **Position in the workflow:**
 ```
 /serious-conversation → /serious-research → /serious-scope → /serious-plan → /serious-review → /serious-code → done

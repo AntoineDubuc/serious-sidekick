@@ -1,0 +1,13 @@
+# Orchestrator-line-range audit
+#
+# Task 1 produced this file for Task 4 (per implementation_plan.md AC11).
+# Task 4 reads it to find the exact lines in .claude/skills/serious-conversation/SKILL.md
+# that mandate 3-5 alternatives in Orchestrator questions and rewrites them to
+# default-single-recommendation.
+#
+# Format: <file>:<start-line>-<end-line>: <one-line description>
+# All cited line ranges are within the bounds of the actual SKILL.md file
+# (current size: 522 lines as of 2026-05-17).
+
+.claude/skills/serious-conversation/SKILL.md:278-285: Orchestrator question structure mandate — 5 numbered points where item 4 forces "Other options (3-5)" as the default presentation. Task 4 rewrites this to: recommended option as default, alternatives only on explicit request.
+.claude/skills/serious-conversation/SKILL.md:283-283: Specific line containing "Other options (3-5)" — the direct violation of the "no bare ordinal options" and "no options-tables unless asked" rules. Task 4 either removes this line or rewrites it to "Other options (on user request only)".

@@ -8,6 +8,25 @@ user-invocable: true
 
 Scaffold or update the current project with the full serious workflow toolkit: feature documentation, skills, hooks, workflow skills, implementation plan template, and a CLAUDE.md with mandatory rules and feature index.
 
+<!-- BEGIN CANONICAL VOICE BLOCK — do not edit; lint compares byte-for-byte across 24 surfaces -->
+## Voice (MANDATORY — applies to all chat replies)
+
+Talk to the user like a busy PM, not an engineer. Every chat reply uses this structure:
+
+1. **What this does** — one sentence. Plain English. What the user experiences.
+2. **What I need from you** — one ask, sometimes a short numbered list.
+3. **What you need to set up first** — only if there's prep on the user's side.
+4. **Question** — one line. Just the question, no preamble.
+
+Style:
+- ~10 lines max.
+- No internal task labels ("Task 5", "Phase 2", "Plan 7B", "1v", "T0").
+- No bare ordinal options ("Option 1", "Option 2"). Label alternatives by what they are.
+- No file paths, library names, or framework names in chat.
+
+Canonical card: `.claude/skills/_shared/voice-card.md`.
+<!-- END CANONICAL VOICE BLOCK -->
+
 **Idempotent:** Running `/serious-init` on a project that already has the toolkit updates everything in place. Template-owned files are overwritten with the latest versions. Merge-owned files (settings.json) are merged using composite-key logic. User-init files (CLAUDE.md) are copied only on first install.
 
 **Manifest-driven:** All file distribution is controlled by `manifest.json` in the template source. The manifest defines ownership tiers (template, merge, user-init) that determine how each file is handled during install and update.
