@@ -118,6 +118,10 @@ else:
   "bug_class": "null_propagation",
   "locality": "single",
   "recurrence": "low",
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 95 -->
+<!-- WHY: state.json is a file artifact the agent writes for its own session persistence
+     and recovery. The user never sees the field names (reproducer_cmd, bug_class, etc.)
+     verbatim — they see PM-voice translations during the live debug flow. -->
   "reproducer_cmd": "npm test -- --grep 'formatCurrency'",
   "corpus_hits": [],
   "investigation_template": "null_propagation",
@@ -126,7 +130,17 @@ else:
 }
 ```
 
-**Triage presentation** (never more than 6 lines):
+**Triage presentation in PM voice.**
+
+<!-- voice-retrofit: rewritten; thread-1 line: 111 -->
+
+Don't dump the engineering triage block to the user. Translate to PM voice:
+
+> What this does: looking at the bug — I've narrowed it down to {plain-English description of where, e.g., "the part of the app that formats prices"}. I'll try a quick fix first; if that doesn't catch it, I'll dig deeper.
+>
+> Question: go ahead, or want to know more first?
+
+The engineering triage block (mode/class/scope/corpus/confidence) is internal scaffolding — used by the agent to decide how to proceed, never shown verbatim:
 ```
 ── triage ──────────────────────────────────
 mode:       AUTO-FIX | QUICK | DEEP
@@ -265,12 +279,23 @@ The PostToolUse hook tracks `fix_attempts` in `state.json`. After 2 failed fix a
 1. Update `state.json`: `mode: "DEEP"`
 2. Print escalation message framing what was LEARNED, not what failed:
 ```
+<!-- voice-retrofit: rewritten; thread-1 line: 247 -->
+<!-- Rewrite the escalation banner to PM voice: "What this does: the quick attempts didn't
+     catch it — the issue is deeper than first thought. I'll switch to structured
+     investigation (~30 min instead of 5). Question: go, or want to pause?"
+     The literal banner below is preserved for the agent's internal log; the user sees
+     the PM-voice translation. -->
 [debug] 2 fix attempts narrowed the problem to state management in useCart().
 [debug] Switching to structured investigation — this needs call-graph tracing.
 [debug] mode: DEEP | blocking source edits until root cause is written
 ```
 3. Activate the blocking ratchet
 4. Re-enter Phase 1 with the information gathered so far
+
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 256 -->
+<!-- WHY: this is a denylist for the agent's own voice — compliant guidance. No rewrite
+     needed; preserve and extend as-is. The voice-card retrofit on this file extends the
+     denylist via the canonical block at the top. -->
 
 **NEVER say:** "Quick mode failed." "Unable to resolve." "Escalating due to errors." The developer should feel reinforcements arriving, not process punishing them.
 
@@ -391,6 +416,13 @@ Use the template at `templates/debug-report.md`. Six sections, PR-ready:
 
 **Completion summary** (printed to user):
 ```
+<!-- voice-retrofit: rewritten; thread-1 line: 373 -->
+<!-- Rewrite the completion summary to PM voice:
+     "What this does: bug fixed — {plain-English description of cause and fix}. Added
+     {N} tests so we catch it next time. No regressions detected.
+     Question: anything else to chase, or call it done?"
+     The engineering block below stays in the agent's internal log; the user sees
+     the PM-voice translation. -->
 ── resolved ────────────────────────────────
 root cause: formatCurrency() receives string from API, parses as NaN
 fix:        added Number() guard with fallback to 0
@@ -402,6 +434,11 @@ report:     Research/debug/debug-currency-nan/debug_report.md
 
 For auto-fix, compress to one line:
 ```
+<!-- voice-retrofit: rewritten; thread-1 line: 386 -->
+<!-- Rewrite the auto-fix one-liner to PM voice:
+     "What this does: caught and fixed it — was a small wiring mistake. Took 12 seconds.
+     Question: keep going, or all done?"
+     No file paths, no "verified green" jargon in chat. -->
 [debug] AUTO-FIX: missing import './utils' → added (1 candidate, verified green) | 12s
 ```
 
@@ -420,6 +457,10 @@ Append-only JSONL file at `debug_corpus.jsonl` in the project root. One entry pe
 1. Read `debug_corpus.jsonl`
 2. Fuzzy-match current symptom against historical `symptom` fields
 3. Surface matches with similarity > 0.7
+<!-- voice-retrofit: deferred — reason: phase-4-polish; thread-1 line: 404 -->
+<!-- WHY: corpus-history surfacing is sales-friendly content (history-aware framing
+     is a feature, not slop). The {slug} reference is the only engineering token;
+     phase-4 polish will translate slugs to descriptive titles when surfaced. -->
 4. Present as: "History suggests: similar bug fixed in {slug} ({date}). Root cause was {root_cause}."
 
 **Policy:** The corpus informs triage. It NEVER overrides it. "History suggests" — never "history decided." A human or the triage algorithm makes the final call.
@@ -444,6 +485,10 @@ Pin expressions during debugging for evaluation after every edit.
 
 **Display:**
 ```
+<!-- voice-retrofit: rewritten; thread-1 line: 427 -->
+<!-- Rewrite watch list display to PM voice. Translate code values and function names
+     to plain English: "The price formatter is returning gibberish for round numbers —
+     that's the symptom." Don't pump function calls and code values into chat per-edit. -->
 [debug] reproducer: FAIL | watches: formatCurrency(1000)=NaN, cart.total=undefined
 [debug] reproducer: PASS | watches: formatCurrency(1000)=*$10.00* (was NaN)
 ```
@@ -457,6 +502,11 @@ Value changes are highlighted. Session-scoped — the Stop hook deletes `.seriou
 During active debug sessions, maintain a single-line status:
 
 ```
+<!-- voice-retrofit: rewritten; thread-1 line: 440 -->
+<!-- Rewrite the status-bar template to PM voice. Status indicators in chat should be
+     plain-English: "looking at it…" / "trying a fix…" / "deeper investigation…" — not
+     "reproducer: FAIL | attempts: 0/2". The CLI status bar shown in the IDE status line
+     can keep its compact engineering form (that's a different surface). -->
 [debug] reproducer: FAIL | attempts: 0/2 | phase: investigate | mode: QUICK
 ```
 
@@ -477,6 +527,11 @@ When the reproducer flips to PASS, the entire status line turns green.
 
 When `/serious-code`'s test-runner agent detects 2 consecutive red cycles on a previously-green test:
 1. Write `.serious-code-debug-candidate` with test name, failure context, attempt history
+<!-- voice-retrofit: deferred — reason: phase-4-polish; thread-1 line: 461 -->
+<!-- WHY: this is a fixed-string recommendation surfaced by an auto-detection hook.
+     The framing is fine for engineers; for sales/PM voice, phase-4 polish translates
+     "test X — 2 consecutive regressions" to "your tests keep breaking — want me to
+     investigate?". Low frequency (only fires on regression-detection trigger). -->
 2. Surface recommendation: "Recommend /serious-debug for test X — 2 consecutive regressions detected."
 3. User confirms — automatic detection, manual invocation
 4. On confirmation: `/serious-debug` launches with full context from the candidate file
@@ -485,6 +540,12 @@ When `/serious-code`'s test-runner agent detects 2 consecutive red cycles on a p
 
 When blast radius > 8 files or 3+ API endpoints, the `stop-plan-escalation.sh` hook offers:
 ```
+<!-- voice-retrofit: deferred — reason: covered-by-translator; thread-1 line: 468 -->
+<!-- WHY: this is a hook-output banner from stop-plan-escalation.sh. When it surfaces
+     in chat, Task 3's voice-translator wires into the debug-escalation touchpoint and
+     rewrites "blast radius / architecturally significant" to plain-English ("this fix
+     would touch ~12 files across the codebase — that's a bigger change than a quick
+     patch can handle"). Hook keeps its compact form internally. -->
 [debug] Blast radius is architecturally significant (12 files, 4 endpoints).
 [debug] Recommend /serious-scope → /serious-plan to address the structural issue.
 ```
@@ -494,6 +555,10 @@ If accepted: the debug report becomes the plan's problem statement. Frontmatter 
 
 `/serious-debug` is pipeline order **8** (lateral to `/serious-code` at order 7).
 
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 478 -->
+<!-- WHY: pipeline-handoff documentation in the skill's own protocol reference. This
+     describes how /serious-debug coexists with /serious-code internally — not chat
+     output. -->
 - **From /serious-code (order 7):** Advancing. Both breadcrumbs coexist. Plan state frozen. Debug output in `Research/debug/{slug}/`. On completion, `.active-debug` removed, code resumes.
 - **From /serious-debug (order 8):** Same-skill branching. Prompt for sub-workflow. Output in `{parent}/sub/debug-{slug}/`.
 - **From any skill order < 8:** Advancing. Normal behavior, both breadcrumbs coexist.
@@ -517,3 +582,4 @@ If accepted: the debug report becomes the plan's problem statement. Frontmatter 
 - **Bug fixed, large blast radius:** `/serious-scope` → `/serious-plan` to address the structural issue.
 - **Invoked from /serious-code:** Return to `/serious-code` execution. Plan state unfrozen.
 - **Pattern detected across multiple files:** Consider `/serious-research` to investigate the systemic issue.
+

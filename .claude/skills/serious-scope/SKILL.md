@@ -50,7 +50,13 @@ Canonical card: `.claude/skills/_shared/voice-card.md`.
 - Check `Research/features/*/research.md`, `Research/bugs/*/research.md`, `Research/exploratory/*/research.md` for `status: done` in YAML frontmatter
 - Check sub-workflow paths: `Research/**/sub/*/research.md`
 - If `$ARGUMENTS` specifies a path, use that directly and skip to Phase 0b
-- **One found:** "Use this as the basis for scoping?" **Multiple:** list and ask. **None:** "Run `/serious-research` first, or provide a path."
+<!-- voice-retrofit: rewritten; thread-1 line: 34 -->
+
+When presenting the result, use PM voice:
+
+- **One found:** "What this does: I found the research we did on this. I'll use it as the basis for splitting the work into plans. Question: use it?"
+- **Multiple:** "What this does: a few research write-ups match. I'll describe each in one line and you pick. Question: which?"
+- **None:** "What this does: there's no research write-up to anchor the scope. Either describe the feature in a sentence, or we run the research step first. Question: which?"
 
 ### 0b. Upstream extract-mode pre-check — MANDATORY GATE
 
@@ -77,6 +83,14 @@ Canonical card: `.claude/skills/_shared/voice-card.md`.
 <!-- END GUARDRAILS -->
 
 ## Pre-Scoping Commitment
+
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 62 -->
+<!-- WHY: the _commitment.md template is a file artifact written by the agent for its own
+     pre-execution commitment. It's not chat output — the user never sees this template
+     verbatim. -->
+
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 49 -->
+<!-- WHY: the Guardrails table at line 69 is internal agent behavioral handbook, not chat. -->
 
 **Before writing the manifest**, write `_commitment.md` to the output folder:
 
@@ -105,7 +119,13 @@ Read extracted items and research findings/recommendations. Identify natural pla
 
 ## Phase 2: Present
 
-Show the proposed manifest to the user. Interactive — the user may adjust boundaries, add/remove/merge/split plans, edit rationale or tags. **Wait for explicit approval before proceeding.**
+<!-- voice-retrofit: rewritten; thread-1 line: 79 -->
+
+When presenting the proposed manifest to the user, use PM voice. Don't dump the six engineering-label rows for each plan entry — describe each plan in one sentence: what it builds, who it depends on (in plain English), what the trade-off is. The full structured manifest is written to disk; chat gets the translated version.
+
+<!-- voice-retrofit: rewritten; thread-1 line: 89 -->
+
+When the user wants changes, ask in PM voice: "Question: what would you change first?" — let them speak naturally. Don't present a 5-option menu of edit modes. The agent figures out the right action from the user's answer. **Wait for explicit approval before proceeding.**
 
 ## Phase 3: Write
 
@@ -159,6 +179,12 @@ The outer `( ... )` subshell scopes `umask 077` so the caller's umask is unchang
 Run handoff verifier per `.claude/skills/_shared/handoff-verifier.md`:
 - **Upstream:** the `source` path (research.md) | **Downstream:** manifest.md | **Strategy:** `structural`
 
+<!-- voice-retrofit: deferred — reason: covered-by-translator; thread-1 line: 143 -->
+<!-- WHY: the verifier verdict vocabulary (PASS / FAIL / PASS WITH DEFERRALS / MISSING /
+     SHIRKED) is internal between the scope skill and the handoff verifier. When this
+     surfaces in chat at wrap-up, Task 3's voice-translator (wired into the scope-completion
+     touchpoint, see implementation_plan.md Task 3) rewrites the verdict into PM voice. -->
+
 **On FAIL:** Fix MISSING/SHIRKED items, re-verify. Repeat until PASS or PASS WITH DEFERRALS.
 **On PASS:** Set `status: done` in manifest frontmatter. Proceed to Phase 5.
 
@@ -171,4 +197,9 @@ Run handoff verifier per `.claude/skills/_shared/handoff-verifier.md`:
    rm -f "$new_bc" "${CLAUDE_PROJECT_DIR}/.active-scope"
    ```
 3. **Same-skill restoration:** If `parent:` exists and parent was scope, **re-run the writer block** with the parent's folder path as `${RELATIVE_OUTPUT_PATH}` and `${SKILL}=scope`. The writer block writes to `.claude-active/$(claude_pid)-scope`, do not write the legacy `.active-scope` at the project root.
-4. Report: manifest path, number of plans, summary of the split.
+4. <!-- voice-retrofit: rewritten; thread-1 line: 155 --> Report to the user in PM voice: what got built ("Split the work into N plans"), what they need to do next ("Next step is the planning pass for the first plan"), no file paths in chat. Example wrap-up:
+
+   > What this does: split your feature into N independent pieces, each small enough to plan and build separately.
+   >
+   > Question: ready to start the planning step for the first one?
+

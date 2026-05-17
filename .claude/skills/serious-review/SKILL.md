@@ -75,8 +75,10 @@ Before anything else, check for active workflow breadcrumbs in the project root:
    - Check `Research/features/*/plans/*.md` for plan files
    - Check `Research/features/*/implementation_plan.md` for single plans
    - Check `Research/bugs/*/` and `Research/exploratory/*/` similarly
-3. If multiple plans found, list them and ask which one to review.
-4. If no plans found: "No implementation plans found. Run `/serious-plan` first."
+<!-- voice-retrofit: rewritten; thread-1 line: 59 -->
+<!-- voice-retrofit: rewritten; thread-1 line: 60 -->
+3. If multiple plans found, describe each in one sentence (what it builds, not its filename) and ask which to review. PM voice: "What this does: a few plans exist. I'll describe each in one line and you pick. Question: which?"
+4. If no plans found: PM voice — "What this does: there's no plan to review yet — we build it first, then review it. Question: ready to do the planning step?"
 
 ### 0b. Write breadcrumb
 
@@ -160,6 +162,14 @@ Read the plan's `source:` frontmatter field. Store this path — it will be pass
 
 ### 2a. Mandatory agents
 
+<!-- voice-retrofit: deferred — reason: covered-by-translator; thread-1 line: 144 -->
+<!-- WHY: this is the internal dispatch instruction (which sub-agents to spawn). The
+     sub-agent CLASS NAMES (serious-review-anti-slop, etc.) are agent-internal and must
+     NEVER appear in chat summaries. Task 3's voice-translator sub-agent wires into the
+     review verdict touchpoint and rewrites the agent reports into PM voice before the
+     user sees them, scrubbing the class names. The dispatch labels stay here for the
+     agent's own use. -->
+
 Spawn all 3 agents using the Agent tool, passing them the plan file path:
 
 1. **`serious-review-anti-slop`** — Pass: plan path, source path (from 1b), project root path
@@ -221,11 +231,21 @@ Wait for all dispatched agents to complete. Collect their individual reports and
 **Maximum 2 rounds.** This is the first round.
 
 - If **PASS** or **PASS-WITH-CONDITIONS**: proceed to Phase 4.
-- If **FAIL** (Round 1): Present findings to the user. Ask: "This plan failed review. Options: (1) Fix the issues and re-run review, (2) Override and proceed anyway, (3) Re-scope the plan."
-  - If user fixes and re-runs: this is Round 2. Re-dispatch all agents. If Round 2 also fails, escalate.
-  - If user overrides: proceed to Phase 4 with override status.
-  - If user re-scopes: stop. Tell them to run `/serious-plan` again.
-- If **FAIL** (Round 2): Escalate. "This plan has failed review twice. Here's what keeps failing: {findings diff between round 1 and round 2}. Options: fix manually, re-scope with `/serious-plan`, or override with a documented reason."
+- If **FAIL** (first attempt):
+  <!-- voice-retrofit: rewritten; thread-1 line: 205 -->
+  Present findings in PM voice — explain the worst issue in one sentence, recommend ONE action (typically "let's fix it together — should take about an hour"). Do NOT present a 3-option menu. Example:
+
+  > What this does: the plan has a couple of issues that'll make the build painful — worst is {one-sentence summary}.
+  >
+  > What I need from you: pick one — fix it together (recommended; ~1h), ship anyway and patch later, or rethink the whole plan.
+  >
+  > Question: which?
+
+  Only show the trade-offs if the user asks for alternatives. The internal state machine still tracks "Round 2" / overrides — but the user sees one recommendation, not a ballot.
+
+- If **FAIL** (second attempt):
+  <!-- voice-retrofit: rewritten; thread-1 line: 209 -->
+  Same PM-voice approach. Explain in plain English what kept failing across both rounds (e.g., "same gap as before — the test specs"). Recommend ONE action. Don't dump "findings diff between round 1 and round 2" verbatim — describe the pattern.
 
 ---
 
@@ -268,19 +288,33 @@ If frontmatter has a `parent:` field and the parent was the same skill type (rev
 
 ### 5b. Present summary
 
-Display the verdict to the user:
+<!-- voice-retrofit: rewritten; thread-1 line: 251 -->
 
-**If PASS:**
-> "Plan passed review. Ready for `/serious-code`."
+Display the verdict to the user in PM voice. No "PASS-WITH-CONDITIONS", no "{N} Critical and {M} Major findings", no `review_verdict.md` file path in chat.
 
-**If PASS-WITH-CONDITIONS:**
-> "Plan passed with conditions: {list conditions}. These should be addressed during implementation. Ready for `/serious-code`."
+**If passed:**
 
-**If FAIL:**
-> "Plan failed review. {N} Critical and {M} Major findings. See `review_verdict.md` for details."
+> What this does: the plan is solid — ready to build.
+>
+> Question: start building?
 
-**If OVERRIDE:**
-> "Plan review overridden. Reason: {reason}. Override documented in plan frontmatter. Ready for `/serious-code`."
+**If passed with conditions:**
+
+> What this does: the plan works, but there are {N} things to watch for during the build — I'll flag each one when we hit it. {one-sentence summary of the biggest one.}
+>
+> Question: ready to build, with those in mind?
+
+**If failed:**
+
+> What this does: the plan has {N} real issues — the biggest is {one-sentence summary}. The full breakdown is saved locally if you want detail.
+>
+> Question: fix it together (recommended), ship anyway, or rethink the plan?
+
+**If overridden:**
+
+> What this does: you decided to ship the plan despite the review's concerns. That's noted on the plan itself.
+>
+> Question: ready to build?
 
 ---
 
@@ -299,3 +333,4 @@ Display the verdict to the user:
 - `/serious-review` — Auto-detect plans, ask which one to review
 - `/serious-review Research/features/auth/plans/A_auth_flow.md` — Review a specific plan
 - `/serious-review path/to/plan.md` — Review any plan by path
+

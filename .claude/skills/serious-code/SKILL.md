@@ -73,14 +73,31 @@ Before asking anything, scan the project:
 
 ### 0b. Present what you found
 
+<!-- voice-retrofit: rewritten; thread-1 line: 58 -->
+<!-- voice-retrofit: rewritten; thread-1 line: 60 -->
+<!-- voice-retrofit: rewritten; thread-1 line: 64 -->
+
+Use the PM voice (canonical card above). The agent translates the result to plain English — describe what the plan is FOR, not its filename or path.
+
 **If exactly one plan or phase map found:**
-> "I found a plan at `Research/features/auth/implementation_plan.md`. Execute this?"
+
+> What this does: I found the plan we built — it's the work for the feature you described. I'll start executing it task by task.
+>
+> Question: ready to go?
 
 **If multiple found:**
-> List them and ask which one to execute.
+
+> What this does: I found a few work plans on disk. The recommended one is the most recent that matches your current branch.
+>
+> What I need from you: pick the one to run (I'll describe each in one sentence — no file paths).
+>
+> Question: which?
 
 **If nothing found:**
-> "No plans found. Run `/serious-plan` first to generate one."
+
+> What this does: there's no work plan on disk yet. We need to build one first — that takes ~30 minutes of structured conversation.
+>
+> Question: ready to start the planning step?
 
 ### 0c. Validate the plan
 
@@ -110,8 +127,9 @@ Once the upstream plan artifact is identified and validated (from 0a/0b/0c):
 
 After the plan is validated, check its YAML frontmatter for `review_status`:
 
-- **If `review_status` is missing:** Display warning: "No review verdict found for this plan. Run `/serious-review` first? (Y/n)." If Y: stop and tell the user to run `/serious-review`. If N: proceed, log "Proceeding without review verdict."
-- **If `review_status: failed`:** Display warning: "This plan FAILED review. Proceeding without fixes is not recommended. Continue anyway? (Y/n)." If Y: proceed with warning logged. If N: stop.
+<!-- voice-retrofit: rewritten; thread-1 line: 94 -->
+- **If review is missing:** Display the warning in PM voice — "What this does: the plan hasn't been reviewed yet — recommend we review it before building (~10 min). Question: review now, or skip?" Don't surface the `review_status` field name in chat.
+- **If review failed:** PM voice — "What this does: the plan flunked review earlier — there are real issues that'll bite during the build. Recommend we fix them first. Question: fix it, or proceed anyway?"
 - **If `review_status: passed`, `passed-with-conditions`, or `override`:** Proceed silently.
 
 This check is advisory — it never hard-blocks execution.
@@ -181,6 +199,12 @@ source: # Set to the path of the implementation_plan.md consumed
 
 ## Phases
 
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 147 -->
+<!-- WHY: this Phase 1/2 execution_log.md template is a file artifact the agent writes
+     for its own progress tracking. The user sees the translated chat status (e.g., "first
+     piece of work in progress"), not the {parallel|sequential} marker or the 01_xxx slug
+     literals. -->
+
 ### Phase 1 — {parallel|sequential}
 | Plan | Status | Started | Completed | Notes |
 |------|--------|---------|-----------|-------|
@@ -209,6 +233,10 @@ source: # Set to the path of the implementation_plan.md consumed
 | # | Task | Status | Risk | Evidence |
 |---|------|--------|------|----------|
 | 1 | {task name} | pending | {L/M/H} | — |
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 188 -->
+<!-- WHY: the per-plan progress.md template is a file artifact for the agent's
+     task-tracking. The user sees PM-voice progress updates ("first piece of the
+     {feature} work is in flight"), not "1v" or "{verify task name}" literals. -->
 | 1v | {verify task name} | pending | — | — |
 | 2 | {task name} | pending | {L/M/H} | — |
 | 2v | {verify task name} | pending | — | — |
@@ -243,6 +271,9 @@ source: # Set to the path of the implementation_plan.md consumed
 
 ```markdown
 ## Commitment — /serious-code
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 225 -->
+<!-- WHY: the _commitment.md template is the agent's pre-execution self-commitment file,
+     written to disk for accountability. The user never sees this template verbatim. -->
 I will produce: [list every deliverable from the plan's acceptance criteria]
 I will NOT skip: [list the top 3 rationalizations from the guardrail table above]
 Verification: [how to check — test commands, grep patterns, file existence checks]
@@ -257,7 +288,8 @@ Verification: [how to check — test commands, grep patterns, file existence che
 
 If there's only one plan (no phase map):
 
-1. Present the plan summary to the user: task count, risk levels, estimated scope
+<!-- voice-retrofit: rewritten; thread-1 line: 241 -->
+1. Present the plan summary in PM voice — describe what gets built, total time estimate, and the riskiest piece. Don't dump "task count, risk levels, estimated scope" as engineering metrics. Example: "What this does: I'll build {one-sentence feature description} — about {N hours total}, biggest piece is {one-sentence summary}. Question: ready to start, or any concerns first?"
 2. Wait for user approval: "Go"
 3. Work through tasks sequentially (see Task Execution Cycle below)
 4. After each task completes, update `progress.md` and `execution_log.md`
@@ -272,6 +304,12 @@ For each phase in order:
 #### 1a. Present the phase
 
 Show the user:
+<!-- voice-retrofit: rewritten; thread-1 line: 253 -->
+<!-- Present the phase in PM voice — describe what this phase builds (in one sentence)
+     and how many independent pieces it has. NEVER say "Phase number and type
+     (parallel/sequential)" verbatim — those are internal scaffolding labels. Example:
+     "What this does: this batch builds the foundation pieces in parallel — {N} pieces,
+      they don't depend on each other. Question: go?" -->
 - Phase number and type (parallel/sequential)
 - Which plans are in this phase
 - Task count and risk levels per plan
@@ -282,6 +320,10 @@ Wait for user approval: "Go"
 #### 1b. Create worktrees (parallel phases)
 
 For each plan in a parallel phase:
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 266 -->
+<!-- WHY: git worktree paths are internal isolation mechanisms; the user doesn't see
+     the path in chat. They see "I'm building piece A in parallel with piece B —
+     keeping them isolated so they don't step on each other." -->
 - Create a git worktree: `.claude/worktrees/serious-code-{plan_slug}`
 - Each worktree gets its own branch based on current HEAD
 
@@ -304,6 +346,11 @@ For each task in the plan's Master Checklist, in order:
 
 1. Update progress.md: mark task as in_progress
 2. Dispatch the serious-code-implementer agent for the task
+<!-- voice-retrofit: deferred — reason: covered-by-translator; thread-1 line: 276 -->
+<!-- WHY: this is the sub-agent dispatch prompt template (telling the implementer agent
+     how to drive verification). The agent class names (serious-code-reviewer, etc.)
+     appear in this internal prompt; when sub-agent summaries reach user-facing chat,
+     Task 3's voice-translator wires into the per-task code touchpoint and rewrites. -->
 3. When implementer completes, dispatch verification agents in parallel:
    - serious-code-reviewer
    - serious-code-test-runner
@@ -357,6 +404,8 @@ After all plans in a phase complete and worktrees are merged, but **before** rep
 4. **If any regression found:**
    - Record the regression in `execution_log.md` under a new `## Regressions` section: which AC, which plan broke it, what the expected vs actual behavior is.
    - **STOP.** Report the regression to the user before proceeding. The user decides: fix it now (re-open the offending plan), roll back the current phase, or accept the regression.
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 341 -->
+<!-- WHY: this is a note written to the execution log file, not chat output. -->
 5. **If all pass:** Note in `execution_log.md`: "Phase {N} regression check: all previous ACs verified."
 
 This catches cases where Plan B's merge breaks something Plan A built — the exact failure mode that single-plan verification cannot detect.
@@ -364,6 +413,12 @@ This catches cases where Plan B's merge breaks something Plan A built — the ex
 #### 1g. Report phase results
 
 Present to the user:
+<!-- voice-retrofit: rewritten; thread-1 line: 346 -->
+<!-- Present phase results in PM voice — describe what got built (in plain English) and
+     what didn't, with the next ask. NOT "which plans succeeded, which failed". Example:
+     "What this does: that batch is done. The {feature A} and {feature B} pieces are
+      working; the {feature C} piece needs another pass — got tangled with X.
+      Question: keep going with the next batch, or fix C first?" -->
 - Which plans succeeded, which failed
 - Regression check results (if applicable)
 - For failures: which task, what went wrong, options (fix and resume, skip, roll back, abort)
@@ -374,6 +429,13 @@ Wait for user approval before next phase.
 #### 1h. Handle failures
 
 If a plan failed:
+<!-- voice-retrofit: rewritten; thread-1 line: 357 -->
+<!-- Present failure-handling in PM voice — recommend ONE action, not a 4-option menu.
+     Translate "fix and resume / skip / roll back / abort" to plain English. Example:
+     "What this does: this piece hit a wall — best path is for us to look at what broke
+      together. The other options are skipping it (the rest might still work) or rolling
+      back this piece (cleanest but loses any partial progress). Question: look at it
+      together?" -->
 - The user can: fix the issue and resume (re-run the failed plan from the failed task), skip the plan, roll back the plan's changes, or abort everything
 - If the failed plan is a dependency for a later phase, warn the user that skipping will affect downstream phases
 
@@ -404,6 +466,9 @@ Spawn the `serious-code-implementer` agent with:
 - The task description from the plan (acceptance criteria, key components, expected behavior)
 - The working directory
 - Instruction to follow TDD: write failing test FIRST, then implement, then make test pass
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 388 -->
+<!-- WHY: TASK_ID tag is internal dispatch metadata read by the dispatch-audit hook.
+     It never appears in chat — it's a marker in the agent-to-agent prompt header. -->
 - Include `TASK_ID: task_{NN}` on its own line near the top of every Agent dispatch prompt (where `{NN}` is the zero-padded task number from the plan's Master Checklist). This tag is consumed by the dispatch audit hook for traceability.
 
 The implementer:
@@ -413,6 +478,9 @@ The implementer:
 4. Returns: list of files changed, tests written, any issues encountered
 
 **Monorepo awareness:** If the implementer modifies a dependency package (library, shared module), it must:
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 396 -->
+<!-- WHY: monorepo build-orchestration rule for the implementer agent. Engineering
+     dispatch detail, not chat. -->
 - Rebuild the modified package before testing dependents
 - Restart any running dev servers that consume the modified package
 - Track which packages were modified and which dependents need rebuilding
@@ -424,6 +492,12 @@ After the implementer completes, scan all files changed in this task for stub pa
 1. Get the list of files changed by the implementer
 2. For each file, grep for every pattern in `{STUB_PATTERNS}`
 3. If any match is found:
+<!-- voice-retrofit: rewritten; thread-1 line: 408 -->
+<!-- For the user-facing message about stub-detection findings, use PM voice. Don't
+     dump "file, line number, matching pattern" — describe what's incomplete:
+     "What this does: I found a few pieces marked as 'to do' that didn't actually get
+      built — we need to finish those before claiming this is done. Question: walk
+      through them, or have me try to finish them autonomously?" -->
    - Report the file, line number, and matching pattern
    - Feed the list back to the implementer: "These patterns indicate hollow/stub code. Replace with real implementations."
    - The implementer fixes all matches
@@ -480,6 +554,12 @@ Include `TASK_ID: task_{NN}` on its own line near the top of the Completion Gate
 
 ```
 TASK_ID: task_{NN}
+<!-- voice-retrofit: deferred — reason: covered-by-translator; thread-1 line: 462 -->
+<!-- WHY: Completion Gate sub-agent dispatch prompt. The "Acceptance Criterion / file:line
+     / DEAD CODE / WIRED IN / PARENT CONTAINER" vocabulary is precise verification
+     shorthand the sub-agent uses internally. When verdicts reach user-facing chat at
+     end-of-task time, Task 3's voice-translator wires into the code-per-task touchpoint
+     and rewrites. -->
 COMPLETION GATE — Task {task_id}: {task_name}
 
 You are an independent verifier. You did NOT implement this code.
@@ -544,6 +624,10 @@ RULES:
 - Max 2 retries, then escalate to the user
 
 **If ALL ACs PASS:**
+<!-- voice-retrofit: rewritten; thread-1 line: 528 -->
+<!-- For the user-facing message: never mention "gate_passed.md" or the evidence
+     folder path in chat. The user sees "verified — moving on" or similar, with the
+     details on disk if they ever want to look. -->
 - Write `gate_passed.md` to `evidence/task_{NN}/` with:
   - Timestamp
   - Full AC-by-AC verification log (criterion text, PASS/FAIL, file:line evidence)
@@ -583,6 +667,14 @@ After all phases complete successfully:
 ### 2a. Generate completion_report.md
 
 ```markdown
+<!-- voice-retrofit: rewritten; thread-1 line: 564 -->
+<!-- The template below is a FILE ARTIFACT written to disk for the project record.
+     CRITICAL: the agent must NOT mirror this template verbatim into chat. The chat
+     wrap-up (Phase 2d Report to user, see the rewrite at line 644) presents the
+     PM-voice translation — what was built, what works for the user now. The structured
+     file lives on disk for the operator/maintainer to reference later; the user sees
+     the translated summary. This split is the actual user-facing rewrite: keep the
+     file format engineering-friendly, present a translated chat reply. -->
 # Completion Report: {Project Title}
 
 **Started:** {timestamp}
@@ -628,6 +720,11 @@ agent types, emit a warning. This section is advisory — warnings do not block 
 
 | Task | Dispatch Count | Distinct Agent Types | Warning |
 |------|---------------|---------------------|---------|
+<!-- voice-retrofit: rewritten; thread-1 line: 612 -->
+<!-- For chat: never dump the dispatch-audit table verbatim. If a verification was
+     skipped (the "fewer than 5 distinct agent types" condition fires), surface in PM
+     voice: "Heads up: I skipped the QA review on the {feature} piece. Want me to add
+     it before declaring this done?" -->
 | task_01 | {N} | {list} | {if < 5 distinct types: "WARN: fewer than 5 distinct agent types"} |
 | task_02 | {N} | {list} | |
 | ... | | | |
@@ -662,6 +759,11 @@ If the `source` field points to an `implementation_plan.md` (or `phase_map.md`),
 ### 2d. Report to user
 
 Present:
+<!-- voice-retrofit: rewritten; thread-1 line: 644 -->
+<!-- Phase 2d Report-to-user in PM voice. NO file path, NO slash-command dump.
+     Example: "What this does: built the whole feature — {one-sentence description of
+      what works for the user now}. All the tests pass and the {key surface} is wired up.
+      Question: ready to ship it, or want to try it in the live app first?" -->
 - Completion report path
 - High-level summary: what was built, all tests passing, evidence collected
 - Any follow-up recommendations
@@ -684,7 +786,8 @@ If `/serious-code --resume` is invoked or the orchestrator detects an existing `
 
 1. Read `execution_log.md` to find the last completed phase/plan/task
 2. Read each plan's `progress.md` to find the exact stopping point
-3. Present to the user: "Found an in-progress execution. Last completed: Phase {N}, Plan {X}, Task {Y}. Resume from Task {Y+1}?"
+<!-- voice-retrofit: rewritten; thread-1 line: 668 -->
+3. Present to the user in PM voice — describe what was last finished and ask to continue. NO "Phase {N}, Plan {X}, Task {Y}" labels. Example: "What this does: I see we were partway through building {feature} — last finished was {plain-English summary of the last completed step}. Question: pick up where we left off, or restart from scratch?"
 4. On approval, continue from where it left off
 5. For parallel phases that partially completed: only re-run the incomplete/failed plans, skip already-completed ones
 
@@ -692,6 +795,9 @@ If `/serious-code --resume` is invoked or the orchestrator detects an existing `
 
 ## Operating Rules
 
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 676 -->
+<!-- WHY: operating rule for the agent itself, not chat. "5 agents" is an internal
+     architectural constraint. -->
 1. **Never skip verification.** Every task gets all 5 agents. No shortcuts.
 2. **Never continue past a failed task.** Stop the plan and report up.
 3. **Never merge a failed plan's worktree.** Leave it for inspection.
@@ -699,12 +805,24 @@ If `/serious-code --resume` is invoked or the orchestrator detects an existing `
 5. **User approval between phases.** Never start a phase without the user saying "go."
 6. **Evidence is mandatory.** Every completed task gets an evidence folder.
 7. **Commits should be granular.** One commit per acceptance criterion, not one mega-commit per task.
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 683 -->
+<!-- WHY: operating doctrine for the implementer agent's own decision-making about
+     when a task is truly done. Not chat output. -->
 8. **"Tests pass" is necessary, not sufficient.** After unit tests pass, always perform a smoke test in the running app for tasks with user-visible outcomes. Do not mark a task complete until the user can see/use the result.
 9. **When tests pass but the feature doesn't work, investigate the gap.** The gap is always in a layer tests don't cover — caches, indexes, visibility culling, event propagation, async timing, build caches. Add a test for the missing layer, fix it, document it.
 10. **Rebuild dependencies in monorepos.** After modifying a dependency package, rebuild it before testing dependents. Restart dev servers that consume the modified package. Stale builds are a silent failure source.
 11. **The completion report is not optional.** Generate `completion_report.md` with full evidence summary. If the session is interrupted, resume must generate it.
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 687 -->
+<!-- WHY: operating rule explaining the stop-hook enforcement mechanism to the agent
+     itself. Not chat output. -->
 12. **The Completion Gate is enforced by a stop hook.** The hook (registered in `.claude/settings.json` by `/serious-init`) checks that every task evidence directory contains `gate_passed.md`. If any are missing, the session cannot exit (exit code 2). You MUST run Step 2.5 for every task. There is no way around this — the hook runs outside your control.
 13. **"INFRASTRUCTURE READY" is not a valid status.** Every acceptance criterion is either PASS or FAIL. There is no partial credit. If code doesn't exist for an AC, it's a FAIL, even if related infrastructure was built.
+<!-- voice-retrofit: deferred — reason: covered-by-translator; thread-1 line: 689 -->
+<!-- WHY: the "dead code" rule is internal agent guidance about what counts as "done"
+     during verification. When a failure surfaces to the user, Task 3's voice-translator
+     wires into the per-task touchpoint and rewrites: "the new feature is built but it's
+     not actually wired into the screen yet — it'd compile and pass tests, but the user
+     wouldn't see it. Want me to wire it up?" -->
 14. **Dead code is not implementation.** A widget/component/handler that exists in its own file but is never imported, instantiated, or mounted by a parent container is dead code. The Completion Gate must verify reachability for all "visible to user" ACs: find the parent container, confirm it imports the new component, confirm it instantiates/renders it, confirm any replaced component is removed. Dead code = FAIL.
 15. **Stub code must be caught before verification.** Step 1.25 scans for `{STUB_PATTERNS}` after implementation. If stubs are found, the implementer must replace them with real code before proceeding. An empty method body or TODO placeholder that reaches verification is a process failure.
 16. **Inter-plan regression is mandatory for multi-plan phases.** After merging a phase's worktrees (Step 1f), re-verify all previous phases' visible-to-user ACs using `{RUNTIME_VERIFY_CMD}`. If any regress, stop and report before starting the next phase. A green phase that silently breaks a previous phase is worse than a red phase.
@@ -802,6 +920,11 @@ If the write or `mv` fails (disk full, permissions, missing `$PLAN_DIR`), log a 
 {
   "version": 1,
   "plan_name": "<sanitized plan name>",
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 783 -->
+<!-- WHY: status.json is the on-disk JSON the IDE status-line reads to render the
+     compact progress indicator. The status-line surface is a separate one (IDE bar,
+     not chat); phase counts there are acceptable UI. Chat output uses PM voice and
+     never quotes the JSON. -->
   "phase": {"current": 0, "total": 0},
   "task": {"current": 0, "total": 0},
   "agents": {
@@ -815,3 +938,4 @@ If the write or `mv` fails (disk full, permissions, missing `$PLAN_DIR`), log a 
   "timestamp": "2026-04-12T00:00:00Z"
 }
 ```
+

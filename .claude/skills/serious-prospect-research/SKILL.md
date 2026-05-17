@@ -62,11 +62,21 @@ Check whether `Research/prospects/<slug>/briefing.md` exists.
 
 **If it DOES exist:** read its frontmatter, extract `created` date. Compute age in days.
 
-| Age | Default action | Prompt the user |
-|---|---|---|
-| < 7 days | show | "Briefing exists from {date} ({N} days ago). Show it as-is, refresh stale sections, or full re-run? (default: show)" |
-| 7–30 days | refresh-stale | "Briefing is {N} days old. Refresh stale sections only, full re-run, or just show? (default: refresh-stale)" |
-| > 30 days | full re-run | "Briefing is {N} days old. Recommend full re-run. Proceed, or refresh-stale, or show? (default: full re-run)" |
+<!-- voice-retrofit: rewritten; thread-1 line: 45 -->
+
+Use PM voice — recommend ONE action, don't present a 3-option menu. Ask follow-up if user wants to change it. Examples:
+
+- **<7 days:** "What this does: I already have a fresh briefing on this company from {N} days ago. Question: open the existing one, or refresh it?"
+- **7–30 days:** "What this does: the briefing is a bit stale ({N} days). I'll refresh the time-sensitive sections quickly. Question: do that, or full re-do?"
+- **>30 days:** "What this does: the briefing is {N} days old — recommend a full re-do (~15 min). Question: go?"
+
+Internal age/default table (for agent dispatch):
+
+| Age | Default action |
+|---|---|
+| < 7 days | show |
+| 7–30 days | refresh-stale |
+| > 30 days | full re-run |
 
 Wait for user response. Apply chosen action:
 - **show** → print full path to `briefing.md` and `briefing.html`. End.
@@ -75,9 +85,15 @@ Wait for user response. Apply chosen action:
 
 ### 0c. Confirm scope before research starts
 
-Print a one-liner confirming what's about to happen:
+Print a one-liner confirming what's about to happen.
 
-> "Researching **{company}** — {mode} mode (~{5 if quick else 15} min). Action: {fresh / refresh-stale / version N→N+1}. Output: `Research/prospects/{slug}/`."
+<!-- voice-retrofit: rewritten; thread-1 line: 61 -->
+
+PM voice — no folder path, no "version N→N+1" notation, no internal "mode" labels:
+
+> What this does: starting the briefing on {company} — quick pass (~5 min) or deep dive (~15 min).
+>
+> Question: pick which depth, then I start.
 
 Proceed without waiting for confirmation. The user will interrupt if wrong.
 
@@ -477,36 +493,49 @@ rm -f "$new_bc" "${CLAUDE_PROJECT_DIR}/.active-prospect-research"
 
 ### 5c. Sales-oriented completion message
 
-Print to the user, in this format (substitute values):
+Print to the user in PM voice.
 
-```
-**{Company}** — {Tier} fit · {mode} mode · {N} sources cited{ + image if generated}
+<!-- voice-retrofit: rewritten; thread-1 line: 462 -->
+<!-- voice-retrofit: rewritten; thread-1 line: 466 -->
 
-**TL;DR for the call:**
-{One sentence: what they do + why fit}
+The TL;DR + Top 3 hooks + Biggest risk format is fine — that's sales-friendly content. But trim the file-path dump and the slash-command-with-flag footnote. Example:
 
-**Top 3 hooks:**
-1. {Hook 1 — short, just the strategic frame}
-2. {Hook 2 — short}
-3. {Hook 3 — short}
+> **{Company}** — {Tier} fit. {N} sources cited.
+>
+> **TL;DR for the call:** {one sentence: what they do + why fit}
+>
+> **Top 3 hooks:**
+> 1. {Hook 1 — short}
+> 2. {Hook 2 — short}
+> 3. {Hook 3 — short}
+>
+> **Biggest risk:** {one sentence}
+>
+> The full briefing (with sources, signals, and an HTML sales card) is saved locally if you want to dig in.
+>
+> Question: ready for the call, or want to go deeper on any of these hooks?
 
-**Biggest risk:** {one sentence}
+Don't print 5 absolute paths. Don't recommend `--deep {slug}` slash-command-with-flag. If the briefing is low-confidence (quick mode, few sources), say so in plain English ("the briefing is thinner than usual — want me to dig deeper?").
 
-**Open in browser:**
-- Briefing (HTML, sales card): {absolute path to briefing.html}
-- Briefing (markdown): {absolute path to briefing.md}
-- Sources: {absolute path to sources.md}
-- Raw signals: {absolute path to signals.md}
-{if image generated:}
-- Timeline image: {absolute path to timeline.png}
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 486 -->
+<!-- WHY: the low-confidence footnote with slash-command-flag is a sub-rule of the
+     5c completion message; the rewrite above replaces it with a plain-English ask. -->
 
-> The HTML has interactive features: theme toggle (top-right ◐), printable view (⎙ Print), tap-to-copy hooks. Open in any browser.
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 288 -->
+<!-- WHY: the quick-mode confidence check is an operator-side metric (count distinct sources,
+     check pillar gaps). The result feeds into how to FRAME the completion message, but the
+     raw count is never shown to the user. -->
 
-{if quick mode + low confidence:}
-> Note: {N} distinct sources cited / pillar gaps detected. Consider `/serious-prospect-research --deep {slug}` for a thorough re-run with synthesis re-dispatch and a generated timeline image.
-```
+<!-- voice-retrofit: deferred — reason: covered-by-translator; thread-1 line: 169 -->
+<!-- WHY: this is the sub-agent dispatch prompt for the synthesis sub-agent. The technical
+     vocabulary ("architectural drift", "AI-tooling friction", etc.) is internal-to-the-skill
+     framing. When the sub-agent output reaches user-facing chat at completion, Task 3's
+     voice-translator wires into the prospect-research touchpoint to rewrite. -->
 
-Use **absolute paths** (resolve from project root + relative path), not relative paths. The user copy-pastes these.
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 336 -->
+<!-- WHY: CSS class names ("tag tag-hot", "pillar lit") are HTML generation directives,
+     not chat content. They appear in the briefing.html file the user opens in a browser,
+     where they're invisible class selectors. -->
 
 ---
 
@@ -541,3 +570,4 @@ Sections updated: 4 (pain signals), 5 (committee recent moves), 6 (AI posture). 
 4. **Quick mode is the default.** Most prospects need a fast briefing, not a thorough one. Deep mode is opt-in for high-stakes calls.
 5. **The HTML is for sales people**, not engineers. Layout favors scannability: TLDR + Fit at top, sections collapsible, hooks copyable.
 6. **One question at a time** if anything is ambiguous (CLAUDE.md rule 9). Most runs should not need any prompts after the initial mode/refresh decision.
+

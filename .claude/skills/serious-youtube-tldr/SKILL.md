@@ -58,6 +58,9 @@ You are NOT a transcript dumper. You watch (read) the entire video and produce a
 
 If `$ARGUMENTS` is provided, treat it as one or more YouTube URLs or video IDs (space-separated, newline-separated, or comma-separated). Also accept a file path containing a list of URLs (one per line).
 
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 42 -->
+<!-- WHY: agent-side guidance to prompt for URLs. The wording comes from the PM-voice card
+     at the top of this file; no verbatim phrase is mandated here. -->
 If no arguments provided, ask the user for URL(s).
 
 ### 0b. Extract and validate video IDs
@@ -156,6 +159,9 @@ For each video, run this Python snippet via Bash:
 
 ```bash
 python3 -c "
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 136 -->
+<!-- WHY: this is a Python code block the agent runs as a tool invocation. It's internal
+     dispatch code, never shown to the user. -->
 from youtube_transcript_api import YouTubeTranscriptApi
 api = YouTubeTranscriptApi()
 segments = list(api.fetch('VIDEO_ID_HERE', languages=['en']))
@@ -195,7 +201,13 @@ estimated_duration: {word_count / 150} min
 
 ### 2b. Gate check
 
-If zero transcripts were fetched successfully, report to user and clean up (remove breadcrumb, update notebook). Stop here.
+<!-- voice-retrofit: rewritten; thread-1 line: 179 -->
+<!-- Use PM voice for the zero-transcripts case: "What this does: I couldn't pull any
+     transcripts from those videos — they may not have captions enabled. Question: try
+     different videos, or skip the summarization?" Avoid "remove breadcrumb"/"update
+     notebook" jargon in chat. -->
+
+If zero transcripts were fetched successfully, report to user (in PM voice — explain the issue in plain English, no internal mechanics) and clean up (remove breadcrumb, update notebook). Stop here.
 
 ---
 
@@ -329,25 +341,21 @@ rm -f "$new_bc" "${CLAUDE_PROJECT_DIR}/.active-youtube-tldr"
 
 ### 5d. Present deliverables
 
-Tell the user what was produced:
+<!-- voice-retrofit: rewritten; thread-1 line: 313 -->
 
-```
-**YouTube TLDR complete:**
-- {N} video(s) processed
-- Transcripts: {list of transcript files}
-- Summaries: {list of summary files}
-- Synthesis: {synthesis.md if batch}
-- Location: Research/youtube/{slug}/
+Use PM voice. Describe WHAT was produced ("a written summary of each video plus a cross-video synthesis if there were multiples") — no file lists, no folder paths, no slash-command mentions in chat. Example:
 
-These artifacts can be consumed by /serious-research or /serious-conversation as source material.
-```
+> What this does: I summarized {N} video(s) and (for batches) wrote a combined synthesis. They're saved locally and ready to feed into a research or brainstorming session.
+>
+> Question: want me to roll the summaries into a research write-up next?
 
 ---
 
 ## Error Handling
 
 - **No transcript available:** Log in notebook, skip video, continue with others. Common for: live streams, music videos, some region-locked content.
-- **Python not installed or youtube_transcript_api missing:** Tell the user to run `pip install youtube-transcript-api`.
+<!-- voice-retrofit: rewritten; thread-1 line: 331 -->
+- **Missing prerequisite:** Tell the user in plain English — "The transcript reader isn't installed on this machine. Want me to install it for you, or you can paste this single command into your terminal: `pip install youtube-transcript-api`." Frame the install as one-line setup, not a library name dump.
 - **All videos failed:** Clean up breadcrumb, report to user, stop.
 - **Context compaction during long batch:** The Stop hook saves progress to notebook.md. On resume, check which transcripts and summaries already exist on disk and skip them.
 
@@ -358,3 +366,4 @@ If the skill is re-invoked and the output folder already exists:
 2. Check which summary files exist — skip re-analyzing those
 3. Pick up from where processing left off
 4. This makes the skill idempotent for interrupted runs
+

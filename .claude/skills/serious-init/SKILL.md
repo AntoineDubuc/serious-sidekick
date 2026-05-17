@@ -123,7 +123,8 @@ ls ~/.claude/skills/ 2>/dev/null
 ls ~/.claude-*/skills/ 2>/dev/null
 ```
 
-Report: "Updating existing installation" or "Fresh install".
+<!-- voice-retrofit: rewritten; thread-1 line: 107 -->
+Report in PM voice — "What this does: this looks like a first install — I'll set everything up for you" or "What this does: I see this is already set up; I'll update what's changed." No further detail unless the user asks.
 
 ### Step 2: Parse the manifest and distribute files to the project
 
@@ -155,7 +156,8 @@ For each entry in `MANIFEST_ENTRIES` (tab-separated: `source_path\townership\tde
 **User-init files** (`ownership=user-init`):
 - Currently: `CLAUDE.md` only
 - If `$PROJECT/CLAUDE.md` does NOT exist: copy from `$SIDEKICK_HOME/CLAUDE.md`
-- If it DOES exist: ask the user: "CLAUDE.md already exists. Overwrite with the template version, or skip?"
+<!-- voice-retrofit: rewritten; thread-1 line: 139 -->
+- If it DOES exist: ask the user in PM voice — "What this does: there's already a project-config file on disk with your custom settings. I can replace it with our standard one or leave yours alone. Question: replace or skip?"
   - Overwrite: replace entirely
   - Skip: leave as-is
 
@@ -199,6 +201,10 @@ After writing or merging settings.json (both project and global), validate:
 # Pseudocode — implement in whatever language the init uses
 for each hook in settings.hooks.Stop[*].hooks[*]:
   if hook has "if" field:
+<!-- voice-retrofit: rewritten; thread-1 line: 183 -->
+<!-- Surface the error to the user in PM voice, NOT verbatim: "What this does: the
+     install template has a misconfiguration that would break the safety net. I'll skip
+     it and warn the operator. Question: continue with the rest of the install, or stop?" -->
     ERROR: "Stop hook '${hook.command}' has an 'if' field. This will BREAK the hook — 'if' only works on tool events (PreToolUse, PostToolUse). Remove the 'if' field."
     EXIT with error
 ```
@@ -211,8 +217,19 @@ Run this validation on every settings.json that was written or merged (project +
 
 ### Step 5: Verify and report
 
-Check that everything was installed correctly:
+Check that everything was installed correctly.
 
+<!-- voice-retrofit: rewritten; thread-1 line: 197 -->
+
+Internally verify the count of installed components. For the user-facing report, use PM voice:
+
+> What this does: all set — the workflows, sub-agents, safety nets, and reference docs are installed and validated.
+>
+> Question: ready to try one out?
+
+Don't dump counts, folder paths, or template filenames to the user. The technical breakdown is for the operator (visible in the install log).
+
+Internal count breakdown (operator-side only):
 ```
 Skills: N installed (.claude/skills/)
 Agents: N installed (.claude/agents/)
@@ -230,7 +247,17 @@ Report whether this was a fresh install or an update:
 - **Fresh:** "Serious Sidekick installed. Here's the workflow..."
 - **Update:** "Updated to latest. Changes: {list what was newer in template}"
 
-Remind the user of the workflow:
+Remind the user of the workflow in PM voice.
+
+<!-- voice-retrofit: rewritten; thread-1 line: 214 -->
+
+Don't dump a 9-command menu. Recommend ONE thing to try first based on context (typically "brainstorm with the AI personas — fastest way to feel it"). Mention that other workflows exist if they want to explore.
+
+> What this does: you're set up. Easiest first try is the brainstorm — describe what you're working on and a panel of AI personas talks it through with you. Takes ~5 minutes to feel the vibe.
+>
+> Question: want to try that, or just leave it for now?
+
+The full command list lives in the project's CLAUDE.md if the user wants to browse later. Internal reference (for the agent's own use, NOT chat output):
 ```
 /serious-conversation  →  brainstorm with AI personas
 /serious-research      →  investigate a bug, feature, or question
@@ -256,6 +283,9 @@ Remind the user of the workflow:
 
 The hooks configuration has two sections, both managed via `settings.json`:
 
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 236 -->
+<!-- WHY: this is operator/engineering reference documentation about the hooks installed.
+     It's reference material for the project maintainer, not chat output to the user. -->
 **PreToolUse hooks** (matcher: `"Edit|Write"`) — 3 gates with conditional `if` filtering:
 - **TDD Gate**: 14 code extensions x 2 tools (Write + Edit) = 28 handlers with `if` patterns (e.g., `if: "Write(*.ts)"`, `if: "Edit(*.ts)"`)
 - **Hedge Language Gate**: 2 handlers — `if: "Write(*implementation_plan*.md)"` + `if: "Edit(*implementation_plan*.md)"`
@@ -271,3 +301,4 @@ The hooks configuration has two sections, both managed via `settings.json`:
 | check-extraction.sh | /serious-plan | Warns if plan has upstream but no _extracted_items.md |
 | check-manifest.sh | /serious-scope | Warns if scope started but no manifest.md |
 | check-verdict.sh | /serious-review | Warns if review started but no verdict |
+

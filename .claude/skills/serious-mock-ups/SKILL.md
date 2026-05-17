@@ -72,14 +72,27 @@ Before asking anything, scan the project:
 
 ### 0b. Present what you found
 
+<!-- voice-retrofit: rewritten; thread-1 line: 50 -->
+
+Use the PM voice. Translate file/folder content into "what the user actually built or wrote about" — no codebase paths in chat.
+
 **If exactly one completed research found:**
-> "I found completed research at `Research/features/auth/research.md`. Use this as the basis for mock-ups?"
+
+> What this does: I found the deep-research write-up from earlier. I'll mock the UI surfaces it points at.
+>
+> Question: use that one?
 
 **If multiple found:**
-> List them and ask which one to use.
+
+> What this does: a couple of research write-ups match. I'll describe each in one sentence and you pick the right one.
+>
+> Question: which?
 
 **If nothing found:**
-> "No research found. You can: point me to a research file, describe what you want to mock up, or run `/serious-research` first."
+
+> What this does: there's no research write-up to anchor the mock-ups. Easiest path is to describe what you're picturing and I'll work from that.
+>
+> Question: describe the feature in a sentence?
 
 ### 0c. Upstream extract-mode pre-check
 
@@ -98,25 +111,34 @@ Once the upstream research artifact is identified (from 0a/0b):
 
 Read the research (or user description) and extract every user-facing component, screen, view, or interaction mentioned. Present them as a numbered checklist:
 
-> "I found these UI surfaces in your research:"
+<!-- voice-retrofit: rewritten; thread-1 line: 120 -->
+
+> What this does: here are the screens / surfaces the research called out.
+>
+> What I need from you:
 > 1. Dashboard overview — main landing screen with metrics
 > 2. Settings panel — user preferences and configuration
 > 3. Notification center — alert list with filtering
 > 4. Onboarding flow — 3-step wizard for new users
 >
-> "Which ones do you want to mock up? (all, or list numbers)"
+> Question: all of them, or just some?
 
 If the research doesn't mention specific UI surfaces, ask the user to describe what screens/views they're envisioning.
 
 ### 0e. Choose fidelity level
 
-Ask which fidelity level to start with:
+<!-- voice-retrofit: rewritten; thread-1 line: 94 -->
 
-- **Wireframe (Recommended)** — ASCII/text-based layouts rendered right in the conversation. Fast, no dependencies, great for structure decisions. Start here to nail down layout before going visual.
-- **Visual mock-up** — Generated via Gemini image API. Proper styling, colors, realistic component rendering. Requires `GEMINI_API_KEY` in `.env`.
-- **Both** — Wireframe first for structure approval, then visual mock-up for the approved layout.
+Recommend "both, in two passes" as the default and ask in PM voice. No `Gemini image API`, no `GEMINI_API_KEY`, no `.env` in chat. Example:
 
-Default to **Both** — wireframes are fast and establish structure; visuals bring it to life after.
+> What this does: I'll start with a quick rough layout you can read right here (text-only, fast), then turn the approved layout into a real picture afterward.
+>
+> Question: go with that, or just rough layouts for now?
+
+Internal options for agent dispatch (NOT shown verbatim to the user):
+- **Wireframe** — ASCII/text-based layouts rendered inline. Fast, no dependencies.
+- **Visual mock-up** — Generated via the project's image-generation tool. Proper styling, colors, realistic rendering.
+- **Both** — Wireframe first for structure approval, then visual for the approved layout. **Default.**
 
 ### 0f. Set up the mock-ups folder
 
@@ -187,6 +209,10 @@ source: # Set to the path of the research.md consumed
 | # | Rationalization | Correct action | Why it fails |
 |---|----------------|----------------|--------------|
 | 1 | "The wireframe captures the intent, visual isn't needed" | If the user selected visual or interactive fidelity, deliver that fidelity. Do not downgrade. | Fidelity downgrade. Declaring "wireframe is enough" when higher fidelity was requested skips design decisions that surface during visual work. |
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 421 -->
+<!-- WHY: the component inventory table is a file artifact written to mock-up-summary.md
+     for downstream consumption by /serious-plan. It is reference data, not chat output.
+     The user sees the rendered mock-ups, not the component table verbatim. -->
 | 2 | "This screen is similar to the previous one" | Generate a separate mock-up for every screen. Shared layouts still have screen-specific components. | Surface skipping. The component inventory misses screen-specific elements when screens are declared "similar." |
 | 3 | "Empty/error states aren't needed for this screen" | Generate state variations for every screen: empty, loading, error, populated. The flow requires all states. | State variation avoidance. Missing states cause implementation gaps — the developer guesses wrong on error handling. |
 | 4 | "A general description captures the intent — the implementer will know what to do" | Name the file, the function, the type, the line range. No hedge words. | Every downstream failure traces to vague language in upstream artifacts. |
@@ -252,6 +278,10 @@ For each round of feedback:
 
 Save each version to the mock-ups folder:
 
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 228 -->
+<!-- WHY: wireframe_v1.md is a file artifact written to disk for iteration tracking.
+     The user sees the rendered wireframe in chat, NOT this filename. Version labels
+     (v1, v2) appear only in the local file storage scheme. -->
 **wireframe_v1.md:**
 ```markdown
 # Wireframe: {Surface Name} — v1
@@ -335,6 +365,9 @@ Requirements:
 
 Use the same Gemini API approach as `/serious-bananas`:
 
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 355 -->
+<!-- WHY: this is the agent-internal dispatch reference (which Gemini model ID to call).
+     The user never sees the model ID — they see the visual mock-up. -->
 - Model: `gemini-3-pro-image-preview` (default) or `gemini-3.1-flash-image-preview` (faster)
 - Aspect ratio: `16:9` for desktop, `9:16` for mobile, `3:2` for tablet
 - Save to: `{mock-ups_folder}/{surface_slug}/visual_v1.png`
@@ -515,12 +548,13 @@ rm -f "$new_bc" "${CLAUDE_PROJECT_DIR}/.active-mock-ups"
 
 ### 4d. Report to user
 
-Present:
-- The mock-ups folder path
-- How many surfaces were mocked up, at what fidelity
-- The component inventory (quick summary)
-- Key design decisions captured
-- Reminder: "Run `/serious-plan` next — it will auto-detect these mock-ups and use the component inventory and design decisions."
+<!-- voice-retrofit: rewritten; thread-1 line: 499 -->
+
+Present in PM voice. No folder path, no `/serious-plan` slash-command dump, no engineering inventory:
+
+> What this does: mocked up {N} screens — both the rough layouts and the visual versions. The big design calls are noted ({summarize 1-2 in plain English: "tabs not accordion", "dark mode default"}). Everything's saved locally.
+>
+> Question: ready to plan the build, or want to revise a screen first?
 
 ---
 
@@ -544,3 +578,4 @@ Present:
 6. **Don't over-produce.** Mock up what matters. Not every screen needs a mobile variant. Not every state needs a visual. Ask the user what's worth their time.
 7. **State variations are first-class.** Empty states, error states, and loading states are not afterthoughts — they're often where UX breaks. Surface them early.
 8. **The summary is not optional.** Generate `mock-up-summary.md` with the full component inventory and design decision log. If the session is interrupted, resume must generate it.
+

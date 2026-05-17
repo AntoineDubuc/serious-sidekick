@@ -34,6 +34,13 @@ Canonical card: `.claude/skills/_shared/voice-card.md`.
 
 ## Models
 
+<!-- voice-retrofit: deferred — reason: phase-4-polish; thread-1 line: 18 -->
+<!-- WHY: this table is the skill's internal reference of which image-generation model to dispatch
+     to. The user never sees the model IDs — they see the nickname ("Nano Banana 2") and the
+     trade-off in plain English during the Interview Protocol. Phase 4 polish: hide the API model
+     IDs entirely from any chat output (already partially handled by the Interview's "Recommended"
+     framing). -->
+
 | Model ID | Nickname | Use case | Pricing |
 |----------|----------|----------|---------|
 | `gemini-3.1-flash-image-preview` | Nano Banana 2 | Best balance — Pro quality at Flash speed. 4K, text rendering, subject consistency | ~$0.045/1K, ~$0.067/2K, ~$0.151/4K |
@@ -43,6 +50,14 @@ Canonical card: `.claude/skills/_shared/voice-card.md`.
 Default to `gemini-3.1-flash-image-preview` (Nano Banana 2). Use Pro only if the user needs advanced reasoning for highly complex compositions. Use v1 only if the user explicitly wants the cheapest option.
 
 ## Interview Protocol
+
+<!-- voice-retrofit: rewritten; thread-1 line: 27 -->
+
+**Voice rule for this protocol:** the questions below have built-in option menus to inform the AGENT what's available — they are NOT what the user sees verbatim. For each question, ask the user in PM voice: state the recommended choice in plain English, then ONE question. Only present alternatives if the user asks. Example:
+
+> What this does: a flowchart usually fits this best — clean lines, easy to read.
+>
+> Question: go with that, or want to see other styles?
 
 When the user invokes `/serious-bananas`, ask these questions **one at a time**. Wait for each answer before asking the next.
 
@@ -79,8 +94,10 @@ Ask the user to describe what they want in plain language.
 
 ### Question 4: Resolution?
 
+<!-- voice-retrofit: rewritten; thread-1 line: 64 -->
 - Header: "Resolution"
-- Options:
+- In chat: recommend 2K (standard) — good quality, fast, cheap. Mention "higher resolution costs more" without pasting the exact prices unless the user asks.
+- Internal options (for agent dispatch):
   - **2K (standard)** — Good quality, fast, affordable (Recommended)
   - **4K (highest)** — Maximum detail, best for print or large displays (~$0.15/image)
   - **1K (fast)** — Quick previews, thumbnails (~$0.045/image)
@@ -97,6 +114,10 @@ Ask the user to describe what they want in plain language.
   - **9:16 (tall)** — Mobile, vertical infographics
   - **21:9 (ultrawide)** — Banners, cinema, panoramic
   - **4:5 (portrait)** — Instagram portrait, posters
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 81 -->
+<!-- WHY: this "Other: allowed" bullet is an agent-side reference list of the API-supported
+     aspect ratios for the "Other" free-text path. The user types a ratio; the agent validates
+     against this list. The list is never displayed verbatim to the user. -->
 - Other: allowed (user types custom ratio — API supports: `1:1`, `1:4`, `1:8`, `2:3`, `3:2`, `3:4`, `4:1`, `4:3`, `4:5`, `5:4`, `8:1`, `9:16`, `16:9`, `21:9`)
 
 ### Question 6: How many variations?
@@ -300,11 +321,15 @@ Each edit builds on the previous image — no need to regenerate from scratch.
 
 ### Error Handling
 
-- If `google-genai` is not installed: tell the user to run `pip install google-genai pillow python-dotenv`
-- If `GEMINI_API_KEY` is missing from `.env`: tell the user to add it
-- If the model returns text instead of an image: show the text response and suggest rephrasing
-- If generation fails: show the error and suggest trying a different model
-- If content safety blocks generation: simplify the prompt (avoid famous figures, financial info, character swaps)
+<!-- voice-retrofit: rewritten; thread-1 line: 284 -->
+
+Translate error states to PM voice. Do NOT dump library names or env-variable names verbatim. Examples:
+
+- **Missing image generator on this machine:** "The image-generation tool isn't installed yet. Want me to install it for you (one command), or you can paste this into your terminal: `pip install google-genai pillow python-dotenv`."
+- **Missing API key:** "The image-generation service needs a key. I'll put it in your local secret file (`.env`). Want me to walk you through getting one (~2 min)?"
+- **Model returned text instead of image:** "The model wrote back a description instead of drawing. Likely my prompt was ambiguous. Want to rephrase together?"
+- **Generation failed:** "The model couldn't generate this one. Probably worth trying a different model — recommend Nano Banana Pro for complex compositions, or the cheap one for a quick retry."
+- **Content blocked:** "The model refused this prompt (usually famous figures or sensitive content). Want to simplify the description?"
 
 ## Example Invocation
 
@@ -320,6 +345,11 @@ User: `/serious-bananas`
 8. "Search grounding?" → No
 9. "Where to save?" → ./images/
 
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 304 -->
+<!-- WHY: this is an Example Invocation showing how the agent SHOULD assemble the
+     generation prompt internally. It's reference documentation for the agent, not
+     a chat message to the user. The user sees the resulting image, not this prompt. -->
 Crafted prompt: "Authentication flow for OAuth2 implementation. Show the complete flow from user login request through token exchange to authenticated session. Clear labeled boxes connected by directional arrows. High contrast. Professional diagram style. No ambiguous connections. Legible text labels on all elements. Dark background (#1a1a2e or similar dark navy/charcoal). Light text on all nodes. Glowing or luminous node borders. Modern tech aesthetic. No watermarks. No extra text outside labels. Legible, precise text rendering on all labels and annotations."
 
 Generates: `./images/oauth2_auth_flow_v1.png` and `./images/oauth2_auth_flow_v2.png`
+

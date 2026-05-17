@@ -140,6 +140,11 @@ Status precedence:
 
 ### 4a. Table format
 
+<!-- voice-retrofit: deferred — reason: phase-4-polish; thread-1 line: 127 -->
+<!-- This skill's whole purpose is to surface workflow status to the user — the table IS the deliverable.
+     Paths and stage labels are the data the user explicitly asked to see. Phase-4 polish: shorten path
+     column to last two segments, replace stage labels with plain-English ("planning", "building"). -->
+
 Display a flat table with tree indentation:
 
 ```
@@ -155,13 +160,15 @@ Display a flat table with tree indentation:
 
 ### 4b. Status glyphs
 
+<!-- voice-retrofit: rewritten; thread-1 line: 138 -->
+
 | Glyph | Meaning |
 |-------|---------|
 | `✓` | done |
-| `●` | active (breadcrumb exists) |
-| `○` | pending (was active, no breadcrumb now) |
-| `✗` | abandoned |
-| `?` | legacy (no frontmatter found) |
+| `●` | in progress right now |
+| `○` | paused (was running, then stopped) |
+| `✗` | dropped |
+| `?` | old record, status unclear |
 
 ### 4c. Indentation
 
@@ -177,11 +184,15 @@ For deeply nested paths, truncate the beginning with `...` to keep the table rea
 
 ## Phase 5: Warnings
 
-After the table, display any warnings:
+After the table, display any warnings.
 
-- **Stale breadcrumbs:** `.active-{skill}` points to a folder that doesn't exist → `⚠ Stale breadcrumb: .active-{skill} → {path} (folder missing)`
-- **Orphaned workflows:** `parent:` field points to a path that doesn't resolve → `⚠ Orphan: {slug} claims parent at {path} (not found)`
-- **Malformed frontmatter:** YAML present but unparseable → `⚠ Malformed frontmatter: {path}`
+<!-- voice-retrofit: rewritten; thread-1 line: 161 -->
+
+Use plain-English wording in the warnings the user sees (no jargon, no curly-brace placeholders, no relative paths). Examples:
+
+- **Stale marker:** "⚠ Workflow record exists for {name}, but its folder is missing. Likely from an old session that wasn't cleaned up."
+- **Orphaned sub-workflow:** "⚠ {name} is linked to a parent workflow that I can't find. Could be from a deleted parent."
+- **Unreadable record:** "⚠ Workflow record for {name} can't be read — its header is malformed."
 
 ---
 
@@ -189,7 +200,11 @@ After the table, display any warnings:
 
 If no workflow folders are found at all:
 
-> "No workflows found. Start one with `/serious-conversation`, `/serious-research`, or `/serious-plan`."
+<!-- voice-retrofit: rewritten; thread-1 line: 173 -->
+
+> What this does: nothing's running right now.
+>
+> Question: want to start something? Most people start with a quick brainstorm — I can walk you through it.
 
 ---
 
@@ -199,3 +214,4 @@ If no workflow folders are found at all:
 - `--active` — show only active workflows (filter to `●` status)
 - `--tree {slug}` — show only the tree containing the named workflow
 - No arguments — show everything (default)
+

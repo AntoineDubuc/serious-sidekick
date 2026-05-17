@@ -82,22 +82,38 @@ Before asking anything, scan the project:
 
 ### 0b. Present what you found
 
+<!-- voice-retrofit: rewritten; thread-1 line: 67 -->
+<!-- voice-retrofit: rewritten; thread-1 line: 70 -->
+
+Use the PM voice. Translate file content to plain English ("the deep research we did on X"). Never paste paths or {placeholder} tokens into chat.
+
 **If a manifest entry was specified:**
-> "Using manifest entry: Plan {N} — {title}. Boundary: {boundary}. Proceeding to generate."
+
+> What this does: I'm using the scope manifest entry you pointed me at — building the plan for the feature it describes.
+>
+> Question: ready to start?
 
 **If exactly one completed research found:**
-> "I found completed research at `Research/features/notifications/research.md`. Use this as the basis for the plan?"
+
+> What this does: I found the deep research we did on this. I'll use it as the basis for the plan.
+>
+> Question: use it?
 
 **If multiple found:**
-> List them and ask which one to use.
 
-**If nothing found**, present the options:
+> What this does: a few research write-ups match. I'll describe each in one sentence and you pick.
+>
+> Question: which?
 
-1. **"I have a scope manifest from `/serious-scope`"** — they provide the manifest path and plan number. This is the standard pipeline path.
-2. **"Point me to your `/serious-research` output"** — if they ran it but the folder is somewhere unexpected, they give you the path.
-3. **"I have a PRD, spec, or requirements doc"** — they provide a file path or paste content. This could be a formal PRD, a Jira ticket, a design doc, meeting notes — anything with requirements.
-4. **"Run `/serious-research` first"** — if they realize they need deeper investigation before planning. Hand off to `/serious-research` and stop.
-5. **"I'll describe what I want"** — lightest path. They describe the feature/fix in conversation and you work from that.
+**If nothing found**, ask in PM voice — recommend ONE path, don't present a 5-option menu.
+
+<!-- voice-retrofit: rewritten; thread-1 line: 75 -->
+
+> What this does: there's no research write-up or scope manifest on disk yet. The fastest path is for you to describe the feature in a sentence and I'll work from that. We can always upgrade to a full investigation later.
+>
+> Question: describe what you want, or run the deep research step first?
+
+If the user mentions they have a PRD or Jira ticket, just take it. The 5-input-type menu is for the agent's own awareness (manifest, research output, PRD/spec, run-research, brief description) — internal options, NOT a chat menu.
 
 ### 0c. Validate the input
 
@@ -109,14 +125,23 @@ Whatever the source, assess whether there's enough to generate a quality plan:
 - Enough context to identify affected files/components
 - Enough detail to write testable acceptance criteria
 
-**Insufficient — ask clarifying questions (2-4 max):**
+**Insufficient — ask clarifying questions ONE AT A TIME:**
+
+<!-- voice-retrofit: rewritten; thread-1 line: 93 -->
+
+Per CLAUDE.md rule 9 (one question per message), ask each question separately and wait for the answer before asking the next. Recommended sequence — start with what the user experiences, then the touchpoints, then constraints. PM voice format ("What this does / Question") for each:
 - What's the expected user-facing behavior?
 - What components/systems does this touch?
 - Are there constraints (performance, compatibility, security)?
 - What does "done" look like?
 
 **If input is a brief description (option 4), add a disclaimer to the plan:**
-> "This plan was generated from a brief description, not structured research. Consider running `/serious-research` if you need higher confidence before implementation."
+
+<!-- voice-retrofit: rewritten; thread-1 line: 100 -->
+
+> What this does: I wrote the plan from your short description, not a full investigation. It'll work, but it's a thinner foundation than starting with structured research.
+>
+> Question: want to run the research step before we build this, or proceed?
 
 ### 0d. Upstream extract-mode pre-check — MANDATORY GATE
 
@@ -127,12 +152,14 @@ Once the upstream research artifact is identified (from 0a/0b/0c):
 1. **If no upstream artifact is specified** (plan generated from description, `source` will be empty): output "No upstream artifact specified — skipping extraction." Skip the rest of 0d. Phase 1 may proceed without `_extracted_items.md`.
 2. **If the upstream path does not exist on disk**: STOP. Output "ERROR: Upstream artifact at [path] not found. Cannot proceed without extraction. Please provide the correct path." Do NOT proceed to Phase 1.
 3. **Read the upstream artifact's YAML frontmatter.** If frontmatter is malformed or unparseable, warn and proceed with heading-based extraction only — extraction must still complete.
-4. **Run extract-mode** per the protocol in `.claude/skills/_shared/handoff-verifier.md`: read the upstream artifact, extract enumerable items from contract sections (Findings, Recommendations), output "Found N items from M sections in [path]." Write `_extracted_items.md` to this plan's output folder. **If extraction produces 0 items from a non-empty artifact, STOP and report the extraction failure — do not proceed with an empty inventory.**
+<!-- voice-retrofit: rewritten; thread-1 line: 111 -->
+4. **Run extract-mode** per the protocol in `.claude/skills/_shared/handoff-verifier.md`: read the upstream artifact, extract enumerable items from contract sections (Findings, Recommendations), and write `_extracted_items.md` to this plan's output folder. **For the user-facing message, use PM voice — don't dump "Found N items from M sections in [path]" verbatim.** Example: "What this does: pulled the key items from the research write-up — there are about N things to plan for. Question: ready for me to draft the plan?" **If extraction produces 0 items from a non-empty artifact, STOP and report the extraction failure (in PM voice) — do not proceed with an empty inventory.**
 5. **Retroactive verification check** (immediate upstream only — do NOT recurse):
    - If the upstream artifact's frontmatter has no `verified` field, run full verification on it before proceeding.
    - If `verified_hash` exists but does not match the current upstream content hash, re-verify.
    - If the upstream artifact's own `source` field points to an unverified artifact (chain gap), warn: "Note: [upstream path]'s own upstream at [source path] has not been verified. Consider running verification on the full chain." Do NOT recurse — warn only.
-6. **Gate check:** Confirm `_extracted_items.md` exists and contains at least 1 item. Output: "Extraction complete: N items from [path]. Proceeding to Phase 1." Only then may Phase 1 begin.
+<!-- voice-retrofit: rewritten; thread-1 line: 116 -->
+6. **Gate check:** Confirm `_extracted_items.md` exists and contains at least 1 item. For the user, no "Extraction complete: N items from [path]" status banner — that's process narration. Silently proceed to drafting the plan. Only then may Phase 1 begin.
 
 ### 0f. Determine the plan location
 
@@ -199,6 +226,11 @@ Verification: [grep for hedge language, count test file references, verify seed 
 ---
 
 ## Phase 1: Plan Generation
+
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 184 -->
+<!-- WHY: this is an agent-self-instruction guardrail (a STOP banner addressed to the agent's
+     own reasoning, not chat output). The tone is intentionally emphatic to prevent the agent
+     from skipping the extraction gate. Never surfaces in chat. -->
 
 **STOP. If an upstream artifact was specified in Phase 0, does `_extracted_items.md` exist in the output folder? If not, go back to Phase 0d. DO NOT generate a plan without the extraction inventory — this is the #1 cause of drift.**
 
@@ -365,6 +397,12 @@ If the `source` field points to a `research.md`, run the verifier:
 - **Downstream artifact:** the path to this skill's `implementation_plan.md` output
 - **Match strategy:** `structural`
 
+<!-- voice-retrofit: deferred — reason: covered-by-translator; thread-1 line: 349 -->
+<!-- WHY: SHIRKED/MISSING/CONTRADICTED/PASS WITH DEFERRALS is internal verifier vocabulary
+     for the agent's own loop. Task 3's voice-translator wires into the plan-reveal
+     touchpoint and rewrites any verdict that leaks into chat to PM voice. The internal
+     loop here can keep its precise vocabulary. -->
+
 **On FAIL:** DO NOT present the plan. Fix every SHIRKED, MISSING, and CONTRADICTED item in the plan. Then re-run the verifier. Repeat until PASS or PASS WITH DEFERRALS. Only then proceed to presentation.
 
 **On PASS or PASS WITH DEFERRALS:** Proceed to presentation. The verifier will have stamped the plan's frontmatter with `verified`, `verified_source`, and `verified_hash`.
@@ -394,12 +432,17 @@ new_bc=$(bash -c 'source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-reso
 rm -f "$new_bc" "${CLAUDE_PROJECT_DIR}/.active-plan"
 ```
 
-**Report:**
-- The plan file path
-- The input source used (research, PRD, manifest entry, or description — with disclaimer if applicable)
-- Summary of what's planned (task count, estimated complexity)
-- Remind the user: "Run `/serious-review` to review the plan before `/serious-code`."
-- Any questions or decisions that need user input before implementation can begin
+<!-- voice-retrofit: rewritten; thread-1 line: 378 -->
+
+**Report in PM voice.** No file path in chat, no "task count, estimated complexity" engineering metrics, no `/serious-review` slash-command dump.
+
+> What this does: drafted the plan — about {N} steps to build the feature, biggest piece is {one-sentence summary}. I recommend we have it reviewed before we start building.
+>
+> What I need from you: any concerns to address up front, otherwise approve the review pass.
+>
+> Question: run the review now, or skim the plan first?
+
+The technical details (file path, task count, source disclaimer) are written to disk in the plan file. The user sees the translated summary.
 
 ---
 
@@ -447,3 +490,4 @@ Once the user approves the plan:
 2. Fixes from review are rewritten into the plan
 3. Run `/serious-code` to begin implementation
 4. `/serious-code` follows the Master Checklist with TDD, QA, and verification
+

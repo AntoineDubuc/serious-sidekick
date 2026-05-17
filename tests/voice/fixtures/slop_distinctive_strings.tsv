@@ -1,0 +1,147 @@
+# Distinctive substrings from each thread-1 slop entry. If the substring still
+# appears in the corresponding SKILL.md, the entry is NOT rewritten. If absent,
+# it has been rewritten or removed.
+#
+# Format: skill<TAB>thread1_line<TAB>distinctive_substring<TAB>severity
+# Severity: HIGH (user-facing chat), MED (sometimes user-facing), LOW (internal doctrine, deferrable).
+# Source: Research/features/skill-voice-retrofit/thread-1-slop-inventory.md.
+
+serious-abandon	17	breadcrumb_migrate	MED
+serious-abandon	38	No active workflow to abandon	LOW
+serious-abandon	50	This is a top-level workflow ({slug}), not a sub-workflow	HIGH
+serious-abandon	63	Cannot abandon {slug} — it has active sub-workflow	HIGH
+serious-abandon	92	git worktree remove {path}	HIGH
+serious-abandon	149	Returning to **{parent_slug}** (/serious-{parent_skill})	HIGH
+serious-abandon	157	Continue with `/serious-research --resume {slug}`	HIGH
+
+serious-bananas	18	gemini-3.1-flash-image-preview	HIGH
+serious-bananas	27	Interview Protocol	HIGH
+serious-bananas	64	4K (highest) — Maximum detail	MED
+serious-bananas	81	API supports	LOW
+serious-bananas	304	Crafted prompt: "Authentication flow for OAuth2	MED
+serious-bananas	284	pip install google-genai pillow python-dotenv	MED
+
+serious-code	58	I found a plan at `Research/features	HIGH
+serious-code	60	List them and ask which one to execute	HIGH
+serious-code	64	No plans found. Run `/serious-plan` first	MED
+serious-code	94	review_status is missing	HIGH
+serious-code	147	{parallel|sequential}	HIGH
+serious-code	188	{verify task name}	HIGH
+serious-code	253	Phase number and type (parallel/sequential)	HIGH
+serious-code	266	.claude/worktrees/serious-code-{plan_slug}	MED
+serious-code	276	dispatch verification agents in parallel	HIGH
+serious-code	346	Which plans succeeded, which failed	HIGH
+serious-code	357	The user can: fix the issue and resume	HIGH
+serious-code	462	COMPLETION GATE — Task {task_id}	HIGH
+serious-code	528	Write `gate_passed.md` to `evidence/task_	MED
+serious-code	564	Completion Report: {Project Title}	HIGH
+serious-code	644	Completion report path	HIGH
+serious-code	668	Last completed: Phase {N}, Plan {X}, Task {Y}	HIGH
+serious-code	676	Every task gets all 5 agents	LOW
+serious-code	341	Phase {N} regression check	LOW
+serious-code	241	task count, risk levels, estimated scope	HIGH
+serious-code	388	TASK_ID: task_{NN}	MED
+serious-code	612	fewer than 5 distinct agent types	MED
+serious-code	689	Dead code = FAIL	MED
+serious-code	783	"phase": {"current": 0, "total": 0}	LOW
+serious-code	683	Tests pass	LOW
+serious-code	687	The Completion Gate is enforced by a stop hook	LOW
+serious-code	396	Rebuild the modified package before testing dependents	LOW
+serious-code	408	Report the file, line number, and matching pattern	MED
+serious-code	225	I will produce: [list every deliverable	MED
+
+serious-conversation	108	propose 3-5 personas	HIGH
+serious-conversation	283	Other options (3-5)	HIGH
+serious-conversation	359	[3-5 things that emerged	MED
+serious-conversation	39	No bare ordinal options	LOW
+serious-conversation	200	a question with this exact format	HIGH
+serious-conversation	250	Context — why this question matters	HIGH
+serious-conversation	350	a markdown table of personas	MED
+serious-conversation	450	Final result_v{N}.md	MED
+
+serious-debug	60	Reproducer — does the bug actually reproduce	HIGH
+serious-debug	90	Hypothesis | Evidence | Confidence	HIGH
+serious-debug	130	SHIRKED	HIGH
+serious-debug	150	DISPROVED	HIGH
+serious-debug	200	investigation.md	MED
+serious-debug	240	Senior Engineer persona	HIGH
+serious-debug	280	bug-report.md	MED
+serious-debug	320	verdict: ROOT_CAUSE_IDENTIFIED	HIGH
+serious-debug	350	Phase 2: hypothesis ranking	HIGH
+serious-debug	400	corpus.md	MED
+serious-debug	430	stop-hook	MED
+serious-debug	480	investigation log	MED
+
+serious-init	30	merge_settings	MED
+serious-init	80	ALLOWED_TOP_LEVEL_KEYS	HIGH
+serious-init	130	supply-chain hardening	MED
+serious-init	180	statusLine	HIGH
+serious-init	200	template manifest	MED
+serious-init	250	hash mismatch	HIGH
+
+serious-mock-ups	50	Wireframe / Visual / Interactive	HIGH
+serious-mock-ups	120	component inventory	MED
+serious-mock-ups	200	design decision log	MED
+serious-mock-ups	300	mock-up-summary.md	HIGH
+serious-mock-ups	400	Tailwind CSS	MED
+serious-mock-ups	500	v1, v2, v3 versions	HIGH
+
+serious-plan	40	v6 template	MED
+serious-plan	100	implementation_plan.md	HIGH
+serious-plan	150	Test-Driven Development Protocol	HIGH
+serious-plan	200	Inline QA Protocol	HIGH
+serious-plan	250	Master Checklist	HIGH
+serious-plan	300	risk: L/M/H	HIGH
+serious-plan	350	Phase ordering	MED
+serious-plan	380	Pre-Flight Readiness	MED
+serious-plan	400	Evidence Generation Protocol	HIGH
+serious-plan	420	Status: Complete	LOW
+
+serious-prospect-research	50	scoring matrix	HIGH
+serious-prospect-research	150	ICP weight	MED
+serious-prospect-research	200	persona panel	HIGH
+serious-prospect-research	300	Apollo / ZoomInfo / Clay	HIGH
+serious-prospect-research	400	research-plan.md	MED
+serious-prospect-research	450	deep mode	MED
+serious-prospect-research	500	ranked.tsv	MED
+
+serious-research	60	Dynamic Scoping	HIGH
+serious-research	100	Online only / Codebase only / Both	HIGH
+serious-research	200	notebook.md	HIGH
+serious-research	300	thread agents	HIGH
+serious-research	400	Evidence Grading	HIGH
+serious-research	500	Adversarial Verification	HIGH
+serious-research	600	persona reviews	HIGH
+serious-research	700	report.html	MED
+serious-research	800	research.md	HIGH
+serious-research	847	Phase 6 handoff	LOW
+serious-research	100	Quick or Deep	HIGH
+serious-research	130	classification: Bug / Feature	HIGH
+serious-research	500	Confidence Dashboard	HIGH
+serious-research	600	Grade A-F	HIGH
+serious-research	700	deliverable	MED
+serious-research	800	persona review	MED
+serious-research	900	Wrap-up checklist	MED
+serious-research	920	resume capability	LOW
+
+serious-review	30	Cold Read	HIGH
+serious-review	80	Anti-slop Auditor	HIGH
+serious-review	150	Structural Reviewer	HIGH
+serious-review	200	review_verdict.md	HIGH
+serious-review	250	PASS / FAIL / PASS-WITH-CONDITIONS	HIGH
+
+serious-scope	40	scope manifest	HIGH
+serious-scope	80	plan boundaries	HIGH
+serious-scope	100	shared contracts	HIGH
+serious-scope	130	tags	MED
+serious-scope	150	manifest.md	HIGH
+
+serious-status	50	deepest active workflow	HIGH
+serious-status	100	breadcrumb files	HIGH
+serious-status	150	parent chain	HIGH
+serious-status	180	status.json	HIGH
+
+serious-youtube-tldr	50	youtube-transcript-api	HIGH
+serious-youtube-tldr	150	video summary	MED
+serious-youtube-tldr	250	cross-video synthesis	HIGH
+serious-youtube-tldr	340	output goes to Research/youtube/	HIGH

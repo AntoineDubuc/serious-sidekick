@@ -59,13 +59,19 @@ Evaluate silently along these dimensions — do NOT ask canned questions:
 
 ### 0b. Determine research scope
 
-Ask the user where the research should look:
+<!-- voice-retrofit: rewritten; thread-1 line: 44 -->
 
-| Scope | When to recommend | What it means |
-|-------|-------------------|---------------|
-| **Online only** | Technology evaluations, competitive analysis, external API docs, industry trends — nothing to investigate in the local codebase | Web searches and external sources only. No file reads, no codebase exploration. |
-| **Codebase only** | Bug hunts, refactoring decisions, understanding existing patterns, tracing execution paths — the answer lives in the code | Local files, git history, grep, glob only. No web searches. |
-| **Both** | Feature implementation research, architecture decisions where you need to understand existing code AND external best practices | Full investigation — codebase + web. Default when unclear. |
+Ask the user where to look in PM voice — recommend ONE based on the topic, ask if they want a different focus. Don't dump a 3-row scope table.
+
+Example: "What this does: I'll start by reading the relevant parts of your code (this is a bug, so the answer probably lives there). Question: stay in the code, also check online for similar issues, or both?"
+
+Internal scope table (for the agent's recommendation logic):
+
+| Scope | When to recommend |
+|-------|-------------------|
+| **Online only** | Technology evaluations, competitive analysis, external API docs, industry trends |
+| **Codebase only** | Bug hunts, refactoring decisions, understanding existing patterns, tracing execution paths |
+| **Both** | Feature implementation research, architecture decisions where you need both. Default when unclear. |
 
 Present your recommendation with a one-sentence rationale based on what you learned in 0a. The user can override.
 
@@ -83,18 +89,25 @@ If the upstream conversation `summary.md` is known (e.g., from `$ARGUMENTS`, aut
 1. **If no upstream artifact is specified** (no conversation summary provided): output "No upstream artifact specified — skipping extraction." Skip the rest of 0c. Phase 1 may proceed without `_extracted_items.md`.
 2. **If the upstream path does not exist on disk**: STOP. Output "ERROR: Upstream artifact at [path] not found. Cannot proceed without extraction. Please provide the correct path." Do NOT proceed to Phase 1.
 3. **Read the upstream artifact's YAML frontmatter.** If frontmatter is malformed or unparseable, warn and proceed with heading-based extraction only — extraction must still complete.
-4. **Run extract-mode** per the protocol in `.claude/skills/_shared/handoff-verifier.md`: read the upstream artifact, extract enumerable items from contract sections (Key insights, Unresolved tensions, Open questions), output "Found N items from M sections in [path]." Write `_extracted_items.md` to this research's output folder. **If extraction produces 0 items from a non-empty artifact, STOP and report the extraction failure — do not proceed with an empty inventory.**
+<!-- voice-retrofit: rewritten; thread-1 line: 67 -->
+4. **Run extract-mode** per the protocol in `.claude/skills/_shared/handoff-verifier.md`: read the upstream artifact, extract enumerable items from contract sections (Key insights, Unresolved tensions, Open questions), and write `_extracted_items.md` to this research's output folder. **For the user-facing message, use PM voice — don't dump "Found N items from M sections in [path]" verbatim.** Example: "What this does: pulled the key threads from the brainstorm. Question: ready to dig in?" **If extraction produces 0 items from a non-empty artifact, STOP and report the extraction failure (in PM voice) — do not proceed with an empty inventory.**
 5. **Retroactive verification check** (immediate upstream only — do NOT recurse):
    - If the upstream artifact's frontmatter has no `verified` field, run full verification on it before proceeding.
    - If `verified_hash` exists but does not match the current upstream content hash, re-verify.
    - If the upstream artifact's own `source` field points to an unverified artifact (chain gap), warn: "Note: [upstream path]'s own upstream at [source path] has not been verified. Consider running verification on the full chain." Do NOT recurse — warn only.
-6. **Gate check:** Confirm `_extracted_items.md` exists and contains at least 1 item. Output: "Extraction complete: N items from [path]. Proceeding to Phase 1." Only then may Phase 1 begin.
+<!-- voice-retrofit: rewritten; thread-1 line: 72 -->
+6. **Gate check:** Confirm `_extracted_items.md` exists and contains at least 1 item. No "Extraction complete: N items from [path]. Proceeding to Phase 1" status banner — that's process narration. Silently proceed to Phase 1. Only then may Phase 1 begin.
 
 **While conducting research, cross-reference `_extracted_items.md` continuously.** Every extracted item should be investigated and addressed in findings. Do not rely on memory of the upstream conversation — use the extracted inventory as a checklist.
 
 ### 0d. Classify the work
 
 Determine the category:
+
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 78 -->
+<!-- WHY: classification (Bug / Feature / Exploratory) is the agent's own routing decision —
+     it determines which output folder to use and which scoping framing applies. The user
+     doesn't pick from a menu; the agent infers from context. Internal table. -->
 
 | Classification | When to use |
 |----------------|-------------|
@@ -103,6 +116,13 @@ Determine the category:
 | **Exploratory** | Open-ended question, architecture evaluation, competitive analysis, technology comparison — not tied to a specific bug or feature |
 
 ### 0e. Recommend the mode
+
+<!-- voice-retrofit: rewritten; thread-1 line: 88 -->
+<!-- Recommend mode in PM voice (quick = ~5 min, deep = ~30 min). One question. No
+     "evidence grading", "parallel thread agents", "QA citation checking" in chat. Example:
+     "What this does: this looks like a quick investigation (~5 min) — one focused question,
+      single angle. Want to keep it quick, or go deep (~30 min, multi-angle, with evidence
+      checks)?" -->
 
 | Mode | When to recommend | What it does |
 |------|-------------------|--------------|
@@ -127,6 +147,11 @@ Determine the category:
 Present a brief for user approval:
 
 ```
+<!-- voice-retrofit: rewritten; thread-1 line: 108 -->
+<!-- Present the scoping brief in PM voice as a SINGLE recommendation, NOT a 4-label dump.
+     Example: "What this does: I'll dig into {topic} — quick mode (~5 min), looking at
+     {scope summary in plain English}. Question: go, or change the depth?" -->
+
 **Research brief:** {1-3 sentence description of what you'll investigate}
 **Scope:** Online only / Codebase only / Both
 **Classification:** Bug / Feature / Exploratory
@@ -472,6 +497,12 @@ Launch all threads as parallel sub-agents in a **single message** so they run si
 For each thread, launch an Agent with `subagent_type: "general-purpose"` using this prompt (replace bracketed values):
 
 ```
+<!-- voice-retrofit: deferred — reason: covered-by-translator; thread-1 line: 454 -->
+<!-- WHY: this is the thread-agent's system prompt — the language the sub-agent thinks in
+     while investigating. Its findings are written to disk. When the orchestrator surfaces
+     findings to the user at handoff time (Phase 6), Task 3's voice-translator rewrites the
+     prose to PM voice. The sub-agent itself keeps its precise investigator vocabulary. -->
+
 You are a research investigator assigned to one thread of a multi-threaded deep research operation. Your job is to thoroughly investigate your assigned angle and write structured findings to disk.
 
 ASSIGNED THREAD: [Thread name and description]
@@ -534,7 +565,8 @@ INSTRUCTIONS:
 Write your findings to disk now. Be thorough and precise.
 ```
 
-After launching all threads, tell the user: "Research threads launched. [N] parallel investigators are working. I'll compile findings when they complete."
+<!-- voice-retrofit: rewritten; thread-1 line: 518 -->
+After launching all threads, tell the user in PM voice. No "parallel investigators", no thread count, no process narration. Example: "What this does: digging in now — investigation in progress. I'll come back with what I find. Question: anything specific you want me to look at first?"
 
 Wait for all threads to complete. Update `.meta.md` with the Phase 2 completion timestamp.
 
@@ -593,7 +625,8 @@ Where threads found conflicting information, flag both sides. Contradictions are
 ]
 ```
 
-Tell the user: "Evidence compiled. [N] claims graded: [breakdown by grade]. Moving to adversarial verification."
+<!-- voice-retrofit: rewritten; thread-1 line: 577 -->
+Tell the user in PM voice. No "[N] claims graded", no "adversarial verification" jargon. Example: "What this does: gathered the evidence — looking solid on most points, a few claims are weaker than expected. I'll stress-test the strongest claims next to make sure they hold up. Question: anything specific to push back on harder?"
 
 Update `.meta.md` and **notebook.md**.
 
@@ -608,6 +641,12 @@ Quick mode skips this phase entirely.
 Launch a single Agent (`subagent_type: "general-purpose"`) with this prompt:
 
 ```
+<!-- voice-retrofit: deferred — reason: covered-by-translator; thread-1 line: 589 -->
+<!-- WHY: adversarial-verifier sub-agent system prompt. The "HELD / WEAKENED / DISPROVED"
+     verdict vocabulary is precise and useful internally. When verdicts surface to the user,
+     Task 3's voice-translator translates ("8 of 12 claims held; 3 weakened; 1 disproved" →
+     "the main claims held up; a few are weaker than first thought; one didn't hold"). -->
+
 You are an adversarial research verifier. Your job is to try to DISPROVE the key findings from a research operation. You are the devil's advocate. You are skeptical of everything.
 
 Read the evidence log at: [path]/evidence-log.md
@@ -661,13 +700,19 @@ Use this format:
 Be rigorous. Be skeptical. Do not rubber-stamp findings.
 ```
 
-Tell the user: "Adversarial verification complete. [N] key claims tested: [X] held, [Y] weakened, [Z] disproved."
+<!-- voice-retrofit: rewritten; thread-1 line: 645 -->
+Tell the user in PM voice. Translate "held / weakened / disproved" to plain English. Example: "What this does: stress-tested the main claims. {X} held up cleanly, {Y} are weaker than first thought (I'll flag those), {Z} didn't hold (removing them). Question: ready for the final check (citations), or want to dig into any of the weakened claims?"
 
 ### 4b. QA Citation Verification
 
 Launch a single Agent (`subagent_type: "general-purpose"`) with this prompt:
 
 ```
+<!-- voice-retrofit: deferred — reason: covered-by-translator; thread-1 line: 649 -->
+<!-- WHY: QA-citation-checker sub-agent system prompt. The "VERIFIED / PARAPHRASED /
+     NOT FOUND / DEAD LINK / BLOCKED" verdict vocabulary is precise QA shorthand. When the
+     summary surfaces to the user, Task 3's voice-translator rewrites to plain English. -->
+
 You are a QA auditor for a research operation. Your job is to independently verify that every citation in the evidence log is accurate. You do NOT trust the research agents — you re-check everything from scratch.
 
 Read the evidence log at: [path]/evidence-log.md
@@ -721,7 +766,8 @@ Be thorough. Check every citation. Do not skip any.
 
 Note: The adversarial agent (4a) and QA agent (4b) can be launched **in parallel** — they are independent.
 
-Tell the user: "QA verification complete. [N] citations checked. Pass rate: [X]%."
+<!-- voice-retrofit: rewritten; thread-1 line: 705 -->
+Tell the user in PM voice. No "QA verification complete", no "pass rate". Example: "What this does: double-checked the sources — most citations are clean, a few are paraphrased or unreachable (flagged in the write-up). Question: ready for the persona reviews, or address the citation issues first?"
 
 Update `.meta.md`, **notebook.md**, and integrate key findings into **research.md**.
 
@@ -734,6 +780,13 @@ Update `.meta.md`, **notebook.md**, and integrate key findings into **research.m
 #### 5a. Select personas
 
 Choose **1 to 3 review personas** based on what the research touches:
+
+<!-- voice-retrofit: rewritten; thread-1 line: 719 -->
+<!-- Present persona selection in PM voice — recommend 2-3 relevant personas based on
+     the research topic, describe each in plain English (what they push for), not by
+     role name. Don't dump the full table by default. Example: "What this does: I'll
+     have three voices review this — one focused on technical accuracy, one on
+     security, one on the customer experience angle. Question: that mix, or change?" -->
 
 | Persona | When to use |
 |---------|-------------|
@@ -863,6 +916,12 @@ Update `.meta.md` with final timestamps.
 
 ## Phase 6: Handoff
 
+<!-- voice-retrofit: rewritten; thread-1 line: 847 -->
+<!-- voice-retrofit: rewritten; thread-1 line: 849 -->
+<!-- NOTE: Phase 6 handoff was the "30-minute cut" in commit 736ef45 (2026-05-16). The
+     existing prose below already implements PM voice: explicit banned list ("Folder paths
+     or file names visible in chat"), explicit canonical structure, reference example. -->
+
 The user is a busy PM. Report in the PM voice from `.claude/output-styles/PM-voice.md`. The full technical detail already lives in `research.md` (and `report.html` for deep mode) — the chat reply is a translation, not a record.
 
 **Structure for the chat reply (both modes):**
@@ -931,6 +990,13 @@ If `/serious-research` is invoked and a `Research/` folder already exists with a
 1. Read `.meta.md` for phase completion timestamps (deep mode only — quick mode has no `.meta.md`; if the folder exists but has no `.meta.md`, check `research.md` Status field instead).
 2. Determine mode:
 
+<!-- voice-retrofit: deferred — reason: phase-4-polish; thread-1 line: 899 -->
+<!-- WHY: resume-mode dispatch table is the agent's internal decision logic for handling
+     "the user wants to continue an existing research". When the agent acts on a mode, the
+     user-facing wording follows from the action (e.g., extend → "What this does: adding
+     a new angle to the existing investigation"). Phase-4 polish: translate mode names to
+     plain-English actions in chat. -->
+
 | Mode | Trigger | Behavior |
 |------|---------|----------|
 | **Resume** | Last run was interrupted (incomplete phases) | Pick up from the last incomplete phase |
@@ -952,6 +1018,10 @@ Always update `.meta.md` timestamps after each phase completes.
 6. **Grade honestly.** Do not inflate grades. A single blog post is a C, not a B. Two analyst reports are an A, not a B.
 7. **The adversarial phase is not optional in deep mode.** Even if time is short, test at least the top 5 claims.
 8. **Persona feedback gets integrated, not appended.** The final research.md reads as one unified document.
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 920 -->
+<!-- WHY: this is an operating rule for the agent's own pacing decisions, not chat
+     output. Phase labels are internal scaffolding. -->
+
 9. **Respect the user's time.** Phase 0 should take under 5 minutes of user interaction. All other phases run autonomously. The user should be able to walk away and come back to finished work.
 10. **The HTML report must look professional.** It will be shown to stakeholders and compared against other research tools. Quality of presentation matters.
 
@@ -975,3 +1045,4 @@ Use `--deep` or `--quick` to force a mode. Without a flag, the mode is auto-dete
 Once research is complete, the recommended next step is usually:
 
 **`/serious-plan`** — Takes the research output (research.md or synthesis.md) and generates a structured implementation plan using the v6 template methodology.
+

@@ -33,6 +33,12 @@ Canonical card: `.claude/skills/_shared/voice-card.md`.
 
 ### 1a. Read breadcrumbs
 
+<!-- voice-retrofit: deferred — reason: not-user-facing; thread-1 line: 17 -->
+<!-- WHY: this section is the internal mechanics for locating active workflows on disk
+     (breadcrumb files, path-resolve helper). The user never sees this language; it's
+     instructions to the implementing agent. No chat output is generated from this step
+     except via Step 1d ("No active workflow") which is rewritten separately above. -->
+
 Source `.claude/skills/_shared/path-resolve.sh`. Run `breadcrumb_migrate` once to delete legacy `.active-{skill}` files at the project root under the agreement-or-orphan condition (preserves `.active-conversation` as the in-flight parent carve-out; emits `MIGRATE:` lines to stderr for every action). Then for each known skill name in the writer roster (`conversation`, `research`, `mock-ups`, `scope`, `plan`, `review`, `code`, `debug`), compute this terminal's per-session breadcrumb path via `bc=$(breadcrumb_path {skill})` and read it if it exists (resolves to `.claude-active/{claude_pid}-{skill}`). For transition-window completeness, also check the legacy `.active-{skill}` at the project root and warn `dual-read fallback for {skill}` to stderr if only the legacy is present.
 
 ### 1b. Validate each
@@ -54,7 +60,12 @@ The workflow with the greatest depth is the deepest active workflow. If multiple
 ### 1d. Error state
 
 If no valid breadcrumbs exist:
-> "No active workflow to abandon."
+
+<!-- voice-retrofit: rewritten; thread-1 line: 38 -->
+
+> What this does: nothing's running right now, so there's nothing to drop.
+>
+> Question: want me to look at what you finished recently, or just stop?
 
 Stop here.
 
@@ -66,9 +77,13 @@ Stop here.
 
 If the deepest workflow has no `parent:` field (it's top-level):
 
-> "This is a top-level workflow ({slug}), not a sub-workflow. Abandon it? (Y/N)"
+<!-- voice-retrofit: rewritten; thread-1 line: 50 -->
 
-If the user says No: stop, do nothing.
+> What this does: heads up — this is a top-level piece of work, not a sub-piece. Dropping it means the whole thread goes away.
+>
+> Question: drop it anyway?
+
+Use the workflow's descriptive name in plain English (what it builds), NOT the kebab-case slug. If the user says No: stop, do nothing.
 
 ### 2b. Active children check
 
@@ -79,9 +94,15 @@ Check if the workflow being abandoned has active children:
 
 If active children exist:
 
-> "Cannot abandon {slug} — it has active sub-workflow(s): {list of child slugs with their skill types}. Abandon or complete the children first, or use `/serious-abandon` on them."
+<!-- voice-retrofit: rewritten; thread-1 line: 63 -->
 
-Stop here. Do NOT cascade-abandon children automatically.
+> What this does: can't drop this — there's still other work running underneath it ({N} pieces). Dropping this one would leave them orphaned.
+>
+> What I need from you: finish or drop the inner pieces first. I can do that for each.
+>
+> Question: want me to walk through the inner pieces?
+
+Use plain-English descriptions of each child workflow (what it builds), NOT kebab-case slugs or "skill types". Stop here. Do NOT cascade-abandon children automatically.
 
 ---
 
@@ -108,7 +129,12 @@ Look for worktree directories at `.claude/worktrees/serious-code-*`.
 ### 4b. Report but do NOT delete
 
 If worktrees exist:
-> "Found worktrees for this code workflow: {list}. These have NOT been deleted or merged — they contain work-in-progress that may be useful. To clean up manually: `git worktree remove {path}`."
+
+<!-- voice-retrofit: rewritten; thread-1 line: 92 -->
+
+> What this does: I dropped the work, but the in-progress code copies are still on disk in case you want to look at them later. They haven't been merged or deleted.
+>
+> Question: want me to clean those up too, or leave them?
 
 ### 4c. Update execution log
 
@@ -165,18 +191,26 @@ Summarize what the abandoned sub-workflow produced (if anything):
 ### 6c. Final message
 
 Format:
-> "Abandoned **{slug}** ({skill}). Returning to **{parent_slug}** (/serious-{parent_skill}). Parent status: {brief summary of parent state}."
+
+<!-- voice-retrofit: rewritten; thread-1 line: 149 -->
+
+> What this does: dropped the inner piece. You're back on the bigger thread — here's where it stands in one sentence.
+>
+> Question: pick the bigger thread back up, or do something else?
+
+Translate the workflow names to plain English (what they build), not kebab-case slugs. Don't surface the `/serious-{skill}` command labels in chat.
 
 If top-level (no parent):
-> "Abandoned **{slug}** ({skill}). No parent workflow to return to."
+
+> What this does: dropped it. Nothing's running now.
+>
+> Question: start something new?
 
 ### 6d. Suggest next step
 
-Based on the parent's state:
-- If parent is `/serious-research` with status active: "Continue with `/serious-research --resume {slug}`"
-- If parent is `/serious-plan`: "Continue planning with `/serious-plan`"
-- If parent is `/serious-code`: "Resume coding with `/serious-code --resume`"
-- If no parent: "Start fresh with `/serious-conversation` or `/serious-research`"
+<!-- voice-retrofit: rewritten; thread-1 line: 157 -->
+
+Based on the parent's state, suggest ONE next step in plain English. NOT a 4-option menu, NOT slash commands with `--flag {slug}`, NOT bare ordinals. Just one recommendation: "Want me to pick the research back up where it stopped?" or "Want to start fresh on something new?" The user can always ask for alternatives.
 
 ---
 
@@ -185,3 +219,4 @@ Based on the parent's state:
 `$ARGUMENTS` can specify:
 - A specific slug: `/serious-abandon auth-token-fix` — abandon that specific workflow instead of the deepest
 - No arguments — abandon the deepest active workflow (default)
+

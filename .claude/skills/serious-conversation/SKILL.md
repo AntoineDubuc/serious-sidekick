@@ -87,11 +87,16 @@ Let the user describe the topic freely. This becomes the seed input for the pers
 
 **Question 2:** "What are you hoping to get out of this?"
 
-Present options:
-1. **Understanding** — "I want to understand something better"
-2. **Decision** — "I need to make a choice between approaches"
-3. **Ideas** — "I want creative/divergent thinking"
-4. **Exploration** — "I'm not sure what I'm looking for yet"
+<!-- voice-retrofit: rewritten; thread-1 line: 69 -->
+
+Ask in PM voice — open-ended, no 4-option menu by default. Listen to what the user says and infer their goal. Internal mapping (for the agent's own use):
+
+| User intent | Goal type for sub-agent prompts |
+|---|---|
+| "I want to understand..." | Understanding |
+| "I need to choose between..." | Decision |
+| "I want creative ideas..." | Ideas |
+| "I'm not sure yet..." | Exploration |
 
 The desired outcome shapes how the Orchestrator frames its synthesis:
 - Understanding → synthesis explains trade-offs and clarifies concepts
@@ -107,7 +112,11 @@ Create a URL-safe slug from the topic. Example: "auth systems for our API" → `
 
 Based on the topic, propose 3-5 personas from the roster (see Persona Roster below). Explain briefly why each was chosen.
 
-Then show the **full roster** (built-ins + any saved customs from `Research/conversations/_personas/`) and let the user:
+<!-- voice-retrofit: rewritten; thread-1 line: 91 -->
+
+Then propose ~3 personas in PM voice — DON'T dump the full 10-persona roster by default. Recommend the 2-3 most relevant for the user's topic + goal, describe each in one sentence (what they push for, not their persona name). Example: "What this does: I'm setting up a panel of three voices — one focused on simplicity, one on long-term cost, one on customer-experience risk. Question: go with that mix, or want to swap someone?" Mention the full roster only if the user asks.
+
+Internal: show the full roster (built-ins + any saved customs from `Research/conversations/_personas/`) on request, and let the user:
 - Remove any proposed persona
 - Add others from the roster
 - Create a custom persona (see Custom Personas below)
@@ -146,7 +155,13 @@ created: {YYYY-MM-DD}
 
 The `parent` field is left empty for now (populated by Phase 0-pre if this is a sub-workflow).
 
-Tell the user: **"I've set up the panel. The persona prompts are in `personas/`. You can review or edit them before we start. Say 'go' when ready."**
+<!-- voice-retrofit: rewritten; thread-1 line: 130 -->
+
+Tell the user in PM voice — no folder path, no "the persona prompts are in personas/" mention:
+
+> What this does: panel's set up — three voices ready to weigh in on your topic.
+>
+> Question: ready to start, or want to see how each one is framed first?
 
 ### 0e. Write the per-session breadcrumb
 
@@ -200,6 +215,14 @@ Each round follows the same cycle:
 Spawn one sub-agent per persona using the Agent tool. Each sub-agent receives this prompt:
 
 ```
+<!-- voice-retrofit: deferred — reason: covered-by-translator; thread-1 line: 183 -->
+<!-- WHY: this is the sub-agent spawn prompt template. The technical scaffolding
+     (folder paths, round numbers, persona file references) is the agent's own dispatch
+     vocabulary; when the persona response reaches user-facing chat at synthesis time,
+     Task 3's voice-translator wires into the conversation-synthesis touchpoint and
+     rewrites to PM voice. The personas keep their own voice; the scaffolding gets
+     scrubbed. -->
+
 You are {persona_name}. Read your persona prompt at:
   {conversation_folder}/personas/{persona_slug}/prompt.md
 
@@ -257,7 +280,9 @@ explains the reasoning. This is a PROPOSAL, not a conclusion.]
 - [things that didn't get resolved this round]
 ```
 
-**Present the full synthesis to the user in the chat.** Do NOT just say "I've written the synthesis to result_vN.md" — the user is having a conversation, not reading files. Present the complete synthesis inline in plain PM language:
+<!-- voice-retrofit: rewritten; thread-1 line: 241 -->
+
+**Present the full synthesis to the user in the chat.** Use PM voice — no file references, no "I've written the synthesis to result_vN.md" status banner. The user is having a conversation, not reading files. Present the complete synthesis inline in plain language:
 
 - **What the panel said** — one paragraph per persona, in plain language, no jargon
 - **Where they agree** — bullet points
@@ -275,7 +300,15 @@ The user reacts to the synthesis. This is freeform conversation between the user
 - If the user asks questions, answer them
 - If the user wants to go deeper on one persona's angle, discuss it
 
-**When the Orchestrator has questions for the user**, present each one using this format:
+<!-- voice-retrofit: rewritten; thread-1 line: 259 -->
+
+**When the Orchestrator has questions for the user**, default to PM voice — ONE recommendation with a one-sentence trade-off. Do NOT present a 5-section structure with "Other options (3-5)" by default — that directly contradicts CLAUDE.md voice rule. Alternatives only on user request. Example:
+
+> What this does: based on what the panel said, I'd say {recommended option in one sentence}. Trade-off: {one sentence on what we'd give up}.
+>
+> Question: go with that, or want me to walk through the other angles?
+
+Internal structure (used ONLY when the user explicitly asks "what are the other options"):
 
 1. **Context** — why this question matters right now (1-2 sentences)
 2. **The question** — clear, specific, one question at a time
@@ -289,11 +322,18 @@ Do NOT dump multiple questions in one message. Ask one, wait for the answer, the
 
 When the user says to finalize (or agrees at check-in):
 - Update `result_v{N}.md` with any changes from the discussion
-- Confirm: "Round {N} finalized. Starting round {N+1}."
+<!-- voice-retrofit: rewritten; thread-1 line: 273 -->
+- Confirm in PM voice: "What this does: this round's wrapped. Question: keep going, or call it?" Do NOT surface "Round {N} finalized. Starting round {N+1}" — round counts are internal scaffolding.
 
 ### Step 4: Next round or wrap up
 
 Before starting the next round, assess:
+
+<!-- voice-retrofit: deferred — reason: phase-4-polish; thread-1 line: 279 -->
+<!-- WHY: this nudge mentions "{N} rounds" — a round-count label. Replacing it with a
+     more natural "we've been at this a while" framing is a phase-4 polish item. The
+     impact is small (fires once per conversation) and the literal count is informative
+     in context. -->
 
 **After round 3-4**, nudge: "We've done {N} rounds. Want to continue or wrap up?"
 
@@ -386,11 +426,15 @@ new_bc=$(bash -c 'source "${CLAUDE_PROJECT_DIR}/.claude/skills/_shared/path-reso
 rm -f "$new_bc" "${CLAUDE_PROJECT_DIR}/.active-conversation"
 ```
 
-Report:
-- The conversation folder path
-- Number of rounds completed
-- Summary file path
-- Any saved personas
+Report in PM voice.
+
+<!-- voice-retrofit: rewritten; thread-1 line: 370 -->
+
+> What this does: wrapped the conversation. Captured the key takeaways, the open questions, and any new personas you wanted to keep around for next time.
+>
+> Question: ready to move from talking to building?
+
+Don't dump folder paths, round counts, or summary filenames. The on-disk record is for future reference.
 
 ---
 
@@ -520,3 +564,4 @@ After wrapping up, the summary recommends a next step:
 - **`/serious-research`** — if a question emerged that needs formal investigation
 - **`/serious-plan`** — if the conversation produced enough clarity to plan
 - **Nothing** — if the thinking was the goal
+

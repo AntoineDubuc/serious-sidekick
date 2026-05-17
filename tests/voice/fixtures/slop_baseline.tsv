@@ -1,0 +1,20 @@
+# Per-skill slop baseline counts from thread-1-slop-inventory.md.
+# Format: skill_name<TAB>baseline_count<TAB>min_rewrites_for_50pct
+# Source: Research/features/skill-voice-retrofit/thread-1-slop-inventory.md per-skill headings.
+# Baseline matches thread-1 inventory counts exactly (not the plan's earlier rounded numbers
+# which were off by 1-2 for several skills — flagged by the QA review on 2026-05-17).
+# 50% threshold per plan Task 2 AC1.
+serious-abandon	7	4
+serious-bananas	6	3
+serious-code	28	14
+serious-conversation	9	5
+serious-debug	12	6
+serious-init	6	3
+serious-mock-ups	7	4
+serious-plan	10	5
+serious-prospect-research	8	4
+serious-research	18	9
+serious-review	6	3
+serious-scope	7	4
+serious-status	4	2
+serious-youtube-tldr	5	3
