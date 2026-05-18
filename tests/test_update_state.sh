@@ -202,6 +202,97 @@ else
 fi
 
 echo ""
+
+# --- REL5.* — corruption sentinel (Task 7, Finding 10) ---
+# When post-write validation fails, update_state deletes the invalid state
+# file AND writes a sentinel ".serious-sidekick-state.corrupt" alongside.
+# We force the failure by stubbing validate_json to always return 1.
+echo ""
+echo "=== Test: update_state corruption sentinel (REL5.*) ==="
+
+REL5_DIR="$TMP_DIR/rel5_sentinel"
+mkdir -p "$REL5_DIR"
+# We want validate_json to PASS on pre-write (file_hashes input) and FAIL on
+# post-write (state file). Wrap: count invocations and fail on the 2nd.
+# Use a file-based counter for subshell-safety.
+REL5_COUNTER="$TMP_DIR/rel5_counter"
+echo 0 > "$REL5_COUNTER"
+# shellcheck disable=SC2034
+set +e
+(
+  validate_json() {
+    local n
+    n=$(cat "$REL5_COUNTER")
+    n=$((n + 1))
+    echo "$n" > "$REL5_COUNTER"
+    if [ "$n" -ge 2 ]; then
+      return 1  # fail on post-write
+    fi
+    return 0  # pass on pre-write
+  }
+  update_state "$REL5_DIR" \
+    "abc1234def5678901234567890abcdef12345678" "" \
+    '{"skills/foo.md": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}' >/dev/null 2>&1
+)
+REL5_EXIT=$?
+set -e
+
+# REL5.U1: state file deleted on validation failure
+if [ ! -f "$REL5_DIR/.serious-sidekick-state.json" ]; then
+  assert "REL5.U1: invalid state file deleted on post-write validation failure" "pass"
+else
+  assert "REL5.U1: invalid state file deleted on post-write validation failure" "fail"
+fi
+
+# REL5.U2: sentinel written adjacent to deleted state file
+if [ -f "$REL5_DIR/.serious-sidekick-state.corrupt" ]; then
+  assert "REL5.U2: sentinel file .serious-sidekick-state.corrupt written" "pass"
+else
+  assert "REL5.U2: sentinel file .serious-sidekick-state.corrupt written" "fail"
+fi
+
+# REL5.U3: update_state still returns non-zero
+if [ "$REL5_EXIT" -ne 0 ]; then
+  assert "REL5.U3: update_state returns non-zero on validation failure" "pass"
+else
+  assert "REL5.U3: update_state returns non-zero on validation failure" "fail" "exit=$REL5_EXIT"
+fi
+
+# REL5.U4: sentinel content is two-line plain text
+#   line 1: corrupt_at: <ISO 8601>
+#   line 2: error: <single-line message>
+if [ -f "$REL5_DIR/.serious-sidekick-state.corrupt" ]; then
+  REL5_L1=$(sed -n '1p' "$REL5_DIR/.serious-sidekick-state.corrupt")
+  REL5_L2=$(sed -n '2p' "$REL5_DIR/.serious-sidekick-state.corrupt")
+  if echo "$REL5_L1" | grep -qE '^corrupt_at: [0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$' \
+     && echo "$REL5_L2" | grep -qE '^error: .+$'; then
+    assert "REL5.U4: sentinel format is corrupt_at: <ISO 8601> + error: <message>" "pass"
+  else
+    assert "REL5.U4: sentinel format is corrupt_at: <ISO 8601> + error: <message>" "fail" \
+      "l1='$REL5_L1' l2='$REL5_L2'"
+  fi
+fi
+
+# REL5.U5: sentinel error line is single-line and <=510 chars (500 + small slack
+# for the "error: " prefix).
+if [ -f "$REL5_DIR/.serious-sidekick-state.corrupt" ]; then
+  REL5_L2=$(sed -n '2p' "$REL5_DIR/.serious-sidekick-state.corrupt")
+  REL5_L2_LEN=${#REL5_L2}
+  REL5_LINE_COUNT=$(wc -l < "$REL5_DIR/.serious-sidekick-state.corrupt" | tr -d ' ')
+  if [ "$REL5_L2_LEN" -le 510 ] && [ "$REL5_LINE_COUNT" -le 2 ]; then
+    assert "REL5.U5: sentinel error line <=510 chars and total <=2 lines" "pass"
+  else
+    assert "REL5.U5: sentinel error line <=510 chars and total <=2 lines" "fail" \
+      "err_len=$REL5_L2_LEN lines=$REL5_LINE_COUNT"
+  fi
+fi
+
+# Re-source serious-common.sh so the rest of the file (if any) gets the real
+# validate_json back. (No more tests after this point — defensive.)
+unset -f validate_json 2>/dev/null || true
+source "$REPO_ROOT/lib/serious-common.sh"
+
+echo ""
 echo "=== update_state Tests Complete: $ERRORS error(s) ==="
 [ "$ERRORS" -gt 0 ] && exit 1
 exit 0

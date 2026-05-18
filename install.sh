@@ -89,10 +89,17 @@ if [ -d "$SIDEKICK_HOME" ]; then
     exit 1
   fi
 
-  if ! git -C "$SIDEKICK_HOME" pull >/dev/null 2>&1; then
-    echo "ERROR: git pull failed in $SIDEKICK_HOME" >&2
+  # Site #9 (research.md#Finding-1): capture git pull stderr and surface
+  # the real error. No log_audit call: install.sh runs before the audit
+  # log infrastructure is set up. Credentials embedded in HTTPS remote
+  # URLs are redacted before printing (S2 hardening).
+  if ! pull_err=$(LC_ALL=C git -C "$SIDEKICK_HOME" pull 2>&1 >/dev/null); then
+    pull_err=$(printf '%s' "$pull_err" | sed 's#://[^@[:space:]]*@#://REDACTED@#g')
+    echo "ERROR: git pull failed in $SIDEKICK_HOME:" >&2
+    printf '  %s\n' "$pull_err" >&2
     exit 1
   fi
+  unset pull_err
 
   echo -e "  ${GREEN}OK${RESET}  Updated to latest"
 else
