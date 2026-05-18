@@ -263,7 +263,7 @@ with open(template_path) as f:
     template = json.load(f)
 
 # Supply-chain hardening: reject templates with unknown top-level keys
-ALLOWED_TOP_LEVEL_KEYS = {'hooks', 'permissions', 'env', 'statusLine'}
+ALLOWED_TOP_LEVEL_KEYS = {'hooks', 'permissions', 'env', 'statusLine', 'outputStyle'}
 extra_keys = set(template.keys()) - ALLOWED_TOP_LEVEL_KEYS
 if extra_keys:
     # Sanitize key names — strip to [a-zA-Z0-9_-] to prevent control-char injection

@@ -430,7 +430,7 @@ match = re.search(r\"ALLOWED_TOP_LEVEL_KEYS\s*=\s*\{([^}]+)\}\", content)
 if match:
     raw = match.group(1)
     keys = set(k.strip().strip(\"'\\\"\") for k in raw.split(','))
-    expected = {'hooks', 'permissions', 'env', 'statusLine'}
+    expected = {'hooks', 'permissions', 'env', 'statusLine', 'outputStyle'}
     if keys == expected:
         print('EXACT_MATCH')
     else:
