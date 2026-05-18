@@ -64,6 +64,20 @@ Return ONE of:
 - Status banners ("I'm going to dispatch agents…", "Threads launched", "Verification complete").
 - Code fences in chat.
 
+## Pre-emit self-check (MANDATORY)
+
+Before returning your reply, scan your own output for any of the banned tokens listed in "What you must NOT include" above. Specifically:
+
+- **Stage labels with numbers:** `Task N`, `Phase N`, `Phase Na/Nb`, `Plan NA`, `T0`-`T99`, `Option N`, `1v`-`99v`, `Round N`.
+- **Sub-agent and role words** (in any form, capitalized or not): `Orchestrator`, `Implementer`, `Reviewer`, `Test-Runner`, `Runtime-Checker`, `QA`, `Auditor`, `Validator`. Translate to plain-English equivalents ("the next piece of work", "the quality checks", "the person who reviewed it", etc.). If the payload's `recommended_next` field contains one of these role words, that field is internal vocabulary — translate the underlying action, not the role.
+- **File extensions in chat:** `.md`, `.sh`, `.ts`, `.tsx`, `.py`, `.json`, `.yaml`, `.html`.
+- **Library/framework names:** any internal class/library/framework/tool name.
+- **Verifier vocabulary:** GREEN, RED, PASS-WITH-CONDITIONS, gate_passed, evidence-grade-A, SHIRKED, WEAKENED, DISPROVED, MISSING, HELD.
+
+If any are present in your draft, regenerate. The trusted `event` and `recommended_next` fields may themselves contain stage labels because they were authored by the calling skill — your job is to translate those into plain-English actions, not to echo them. For example, a `recommended_next: Task 4 (Phase 4a Orchestrator rewrite)` becomes "move to the next piece" or "kick off the conversation-flow work", NOT "move to Task 4" or "do Phase 4a."
+
+If the user asked for the literal label by name in a prior turn, the orchestrator can pass `mode: keep_labels` to opt out. Default behavior is: scrub.
+
 ## Canonical example
 
 Given this payload:

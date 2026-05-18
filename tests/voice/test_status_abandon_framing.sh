@@ -34,6 +34,37 @@ else
   assert "/serious-status empty-state uses 'What this does' framing" "fail"
 fi
 
+# AC1 (common-case): Phase 4 (the path users hit ~99% of the time, not the
+# empty-state path) must instruct the skill to emit a one-line voice-card
+# summary BEFORE rendering the table. Added 2026-05-17 after retro-review
+# flagged that only the empty-state branch had voice-card framing.
+phase_4_block=$(awk '
+  /^## Phase 4: Render/ { in_block=1; next }
+  in_block && /^## / { exit }
+  in_block { print }
+' "$STATUS_MD")
+
+if [ -z "$phase_4_block" ]; then
+  assert "/serious-status Phase 4 (Render) section exists" "fail" "no '## Phase 4: Render' heading found"
+else
+  assert "/serious-status Phase 4 (Render) section exists" "pass"
+fi
+
+# The Phase 4 block must contain a "What this does" summary instruction (the
+# common-case salesguy summary) — not just the empty-state branch.
+if echo "$phase_4_block" | grep -qF "What this does"; then
+  assert "/serious-status Phase 4 has 'What this does' summary instruction (common-case)" "pass"
+else
+  assert "/serious-status Phase 4 has 'What this does' summary instruction (common-case)" "fail" "Phase 4 lacks the common-case voice-card summary"
+fi
+
+# It must also describe the format with a count of workflows tracked (plain-English).
+if echo "$phase_4_block" | grep -qE "workflow.*tracked"; then
+  assert "/serious-status Phase 4 summary describes workflows-tracked count" "pass"
+else
+  assert "/serious-status Phase 4 summary describes workflows-tracked count" "fail"
+fi
+
 # Phase 4b glyphs: "in progress right now" instead of "active (breadcrumb exists)"
 if grep -qF "in progress right now" "$STATUS_MD"; then
   assert "/serious-status glyph legend uses plain English (no 'breadcrumb' jargon)" "pass"

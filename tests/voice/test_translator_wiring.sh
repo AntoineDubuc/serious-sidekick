@@ -28,14 +28,30 @@ assert() {
 
 echo "=== Task 3 translator-wiring check ==="
 
-# AC3: /serious-research Phase 6 handoff
+# AC3: /serious-research Phase 6 handoff — must be section-scoped, not file-wide grep.
+# Extract the Phase 6 block (from "## Phase 6: Handoff" to the next "## " heading).
 research_md="$PROJECT_ROOT/.claude/skills/serious-research/SKILL.md"
-if grep -qF 'voice-translator' "$research_md"; then
-  assert "serious-research wires translator OR has manual-rewrite marker" "pass"
-elif grep -qF 'voice-retrofit: manual rewrite' "$research_md"; then
-  assert "serious-research has manual-rewrite marker (commit 736ef45)" "pass"
+phase_6_block=$(awk '
+  /^## Phase 6: Handoff/ { in_block=1; next }
+  in_block && /^## / { exit }
+  in_block { print }
+' "$research_md")
+
+if [ -z "$phase_6_block" ]; then
+  assert "serious-research Phase 6 section exists" "fail" "no '## Phase 6: Handoff' heading found"
 else
-  assert "serious-research wires translator OR has manual-rewrite marker" "fail"
+  assert "serious-research Phase 6 section exists" "pass"
+fi
+
+# Inside the Phase 6 block, REQUIRE one of:
+# (a) the literal deferral marker (per Task 3 AC3 wording), OR
+# (b) an explicit voice-translator dispatch instruction
+if echo "$phase_6_block" | grep -qF 'voice-retrofit: manual rewrite — translator deferred'; then
+  assert "serious-research Phase 6 has literal deferral marker" "pass"
+elif echo "$phase_6_block" | grep -qE 'dispatch.*voice-translator|invoke.*voice-translator|spawn.*voice-translator'; then
+  assert "serious-research Phase 6 dispatches voice-translator" "pass"
+else
+  assert "serious-research Phase 6 has deferral marker OR translator dispatch" "fail" "neither pattern found in the Phase 6 block"
 fi
 
 # AC4-6: /serious-plan, /serious-code, /serious-review must all dispatch the translator

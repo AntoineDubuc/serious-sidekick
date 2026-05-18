@@ -918,9 +918,12 @@ Update `.meta.md` with final timestamps.
 
 <!-- voice-retrofit: rewritten; thread-1 line: 847 -->
 <!-- voice-retrofit: rewritten; thread-1 line: 849 -->
+<!-- voice-retrofit: manual rewrite — translator deferred -->
 <!-- NOTE: Phase 6 handoff was the "30-minute cut" in commit 736ef45 (2026-05-16). The
      existing prose below already implements PM voice: explicit banned list ("Folder paths
-     or file names visible in chat"), explicit canonical structure, reference example. -->
+     or file names visible in chat"), explicit canonical structure, reference example.
+     The voice-translator sub-agent is deferred for this touchpoint — the main model
+     self-translates per the prose rules above. Document the deferral; do not dispatch. -->
 
 The user is a busy PM. Report in the PM voice from `.claude/output-styles/PM-voice.md`. The full technical detail already lives in `research.md` (and `report.html` for deep mode) — the chat reply is a translation, not a record.
 

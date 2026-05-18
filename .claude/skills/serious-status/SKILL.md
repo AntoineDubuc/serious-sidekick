@@ -138,6 +138,21 @@ Status precedence:
 
 ## Phase 4: Render
 
+<!-- voice-retrofit: rewritten — common-case summary line added; thread-1 line: 127 -->
+
+### 4-pre. One-line summary (MANDATORY)
+
+Before the table, emit a plain-English summary line in PM voice. One sentence. No jargon. Just the count and the user-relevant takeaway.
+
+Format: `**What this does:** N workflow(s) tracked — {M in progress, K paused, J done, etc.}.`
+
+Examples:
+- `**What this does:** four workflows tracked — one in progress, two paused, one done.`
+- `**What this does:** one workflow tracked — running, no action needed from you.`
+- `**What this does:** seven workflows tracked — three need a decision from you (rest are running or done).`
+
+Then render the table.
+
 ### 4a. Table format
 
 <!-- voice-retrofit: deferred — reason: phase-4-polish; thread-1 line: 127 -->
