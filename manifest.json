@@ -85,6 +85,11 @@
       "ownership": "template",
       "sha256": "d059ce32b2e6876a1bea008770ca41778d87135533f47a5dc0e15c69a7a64542"
     },
+    ".claude/skills/_shared/voice-card.md": {
+      "dest": "skills/_shared/voice-card.md",
+      "ownership": "template",
+      "sha256": "f5b6e7d8a8071fc3ef08eaa4846325c9f74097e533789b43de74ea37e3491b2d"
+    },
     ".claude/skills/agent-teams/SKILL.md": {
       "dest": "skills/agent-teams/SKILL.md",
       "ownership": "template",
@@ -323,7 +328,7 @@
     ".claude/skills/serious-research/SKILL.md": {
       "dest": "skills/serious-research/SKILL.md",
       "ownership": "template",
-      "sha256": "a9a3fd9ef03406bb3e17fd324124e635478e1390569e844e95a9817f3ce47e5e"
+      "sha256": "28205d5a45b5b7ba8f777c987c280d597d66401f69f4b3943ac4d978c44650e4"
     },
     ".claude/skills/serious-research/hooks/capture-research.sh": {
       "dest": "skills/serious-research/hooks/capture-research.sh",
@@ -393,7 +398,7 @@
     "CLAUDE.md": {
       "dest": "CLAUDE.md",
       "ownership": "user-init",
-      "sha256": "414da689bbfe77305091cbbb19c5b1bae3a1f348258ba18b3f248d1335869e33"
+      "sha256": "06ff3620adee4f6108f459b24578dbcceb15c3122c30ac0eb562f4a0962cfcf4"
     },
     "_anti-rationalization-core.md": {
       "dest": "../_anti-rationalization-core.md",
@@ -406,6 +411,6 @@
       "sha256": "c65b3acedb85cee57151957f0ace6e9261a81f693e5cc17466032693a95f139d"
     }
   },
-  "generated_from_commit": "4823ee827dd55a7c78380ff125e143c7725301d6",
+  "generated_from_commit": "9f9fdd473a4d75b9d7721050122b3a40764caa3b",
   "version": 1
 }
