@@ -466,8 +466,27 @@ with open(output_path, 'w') as f:
 
   # Post-write validation
   if ! validate_json "$state_file"; then
-    echo "ERROR: update_state: post-write validation failed, deleting invalid state file" >&2
+    local validation_err="post-write validation failed, deleting invalid state file"
+    echo "ERROR: update_state: $validation_err" >&2
     rm -f "$state_file"
+    # Task 7 / Finding 10: leave a sentinel adjacent to the deleted state file
+    # so the next run's do_migrate path can distinguish "first run" (no state,
+    # record on-disk hashes) from "post-corruption recovery" (no state, but
+    # there WAS state — do NOT trust on-disk hashes; force redistribute via
+    # installed_from_commit=""). Two-line plain text (NOT JSON) so a future
+    # validate_json change can't recursively wedge the recovery path.
+    #   line 1: corrupt_at: <ISO 8601 timestamp>
+    #   line 2: error: <single-line validation message, <=500 chars>
+    local sentinel_file="$target_dir/.serious-sidekick-state.corrupt"
+    local sentinel_ts
+    sentinel_ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    # Collapse any embedded newlines and cap to 500 chars.
+    local sentinel_err
+    sentinel_err=$(printf '%s' "$validation_err" | tr '\n' ' ' | tr '\r' ' ' | cut -c1-500)
+    {
+      printf 'corrupt_at: %s\n' "$sentinel_ts"
+      printf 'error: %s\n' "$sentinel_err"
+    } > "$sentinel_file" 2>/dev/null || true
     return 1
   fi
 }

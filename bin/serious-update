@@ -97,6 +97,7 @@ CHECK_ONLY=false
 DIFF_ONLY=false
 ROLLBACK=false
 NO_GLOBAL=false
+VERIFY_ONLY=false
 
 usage() {
   cat <<'USAGE'
@@ -106,6 +107,7 @@ Options:
   --check       Check for staleness, write staleness.json, apply no changes
   --diff        Show what would change without applying
   --rollback    Revert to previous_commit from state file
+  --verify      Check install integrity against state files and manifest (read-only)
   --no-global   Skip global directory distribution
   --help        Show this help message
 
@@ -115,8 +117,8 @@ Environment variables:
 
 Exit codes:
   0  Success
-  1  Error
-  2  Nothing to update
+  1  Error / Drift detected
+  2  Nothing to update / state files missing or unparseable
 USAGE
 }
 
@@ -125,6 +127,7 @@ while [ $# -gt 0 ]; do
     --check)    CHECK_ONLY=true ;;
     --diff)     DIFF_ONLY=true ;;
     --rollback) ROLLBACK=true ;;
+    --verify)   VERIFY_ONLY=true ;;
     --no-global) NO_GLOBAL=true ;;
     --help)     usage; exit 0 ;;
     *)
@@ -136,11 +139,27 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+# --verify and --diff are mutually exclusive — diff is a write-preview, verify
+# is read-only integrity check. Combining them invites confusion (research.md
+# Finding-5 defensive design).
+if [ "$VERIFY_ONLY" = "true" ] && [ "$DIFF_ONLY" = "true" ]; then
+  echo "ERROR: --verify and --diff are mutually exclusive" >&2
+  exit 1
+fi
+
 # --- Validate SIDEKICK_HOME exists ---
 if [ ! -d "$SIDEKICK_HOME" ]; then
   echo "ERROR: Serious Sidekick home not found: $SIDEKICK_HOME" >&2
   echo "Run install.sh first, or set SERIOUS_SIDEKICK_HOME." >&2
   exit 1
+fi
+
+# --- Banner: which SIDEKICK_HOME this run is operating on (research.md#Finding-7) ---
+# Placed AFTER validation + AFTER flag parsing — so --help, which exits inside the
+# flag-parsing loop, is naturally exempt. Stderr only.
+echo "Using $SIDEKICK_HOME" >&2
+if [ "$SIDEKICK_HOME" != "$HOME/.serious-sidekick" ]; then
+  echo "NOTE: Running against $SIDEKICK_HOME (canonical install is $HOME/.serious-sidekick)." >&2
 fi
 
 # --- Audit log ---
@@ -151,6 +170,25 @@ log_audit() {
   local timestamp
   timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   echo "$timestamp $entry" >> "$AUDIT_LOG"
+}
+
+# --- Error-surface helpers (Task 1, research.md#Finding-1) -----------
+# Captured stderr from git/helper failures is surfaced both to the user
+# (multi-line, full text) and to the audit log (single-line, ≤500 chars,
+# locale-stable English). Credentials embedded in HTTPS URLs are redacted
+# from BOTH sinks before they're written.
+
+# Redact inline HTTPS credentials of the form scheme://user:pass@host.
+# Stdin → stdout pass-through. (sed -E for portable extended regex.)
+_redact_creds() {
+  sed 's#://[^@[:space:]]*@#://REDACTED@#g'
+}
+
+# Collapse captured stderr to a bounded, single-line audit payload.
+# - tr '\n' '|' : single line for grep-friendly audit log entries.
+# - head -c 500 : cap entry length (research.md#Finding-1 head -c 500 cap).
+_audit_collapse() {
+  _redact_creds | tr '\n' '|' | head -c 500
 }
 
 # --- Migration warning (install-ux-detect-dirs Plan 1) ---
@@ -188,22 +226,80 @@ emit_migration_warnings() {
 
 # --- Git operations ---
 
+# Site #4 (research.md#Finding-1): capture rev-parse stderr and surface
+# a specific error ("cannot read HEAD: <real git stderr>") instead of the
+# generic "Not a git repository" lie.
+#
+# IMPORTANT (Task 1 fixup): all callers invoke this via command
+# substitution — `old_commit=$(get_current_commit)` — which runs the
+# function body inside a subshell. Any variable assignment we make here
+# (e.g., a global _GET_HEAD_ERR) is discarded when the subshell exits, so
+# the parent would never see the captured stderr. To avoid that trap, we
+# print the user-facing error to stderr (fd 2 is inherited across the
+# subshell) and write the audit log entry from inside the function. The
+# caller's job shrinks to checking `[ -z "$out" ]` and exiting.
+#
+# Captured stderr is piped through `_redact_creds` before being printed
+# or audited so any inline HTTPS credentials in error output don't leak.
 get_current_commit() {
-  git -C "$SIDEKICK_HOME" rev-parse HEAD 2>/dev/null || echo ""
+  local out err_file err_content
+  err_file=$(mktemp)
+  if out=$(LC_ALL=C git -C "$SIDEKICK_HOME" rev-parse HEAD 2>"$err_file"); then
+    rm -f "$err_file"
+    echo "$out"
+    return 0
+  fi
+  err_content=$(cat "$err_file" 2>/dev/null)
+  rm -f "$err_file"
+  # User-facing stderr: full text, redacted. Subshells inherit fd 2.
+  echo "ERROR: cannot read HEAD in $SIDEKICK_HOME: $(printf '%s' "$err_content" | _redact_creds)" >&2
+  # Audit log: bounded single line, redacted via _audit_collapse.
+  log_audit "ERROR cannot read HEAD: $(printf '%s' "$err_content" | _audit_collapse)"
+  echo ""
+  return 1
 }
 
 do_git_pull() {
   local old_commit
   old_commit=$(get_current_commit)
   if [ -z "$old_commit" ]; then
-    echo "ERROR: Not a git repository: $SIDEKICK_HOME" >&2
+    # Site #4: get_current_commit already printed the user-facing error
+    # to stderr and wrote the audit log entry (it has to — the caller
+    # runs the function in a subshell, so any global it set would be lost).
     exit 1
   fi
 
-  # Redirect git pull stdout/stderr to avoid polluting our output
-  if ! git -C "$SIDEKICK_HOME" pull >/dev/null 2>&1; then
-    echo "ERROR: git pull failed (network error?)" >&2
-    log_audit "ERROR git pull failed"
+  # Finding 3 (research.md#Finding-3): detached-HEAD guard. After
+  # `serious-update --rollback`, do_rollback does `git checkout <previous>`
+  # which leaves $SIDEKICK_HOME on a detached HEAD. The next regular
+  # `serious-update` then runs `git pull`, which fails with git's opaque
+  # "You are not currently on a branch" message — Task 1's pull-error
+  # capture surfaces that text honestly, but the user still doesn't know
+  # how to recover. This one-line guard checks for detached HEAD BEFORE
+  # the pull, and emits a specific, actionable recovery instruction.
+  #
+  # Scope: only do_git_pull. do_git_fetch (called by --check) tolerates
+  # detached HEAD just fine — `origin/main` and `origin/master` resolve
+  # regardless of where HEAD points.
+  #
+  # Recovery wording: names `git -C $SIDEKICK_HOME checkout main` and ONLY
+  # that. The research notes a future `--force` flag (Finding 6) as an
+  # alternate recovery path, but Finding 6 is DEFERRED in this plan — the
+  # message references only commands that actually ship today.
+  if ! git -C "$SIDEKICK_HOME" symbolic-ref -q HEAD >/dev/null 2>&1; then
+    echo "ERROR: $SIDEKICK_HOME is on a detached HEAD (after --rollback?). Run 'git -C $SIDEKICK_HOME checkout main' to recover." >&2
+    log_audit "ERROR detached HEAD in $SIDEKICK_HOME"
+    exit 1
+  fi
+
+  # Site #1 (research.md#Finding-1): capture git pull's stderr and surface
+  # the real error to the user + audit log (locale-stable English, bounded).
+  local pull_err
+  if ! pull_err=$(LC_ALL=C git -C "$SIDEKICK_HOME" pull 2>&1 >/dev/null); then
+    pull_err=$(printf '%s' "$pull_err" | _redact_creds)
+    echo "ERROR: git pull failed in $SIDEKICK_HOME:" >&2
+    printf '  %s\n' "$pull_err" >&2
+    log_audit "ERROR git pull failed: $(printf '%s' "$pull_err" | _audit_collapse)"
     exit 1
   fi
 
@@ -213,16 +309,99 @@ do_git_pull() {
   # Auto-regenerate manifest from the just-pulled sources (research.md#Finding-1
   # part 2 option a). Without this, dev-time edits to source files mismatch the
   # in-tree manifest and silently get skipped at distribution time.
-  # Pipeline: regen → JSON-validity check → atomic rename. Any failure exits 1.
+  # Pipeline: regen → JSON-validity check → atomic rename. Site #5: each step
+  # is checked separately so the error message names the failed step.
   if [ -x "$SIDEKICK_HOME/bin/generate-manifest.sh" ]; then
-    if ! MANIFEST_PATH="$SIDEKICK_HOME/manifest.json.new" \
-         bash "$SIDEKICK_HOME/bin/generate-manifest.sh" "$SIDEKICK_HOME" >/dev/null 2>&1 \
-       || ! python3 -m json.tool "$SIDEKICK_HOME/manifest.json.new" >/dev/null 2>&1 \
-       || ! mv "$SIDEKICK_HOME/manifest.json.new" "$SIDEKICK_HOME/manifest.json" 2>/dev/null; then
+    # Step 1: generate-manifest.sh emits to manifest.json.new
+    local regen_err
+    if ! regen_err=$(MANIFEST_PATH="$SIDEKICK_HOME/manifest.json.new" \
+                     LC_ALL=C bash "$SIDEKICK_HOME/bin/generate-manifest.sh" "$SIDEKICK_HOME" 2>&1 >/dev/null); then
+      regen_err=$(printf '%s' "$regen_err" | _redact_creds)
+      echo "ERROR: generate-manifest.sh failed:" >&2
+      printf '  %s\n' "$regen_err" >&2
       echo "ERROR: manifest regeneration failed after git pull" >&2
-      log_audit "ERROR manifest regen failed after git pull"
+      log_audit "ERROR generate-manifest.sh failed: $(printf '%s' "$regen_err" | _audit_collapse)"
       rm -f "$SIDEKICK_HOME/manifest.json.new"
       exit 1
+    fi
+
+    # Step 2: validate that the regenerated file is valid JSON
+    local json_err
+    if ! json_err=$(LC_ALL=C python3 -m json.tool "$SIDEKICK_HOME/manifest.json.new" 2>&1 >/dev/null); then
+      json_err=$(printf '%s' "$json_err" | _redact_creds)
+      echo "ERROR: regenerated manifest.json is not valid JSON:" >&2
+      printf '  %s\n' "$json_err" >&2
+      echo "ERROR: manifest regeneration failed after git pull" >&2
+      log_audit "ERROR regenerated manifest.json invalid: $(printf '%s' "$json_err" | _audit_collapse)"
+      rm -f "$SIDEKICK_HOME/manifest.json.new"
+      exit 1
+    fi
+
+    # Step 2.5 (Task 3 / Finding 4): compare regenerated content against the
+    # committed manifest. If they describe the same file set with the same
+    # hashes, skip the mv — this breaks the self-defeating loop where every
+    # successful pull left manifest.json modified in the working tree (which
+    # then made the next git pull refuse on a dirty tree). When they differ,
+    # the mv still proceeds (so regenerated truth wins over a stale committed
+    # manifest), but we emit a user-visible NOTE on stderr and a
+    # MANIFEST-REGEN-OVERRIDE audit line so the override is never silent.
+    #
+    # Comparison is on a CANONICAL form that strips the non-deterministic
+    # `generated_from_commit` field (research.md#Finding-4 "non-deterministic
+    # field"): since committing the manifest moves HEAD forward, a committed
+    # manifest can never have generated_from_commit == its own commit's SHA,
+    # so a strict byte comparison would never match in practice and the loop
+    # would never close. Stripping the field lets equality reflect actual
+    # source-content equivalence. Short hashes are first 8 chars of SHA-256,
+    # matching the existing `verified_hash` convention. We still report the
+    # RAW file-content hashes in the NOTE/audit so the user can grep update
+    # logs by the same byte-identity they'd see from `shasum manifest.json`.
+    local committed_short="" regen_short=""
+    local committed_canon="" regen_canon=""
+    if [ -f "$SIDEKICK_HOME/manifest.json" ]; then
+      committed_short=$(shasum -a 256 "$SIDEKICK_HOME/manifest.json" 2>/dev/null | awk '{print substr($1,1,8)}')
+      committed_canon=$(LC_ALL=C python3 -c "
+import json, sys, hashlib
+with open(sys.argv[1]) as f:
+    m = json.load(f)
+m.pop('generated_from_commit', None)
+out = json.dumps(m, indent=2, sort_keys=True, ensure_ascii=False) + '\n'
+print(hashlib.sha256(out.encode('utf-8')).hexdigest())
+" "$SIDEKICK_HOME/manifest.json" 2>/dev/null)
+    fi
+    regen_short=$(shasum -a 256 "$SIDEKICK_HOME/manifest.json.new" 2>/dev/null | awk '{print substr($1,1,8)}')
+    regen_canon=$(LC_ALL=C python3 -c "
+import json, sys, hashlib
+with open(sys.argv[1]) as f:
+    m = json.load(f)
+m.pop('generated_from_commit', None)
+out = json.dumps(m, indent=2, sort_keys=True, ensure_ascii=False) + '\n'
+print(hashlib.sha256(out.encode('utf-8')).hexdigest())
+" "$SIDEKICK_HOME/manifest.json.new" 2>/dev/null)
+    if [ -n "$committed_canon" ] && [ -n "$regen_canon" ] && [ "$committed_canon" = "$regen_canon" ]; then
+      # Canonical-equal path: same file set, same hashes — regenerated output
+      # would only update the stale `generated_from_commit` metadata. Skip
+      # the mv so the working tree stays clean (breaks the loop).
+      rm -f "$SIDEKICK_HOME/manifest.json.new"
+    else
+      # Diverge path (or fresh install where committed manifest didn't
+      # exist): proceed with mv, but warn loudly if we overwrote a real
+      # committed manifest. Skip the NOTE when committed_short is empty
+      # (genuinely first-time generation, nothing to override).
+      local mv_err
+      if ! mv_err=$(LC_ALL=C mv "$SIDEKICK_HOME/manifest.json.new" "$SIDEKICK_HOME/manifest.json" 2>&1 >/dev/null); then
+        mv_err=$(printf '%s' "$mv_err" | _redact_creds)
+        echo "ERROR: mv manifest.json.new -> manifest.json failed:" >&2
+        printf '  %s\n' "$mv_err" >&2
+        echo "ERROR: manifest regeneration failed after git pull" >&2
+        log_audit "ERROR mv manifest.json.new failed: $(printf '%s' "$mv_err" | _audit_collapse)"
+        rm -f "$SIDEKICK_HOME/manifest.json.new"
+        exit 1
+      fi
+      if [ -n "$committed_short" ]; then
+        echo "NOTE: committed manifest.json was overwritten by regenerated output (commit hash $committed_short, regen hash $regen_short); commit the regen output to your fork to silence this NOTE" >&2
+        log_audit "MANIFEST-REGEN-OVERRIDE committed=$committed_short regen=$regen_short"
+      fi
     fi
   fi
 
@@ -234,19 +413,36 @@ do_git_fetch() {
   local local_commit
   local_commit=$(get_current_commit)
   if [ -z "$local_commit" ]; then
-    echo "ERROR: Not a git repository: $SIDEKICK_HOME" >&2
+    # Site #4: get_current_commit already printed + audited; just exit.
     exit 1
   fi
 
-  if ! git -C "$SIDEKICK_HOME" fetch origin 2>/dev/null; then
-    echo "ERROR: git fetch failed (network error?)" >&2
-    log_audit "ERROR git fetch failed"
+  # Site #2 (sync-pair with Site #1): identical error-handling block.
+  local fetch_err
+  if ! fetch_err=$(LC_ALL=C git -C "$SIDEKICK_HOME" fetch origin 2>&1 >/dev/null); then
+    fetch_err=$(printf '%s' "$fetch_err" | _redact_creds)
+    echo "ERROR: git fetch failed in $SIDEKICK_HOME:" >&2
+    printf '  %s\n' "$fetch_err" >&2
+    log_audit "ERROR git fetch failed: $(printf '%s' "$fetch_err" | _audit_collapse)"
     exit 1
   fi
 
+  # Site #3 (research.md#Finding-1): when neither origin/main nor
+  # origin/master resolves, exit 1 with an explicit error instead of
+  # returning an empty remote_commit string (which downstream lies as
+  # "Update available: local=<sha> remote=").
+  # NOTE: --verify is required. Plain `git rev-parse origin/main` on a
+  # missing ref echoes the ref name back on stdout AND exits non-zero —
+  # which would leak the literal string "origin/main" into remote_commit
+  # via command substitution. --verify gives empty stdout on failure.
   local remote_commit
-  remote_commit=$(git -C "$SIDEKICK_HOME" rev-parse origin/main 2>/dev/null || \
-                  git -C "$SIDEKICK_HOME" rev-parse origin/master 2>/dev/null || echo "")
+  remote_commit=$(LC_ALL=C git -C "$SIDEKICK_HOME" rev-parse --verify origin/main 2>/dev/null || \
+                  LC_ALL=C git -C "$SIDEKICK_HOME" rev-parse --verify origin/master 2>/dev/null || echo "")
+  if [ -z "$remote_commit" ]; then
+    echo "ERROR: no origin/main or origin/master in $SIDEKICK_HOME" >&2
+    log_audit "ERROR no origin/main or origin/master"
+    exit 1
+  fi
 
   echo "$local_commit"
   echo "$remote_commit"
@@ -265,8 +461,16 @@ do_read_manifest() {
   parsed=$(parse_manifest "$manifest_path" 2>&1)
   local exit_code=$?
   if [ $exit_code -ne 0 ]; then
+    # Site #8 (research.md#Finding-1): forensic-blind exit gets an audit
+    # entry with the captured parse_manifest stderr — redacted via
+    # _audit_collapse. Per plan AC line 487, the user-stderr message is
+    # also redacted before being printed. parse_manifest stderr doesn't
+    # normally carry HTTPS URLs, but the filter is wired in for literal
+    # plan-AC compliance.
+    parsed=$(printf '%s' "$parsed" | _redact_creds)
     echo "ERROR: Failed to parse manifest.json" >&2
     echo "$parsed" >&2
+    log_audit "ERROR parse_manifest failed: $(printf '%s' "$parsed" | _audit_collapse)"
     exit 1
   fi
   echo "$parsed"
@@ -410,6 +614,10 @@ print(json.dumps(h))
             new_count=$((new_count + 1))
           fi
         else
+          # Site #7 (research.md#Finding-1): forensic-blind gap close.
+          # Audit log records the cp failure; user-facing message is
+          # intentionally left unchanged (already specific).
+          log_audit "ERROR cp $src -> $dest failed in $target_dir"
           echo "  ERROR: Failed to copy $src -> $dest" >&2
           errors=$((errors + 1))
         fi
@@ -479,12 +687,31 @@ print(json.dumps(h))
     esac
   done <<< "$manifest_entries"
 
-  # Write state file LAST — only if not dry run and no critical errors
+  # Write state file LAST — only if not dry run and no critical errors.
+  # Site #6 (research.md#Finding-1): capture update_state's stderr so the
+  # operator sees the actual failure reason indented under the existing
+  # user-facing line. errors=$((errors+1)) still increments.
+  #
+  # The captured stderr is piped through _redact_creds before BOTH the
+  # user-stderr write and the audit-log write (plan AC line 487:
+  # "The user-stderr message is also redacted before being printed.").
+  # update_state stderr doesn't normally carry HTTPS URLs, but the
+  # filter is wired in for literal plan-AC compliance.
   if [ "$dry_run" = "false" ] && [ "$errors" -eq 0 ]; then
-    update_state "$target_dir" "$current_commit" "$previous_commit" "$file_hashes" 2>/dev/null || {
-      echo "  ERROR: Failed to write state file for $target_dir" >&2
+    local upd_err
+    if ! upd_err=$(update_state "$target_dir" "$current_commit" "$previous_commit" "$file_hashes" 2>&1 >/dev/null); then
+      upd_err=$(printf '%s' "$upd_err" | _redact_creds)
+      echo "  ERROR: Failed to write state file for $target_dir:" >&2
+      printf '    %s\n' "$upd_err" >&2
+      log_audit "ERROR update_state failed for $target_dir: $(printf '%s' "$upd_err" | _audit_collapse)"
       errors=$((errors + 1))
-    }
+    else
+      # Task 7 / Finding 10: clear the corruption sentinel after a successful
+      # update_state. If the sentinel was present (post-corruption recovery
+      # path), this completes the recovery cycle. -f makes the call a no-op
+      # when no sentinel exists — the common case.
+      rm -f "$target_dir/.serious-sidekick-state.corrupt"
+    fi
   fi
 
   echo "updated=$updated new=$new_count current=$current skipped=$skipped errors=$errors hash_mismatches=$hash_mismatches"
@@ -542,6 +769,165 @@ with open(sys.argv[5], 'w') as f:
   echo "  Written: $SIDEKICK_HOME/staleness.json"
 
   exit 0
+}
+
+# --- --verify implementation (research.md#Finding-5) ---
+#
+# Read-only drift detection. For each target dir:
+#   (a) compare state file's installed_from_commit vs. current HEAD
+#   (b) compare on-disk file hashes vs state file's recorded hashes
+#   (c) compare manifest source hashes vs actual source-file hashes in $SIDEKICK_HOME
+#
+# Exit codes:
+#   0  all dirs in sync (commit + both hash axes)
+#   1  drift on any axis in any dir
+#   2  state file missing/unparseable in any dir, OR no target dirs configured
+#
+# Does NOT call git fetch / git pull — that's --check's job. Does NOT modify
+# any file (only update.log gets one VERIFY audit line per invocation).
+do_verify() {
+  # NT3: empty target-dir list → indeterminate state, exit 2.
+  if [ ${#TARGET_DIRS[@]} -eq 0 ]; then
+    echo "No target directories configured" >&2
+    log_audit "VERIFY - dirs=0/0 drift=0"
+    exit 2
+  fi
+
+  # Get current HEAD (does NOT fetch — read-only).
+  local local_commit
+  local_commit=$(get_current_commit)
+  if [ -z "$local_commit" ]; then
+    # get_current_commit already printed + audited.
+    exit 1
+  fi
+
+  # Read manifest entries up front (parsed source paths + recorded sha256s).
+  local manifest_entries
+  manifest_entries=$(do_read_manifest) || exit 1
+
+  # Dirty-manifest warning (stderr, BEFORE per-dir output). The warning alone
+  # does NOT drive exit code — only actual hash mismatches do.
+  if ! git -C "$SIDEKICK_HOME" diff --quiet manifest.json 2>/dev/null; then
+    echo "WARNING: $SIDEKICK_HOME/manifest.json is dirty — verification reflects current source-tree state, not committed manifest" >&2
+  fi
+
+  local dirs_total=${#TARGET_DIRS[@]}
+  local dirs_ok=0
+  local total_drift=0
+  local exit_code=0
+  local saw_missing_or_unparseable=false
+
+  # Per-dir verification loop.
+  local dir
+  for dir in "${TARGET_DIRS[@]}"; do
+    local state_file="$dir/.serious-sidekick-state.json"
+
+    # Missing state file → exit 2 (don't bail mid-loop; keep reporting all dirs).
+    if [ ! -f "$state_file" ]; then
+      echo "WARNING: $dir missing state file (first run never completed?)" >&2
+      saw_missing_or_unparseable=true
+      continue
+    fi
+
+    # Unparseable state file → exit 2.
+    if ! validate_json "$state_file" 2>/dev/null; then
+      local sf_err
+      sf_err=$(python3 -c "
+import json, sys
+try:
+    json.load(open(sys.argv[1]))
+except Exception as e:
+    print(str(e))
+" "$state_file" 2>&1 | head -1)
+      echo "ERROR: $dir state file unparseable: $sf_err" >&2
+      saw_missing_or_unparseable=true
+      continue
+    fi
+
+    # Read installed_from_commit + file_hashes from state file.
+    local installed_from_commit
+    installed_from_commit=$(python3 -c "
+import json, sys
+data = json.load(open(sys.argv[1]))
+print(data.get('installed_from_commit', ''))
+" "$state_file" 2>/dev/null)
+
+    # Compute drift_vs_state: on-disk hash vs recorded hash for each manifest entry.
+    # Compute drift_vs_manifest: source-file hash in SIDEKICK_HOME vs manifest's sha256.
+    # state_hashes is the file_hashes object from the state file (dest -> sha256).
+    local drift_vs_state=0
+    local drift_vs_manifest=0
+
+    while IFS=$'\t' read -r src ownership dest sha256 merge_key; do
+      [ -z "$src" ] && continue
+      # Only check template-tier entries — merge-tier (settings.json) is
+      # skipped at distribution, and user-init files diverge by design.
+      [ "$ownership" != "template" ] && continue
+
+      local source_path="$SIDEKICK_HOME/$src"
+      local dest_path="$dir/$dest"
+
+      # (b) drift_vs_state — recorded hash for "$dest" vs current on-disk hash.
+      if [ -f "$dest_path" ]; then
+        local actual_dest_hash recorded_dest_hash
+        actual_dest_hash=$(hash_file "$dest_path" 2>/dev/null || echo "")
+        recorded_dest_hash=$(python3 -c "
+import json, sys
+data = json.load(open(sys.argv[1]))
+print(data.get('file_hashes', {}).get(sys.argv[2], ''))
+" "$state_file" "$dest" 2>/dev/null)
+        if [ -n "$recorded_dest_hash" ] && [ -n "$actual_dest_hash" ] \
+           && [ "$actual_dest_hash" != "$recorded_dest_hash" ]; then
+          drift_vs_state=$((drift_vs_state + 1))
+        fi
+      fi
+
+      # (c) drift_vs_manifest — manifest's sha256 for source file vs current
+      # source-file hash. (Defends against Finding-4 regen-mismatch.)
+      if [ -n "$sha256" ] && [ -f "$source_path" ]; then
+        local actual_src_hash
+        actual_src_hash=$(hash_file "$source_path" 2>/dev/null || echo "")
+        if [ -n "$actual_src_hash" ] && [ "$actual_src_hash" != "$sha256" ]; then
+          drift_vs_manifest=$((drift_vs_manifest + 1))
+        fi
+      fi
+    done <<< "$manifest_entries"
+
+    # Per-dir summary block (stdout — verify is informational, not an error).
+    echo "dir: $dir"
+    echo "  installed_from_commit: ${installed_from_commit:-missing}"
+    echo "  head: $local_commit"
+    echo "  drift_vs_state: $drift_vs_state files"
+    echo "  drift_vs_manifest: $drift_vs_manifest files"
+
+    # Track aggregate counts + this dir's verdict.
+    local dir_clean=true
+    if [ "$installed_from_commit" != "$local_commit" ]; then
+      dir_clean=false
+    fi
+    if [ "$drift_vs_state" -gt 0 ] || [ "$drift_vs_manifest" -gt 0 ]; then
+      dir_clean=false
+    fi
+    if [ "$dir_clean" = "true" ]; then
+      dirs_ok=$((dirs_ok + 1))
+    fi
+    total_drift=$((total_drift + drift_vs_state + drift_vs_manifest))
+  done
+
+  # Exit-code resolution:
+  #   2  any missing/unparseable state file
+  #   1  any commit-mismatch OR any drift
+  #   0  all clean
+  if [ "$saw_missing_or_unparseable" = "true" ]; then
+    exit_code=2
+  elif [ "$dirs_ok" -lt "$dirs_total" ] || [ "$total_drift" -gt 0 ]; then
+    exit_code=1
+  else
+    exit_code=0
+  fi
+
+  log_audit "VERIFY $local_commit dirs=$dirs_ok/$dirs_total drift=$total_drift"
+  exit "$exit_code"
 }
 
 # --- --rollback implementation ---
@@ -616,7 +1002,7 @@ print(data.get('previous_commit', ''))
   fi
 
   # Audit log
-  log_audit "ROLLBACK $current_installed->$previous dirs=$dirs_ok/$dirs_total OK"
+  log_audit "ROLLBACK home=$SIDEKICK_HOME $current_installed->$previous dirs=$dirs_ok/$dirs_total OK"
 
   echo ""
   echo "Rollback complete."
@@ -639,6 +1025,7 @@ do_migrate() {
   local current_commit="$3"
 
   local state_file="$target_dir/.serious-sidekick-state.json"
+  local sentinel_file="$target_dir/.serious-sidekick-state.corrupt"
 
   # Skip if state file already exists
   if [ -f "$state_file" ]; then
@@ -647,6 +1034,44 @@ do_migrate() {
 
   # Skip if target dir doesn't exist (nothing to migrate)
   if [ ! -d "$target_dir" ]; then
+    return 0
+  fi
+
+  # Task 7 / Finding 10: sentinel-aware path. If the corruption sentinel is
+  # present (left by a prior update_state post-write validation failure), the
+  # on-disk files cannot be trusted as "installed from the current commit" —
+  # a previous write crashed mid-flight. Write a state file with
+  # installed_from_commit="" so Task 4's NEEDS_REDISTRIBUTE check fires and
+  # forces a clean redistribute. Preserve the sentinel — distribute_to_dir
+  # clears it after a successful update_state. Do NOT scan on-disk hashes
+  # here; they're not authoritative.
+  if [ -f "$sentinel_file" ]; then
+    # Write state with installed_from_commit="" and empty file_hashes.
+    update_state "$target_dir" "" "" "{}" 2>/dev/null || {
+      # update_state rejects empty commit_sha by design; we need to write the
+      # state file directly to bypass that validation while still preserving
+      # the schema. (The empty installed_from_commit is the whole point —
+      # it signals "do not trust on-disk hashes" to the freshness gate.)
+      local migration_ts
+      migration_ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+      python3 -c "
+import json, sys
+state = {
+    'installed_from_commit': '',
+    'previous_commit': '',
+    'installed_at': sys.argv[1],
+    'file_hashes': {},
+}
+with open(sys.argv[2], 'w') as f:
+    json.dump(state, f, indent=2, sort_keys=True, ensure_ascii=False)
+    f.write('\n')
+" "$migration_ts" "$state_file" 2>/dev/null || {
+        echo "  WARNING: Failed to write sentinel-recovery state for $target_dir" >&2
+        return 1
+      }
+    }
+    # Echo 0 so the caller's numeric check still works.
+    echo "0"
     return 0
   fi
 
@@ -702,6 +1127,13 @@ if [ "$ROLLBACK" = "true" ]; then
   do_rollback
 fi
 
+# Handle --verify (read-only — DOES NOT call git fetch/pull).
+# Must come before do_git_pull below so a broken remote doesn't break
+# --verify's offline-safe contract (research.md#Finding-5).
+if [ "$VERIFY_ONLY" = "true" ]; then
+  do_verify
+fi
+
 # Regular update (or --diff)
 
 # Migration warnings (install-ux-detect-dirs Plan 1) — emit one-time NOTEs for
@@ -725,8 +1157,61 @@ if [ "$NO_GLOBAL" != "true" ]; then
   done
 fi
 
-if [ "$OLD_COMMIT" = "$NEW_COMMIT" ] && [ "$NEEDS_FIRST_RUN" = "false" ] && [ "$DIFF_ONLY" = "false" ]; then
-  log_audit "UPDATE $OLD_COMMIT->$NEW_COMMIT files=0 new=0 dirs=0/0 OK (nothing to update)"
+# Step 2.5: State-aware freshness check (research.md#Finding-2, Task 4).
+# Complement of NEEDS_FIRST_RUN: catches "state file exists but at wrong commit"
+# (interrupted prior run, hand-edited state file, etc.). Without this, the gate
+# below would silently bail (exit 2) on stale targets when OLD==NEW.
+#
+# Implementation: per-dir parallel array PRIOR_INSTALLED indexed by the SAME
+# index as TARGET_DIRS, so the redistribute path downstream can thread the
+# correct per-dir previous_commit value into distribute_to_dir.
+# (bash 3.2 has no associative arrays; do NOT use `declare -A`.)
+#
+# Security hardening:
+#   S1: isinstance(v,str) check in the python3 read coerces non-string types
+#       (list/dict/number/null) to empty string, preventing them from flowing
+#       into the audit log or distribute_to_dir args.
+#   S3: SHA-shape regex ^[0-9a-f]{7,40}$ validates the value before threading
+#       it as previous_commit. Non-SHA values are treated as empty + WARNING.
+NEEDS_REDISTRIBUTE=false
+# Parallel arrays indexed by TARGET_DIRS index.
+#   PRIOR_INSTALLED[$i]      — validated prior installed_from_commit (or '')
+#   PRIOR_STATE_PRESENT[$i]  — "true" if the state file existed at scan time
+# The "present" flag disambiguates "state file missing (first run)" from
+# "state file present but value rejected (S1 non-string / S3 non-SHA)" so the
+# distribute path can thread previous_commit='' for the latter while keeping
+# the legacy OLD_COMMIT fallback for the former.
+PRIOR_INSTALLED=()
+PRIOR_STATE_PRESENT=()
+if [ "$NO_GLOBAL" != "true" ]; then
+  for i in "${!TARGET_DIRS[@]}"; do
+    _state_dir="${TARGET_DIRS[$i]}"
+    _state_file="$_state_dir/.serious-sidekick-state.json"
+    PRIOR_INSTALLED[$i]=""
+    PRIOR_STATE_PRESENT[$i]="false"
+    if [ -f "$_state_file" ]; then
+      PRIOR_STATE_PRESENT[$i]="true"
+      # S1: isinstance(v,str) wrapper — non-string types coerce to ''.
+      installed=$(python3 -c "import json,sys; v=json.load(open(sys.argv[1])).get('installed_from_commit',''); print(v if isinstance(v,str) else '')" "$_state_file" 2>/dev/null)
+      # S3: SHA-shape regex — reject anything that isn't a git short/full SHA.
+      if [ -n "$installed" ] && ! [[ "$installed" =~ ^[0-9a-f]{7,40}$ ]]; then
+        echo "WARNING: $_state_dir state file has non-SHA installed_from_commit value (corrupt or hand-edited); treating as redistribute" >&2
+        installed=""
+      fi
+      PRIOR_INSTALLED[$i]="$installed"
+      if [ "$installed" != "$NEW_COMMIT" ]; then
+        NEEDS_REDISTRIBUTE=true
+      fi
+    fi
+  done
+  unset _state_dir _state_file
+fi
+
+if [ "$OLD_COMMIT" = "$NEW_COMMIT" ] \
+   && [ "$NEEDS_FIRST_RUN" = "false" ] \
+   && [ "$NEEDS_REDISTRIBUTE" = "false" ] \
+   && [ "$DIFF_ONLY" = "false" ]; then
+  log_audit "UPDATE home=$SIDEKICK_HOME $OLD_COMMIT->$NEW_COMMIT files=0 new=0 dirs=0/0 OK (nothing to update)"
   echo "Already up to date at $NEW_COMMIT"
   exit 2
 fi
@@ -774,16 +1259,33 @@ else
   TOTAL_CURRENT=0
   DIR_REPORTS=()
 
-  for dir in "${TARGET_DIRS[@]}"; do
+  for i in "${!TARGET_DIRS[@]}"; do
+    dir="${TARGET_DIRS[$i]}"
     if [ "$DIFF_ONLY" = "true" ]; then
       echo ""
       echo "=== $dir ==="
     fi
 
+    # Thread the per-dir prior installed_from_commit as previous_commit so
+    # the redistribute-for-staleness path (Task 4) records the correct prior
+    # SHA in state. Three cases:
+    #   1. State file present + value validated (incl. empty after S1/S3 reject):
+    #      thread that exact value (may be '').
+    #   2. State file present but PRIOR_INSTALLED is empty due to S1/S3 reject:
+    #      thread '' (Task 4 Security ACs require no leak of corrupt value).
+    #   3. State file ABSENT (NEEDS_FIRST_RUN path or NO_GLOBAL-skipped scan):
+    #      fall back to $OLD_COMMIT (legacy behavior, Scenarios C and D).
+    _prev_for_dir=""
+    if [ "${PRIOR_STATE_PRESENT[$i]:-false}" = "true" ]; then
+      _prev_for_dir="${PRIOR_INSTALLED[$i]:-}"
+    else
+      _prev_for_dir="$OLD_COMMIT"
+    fi
+
     # Capture stdout only — let stderr flow through so HASH MISMATCH lines
     # remain visible to the user (per research.md#Finding-1; previously the
     # `2>&1` here swallowed them, hiding the silent-drop bug).
-    result=$(distribute_to_dir "$dir" "$MANIFEST_ENTRIES" "$DIFF_ONLY" "$NEW_COMMIT" "$OLD_COMMIT")
+    result=$(distribute_to_dir "$dir" "$MANIFEST_ENTRIES" "$DIFF_ONLY" "$NEW_COMMIT" "$_prev_for_dir")
 
     # Parse the last line for counts
     last_line=$(echo "$result" | tail -1)
@@ -841,7 +1343,7 @@ fi
 
 # Step 6: Audit log + completion receipt
 TOTAL_FILES=$((TOTAL_UPDATED + TOTAL_NEW))
-log_audit "UPDATE $OLD_COMMIT->$NEW_COMMIT files=$TOTAL_FILES new=$TOTAL_NEW dirs=$DIRS_OK/$TOTAL_DIRS OK"
+log_audit "UPDATE home=$SIDEKICK_HOME $OLD_COMMIT->$NEW_COMMIT files=$TOTAL_FILES new=$TOTAL_NEW dirs=$DIRS_OK/$TOTAL_DIRS OK"
 
 echo ""
 echo "Serious Sidekick updated to $NEW_COMMIT (was $OLD_COMMIT)"

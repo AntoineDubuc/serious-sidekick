@@ -295,6 +295,85 @@ else
   assert "Receipt: shows uninstall instructions" "fail"
 fi
 
+# ---------------------------------------------------------------
+# Test 8 (reliability Task 1, Site #9): install.sh git pull
+# surfaces real stderr instead of swallowing it.
+# ---------------------------------------------------------------
+echo ""
+echo "--- reliability-task1 Site #9: install.sh git pull error transparency ---"
+echo ""
+
+T8_BASE="$TMP_DIR/t8"
+setup_remote_repo "$T8_BASE"
+T8_HOME="$TMP_DIR/t8_home"
+T8_BIN="$TMP_DIR/t8_bin"
+
+# First install: a clean clone to T8_HOME.
+T8_FIRST=$(run_install "$T8_HOME" "$T8_BIN" "$SETUP_REMOTE" --no-cron 2>&1) || true
+
+# Push a new commit to remote that changes _anti-rationalization-core.md.
+T8_STAGE="$TMP_DIR/t8_stage"
+git clone -q "$SETUP_REMOTE" "$T8_STAGE"
+cd "$T8_STAGE"
+git config user.email "test@test.com"
+git config user.name "Test"
+echo "# upstream change" >> "_anti-rationalization-core.md"
+git add -A
+git commit -q -m "T8 upstream"
+git push -q origin 2>/dev/null
+cd "$REPO_ROOT"
+
+# Wedge: dirty the SAME file the upstream commit changed so `git pull`
+# refuses to fast-forward.
+echo "# local wedge" >> "$T8_HOME/_anti-rationalization-core.md"
+
+# Run install.sh again — pull should fail with the dirty working tree.
+T8_SECOND=$(run_install "$T8_HOME" "$T8_BIN" "$SETUP_REMOTE" --no-cron 2>&1) || true
+
+# AC: install.sh prints real git error (not opaque "git pull failed")
+if echo "$T8_SECOND" | grep -q "ERROR: git pull failed in " \
+   && echo "$T8_SECOND" | grep -q "local changes"; then
+  assert "Site #9: install.sh pull failure shows real git stderr" "pass"
+else
+  assert "Site #9: install.sh pull failure shows real git stderr" "fail" \
+    "output: $(echo "$T8_SECOND" | head -10 | tr '\n' '|')"
+fi
+
+# AC: legacy opaque message removed.
+if echo "$T8_SECOND" | grep -qE "ERROR: git pull failed in [^:]+$"; then
+  # The legacy form ends with the path and no colon-detail. The new form
+  # ends with a colon and the captured stderr follows on subsequent lines.
+  # If we still see exactly "ERROR: git pull failed in <path>" (no colon),
+  # the old swallow-and-guess remains.
+  assert "Site #9: legacy opaque 'git pull failed in <path>' (no detail) removed" "fail" \
+    "old form present"
+else
+  assert "Site #9: legacy opaque 'git pull failed in <path>' (no detail) removed" "pass"
+fi
+
+# AC: S4 — bash -n on install.sh is clean after the fix.
+if bash -n "$REPO_ROOT/install.sh" 2>/dev/null; then
+  assert "Site #9 (S4): bash -n on install.sh is clean" "pass"
+else
+  assert "Site #9 (S4): bash -n on install.sh is clean" "fail"
+fi
+
+# AC: S2 — credentials in remote URLs are redacted from install.sh stderr.
+T8R_BASE="$TMP_DIR/t8r"
+setup_remote_repo "$T8R_BASE"
+T8R_HOME="$TMP_DIR/t8r_home"
+T8R_BIN="$TMP_DIR/t8r_bin"
+run_install "$T8R_HOME" "$T8R_BIN" "$SETUP_REMOTE" --no-cron >/dev/null 2>&1 || true
+# Swap remote URL to one with embedded creds AND a host that won't resolve.
+git -C "$T8R_HOME" remote set-url origin "https://test:secret123@invalid.localhost/repo.git"
+T8R_OUT=$(run_install "$T8R_HOME" "$T8R_BIN" "https://test:secret123@invalid.localhost/repo.git" --no-cron 2>&1) || true
+if ! echo "$T8R_OUT" | grep -q "secret123"; then
+  assert "Site #9 (S2): credentials redacted from install.sh stderr" "pass"
+else
+  assert "Site #9 (S2): credentials redacted from install.sh stderr" "fail" \
+    "'secret123' leaked to stderr"
+fi
+
 echo ""
 echo "=== install.sh Tests Complete: $ERRORS error(s) ==="
 
