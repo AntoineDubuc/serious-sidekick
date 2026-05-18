@@ -6,7 +6,7 @@
 
 ## What's Next
 
-The April roadmap had eight engineer-ranked features. Since then, Claude Code shipped two big features that move the rest of the list around (`claude agents` and `/goal`), and we shipped the first phase of the PM-voice retrofit. Below is the rewritten "next" list, sorted by **what the user feels** — not what's easiest to build.
+The April roadmap had eight engineer-ranked features. Since then, Claude Code shipped two big features that move the rest of the list around (`claude agents` and `/goal`), and we shipped the full PM-voice retrofit (all six phases). Below is the rewritten "next" list, sorted by **what the user feels** — not what's easiest to build.
 
 ### Now (the next two months of work — sorted by what the user feels)
 

@@ -321,7 +321,7 @@
 </header>
 
 <div class="intro">
-  The April roadmap had eight engineer-ranked features. Since then, Claude Code shipped two big features that move the rest of the list around (an agent-view screen and a "keep working until done" command), and we shipped the first phase of the PM-voice retrofit. Below is the rewritten list, sorted by <strong>what the user feels</strong> — not what's easiest to build.
+  The April roadmap had eight engineer-ranked features. Since then, Claude Code shipped two big features that move the rest of the list around (an agent-view screen and a "keep working until done" command), and we shipped the full PM-voice retrofit (all six phases). Below is the rewritten list, sorted by <strong>what the user feels</strong> — not what's easiest to build.
 </div>
 
 <h2>Now <span class="subtitle">— the next two months of work</span></h2>
@@ -347,22 +347,6 @@
   <div class="card">
     <div class="card-head">
       <div class="card-num">2</div>
-      <h3 class="card-title">Finish the voice retrofit</h3>
-      <span class="pill pill-now">Now</span>
-    </div>
-    <div class="card-row">
-      <div class="card-label">What it does for the user</div>
-      <div class="card-value">Today only the research-summary handoff speaks in PM voice. The next phase rewrites the worst chat replies in the other thirteen workflows — the code per-task reports, the plan reveals, the review verdicts, all the status banners — so every reply, not just one, is human-readable.</div>
-    </div>
-    <div class="card-row">
-      <div class="card-label">What it costs us</div>
-      <div class="card-value">6-8 hours of edits to the playbooks. Optional follow-on: a small translation worker for the four highest-volume moments (another 5-7 hours).</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-head">
-      <div class="card-num">3</div>
       <h3 class="card-title">One screen for all your workflows</h3>
       <span class="pill pill-now">Now</span>
     </div>
@@ -378,7 +362,7 @@
 
   <div class="card">
     <div class="card-head">
-      <div class="card-num">4</div>
+      <div class="card-num">3</div>
       <h3 class="card-title">Walk-away mode for the code workflow</h3>
       <span class="pill pill-now">Now</span>
     </div>
@@ -407,25 +391,25 @@
   </thead>
   <tbody>
     <tr>
-      <td class="num">5</td>
+      <td class="num">4</td>
       <td class="title">Quick-skills (two-step recipes)</td>
       <td>Light-weight skills for the operational work between builds: ingest a video and discuss it, audit your workflows for stuck items, check your skills for inconsistencies. Three steps, no full ceremony.</td>
-      <td>Nothing — Anthropic shipped the underlying capability. Effort dropped from a week to two days. Bumped down only because items 1-4 hit more pain.</td>
+      <td>Nothing — Anthropic shipped the underlying capability. Effort dropped from a week to two days. Bumped down only because items 1-3 hit more pain.</td>
     </tr>
     <tr>
-      <td class="num">6</td>
+      <td class="num">5</td>
       <td class="title">Skills that only load when relevant</td>
       <td>Some skills load on every session even when they're irrelevant. Anthropic is expected to add a way to scope skills to file patterns ("only load this when I'm editing TypeScript"). Smaller context, faster sessions.</td>
       <td>Anthropic to ship file-pattern skill scoping. No new info in the last month.</td>
     </tr>
     <tr>
-      <td class="num">7</td>
+      <td class="num">6</td>
       <td class="title">Catch stale plans automatically</td>
       <td>If you write research on Monday, plan on Tuesday, and someone edits the research file Wednesday before you code, today nothing warns you. This adds a one-line warning when the source has shifted under a downstream plan.</td>
       <td>Anthropic to ship file-change hooks. Still waiting.</td>
     </tr>
     <tr>
-      <td class="num">8</td>
+      <td class="num">7</td>
       <td class="title">Safe unattended mode for risky operations</td>
       <td>Headless runs today are all-or-nothing — either nothing prompts and dangerous ops fly through, or every prompt blocks the run. This adds a middle path: dangerous operations pause, harmless denials auto-retry.</td>
       <td>Anthropic to ship two new hook types (pause-on-dangerous + retry-on-deny). Still waiting.</td>
@@ -445,17 +429,17 @@
   </thead>
   <tbody>
     <tr>
-      <td class="num">9</td>
+      <td class="num">8</td>
       <td class="title">Anthropic Issue #54196</td>
       <td>When Anthropic fixes the broken hook that should rewrite tool output, the voice retrofit gets ~10x simpler — sub-agent output gets translated at the seam instead of per-call-site in every playbook.</td>
     </tr>
     <tr>
-      <td class="num">10</td>
+      <td class="num">9</td>
       <td class="title">Interactive diagrams</td>
       <td>Third-party canvas tool for live editable diagrams during research and planning. Nice-to-have, our existing static-image generator covers most cases. Ship when someone asks for it.</td>
     </tr>
     <tr>
-      <td class="num">11</td>
+      <td class="num">10</td>
       <td class="title">Event-driven progress monitoring</td>
       <td>Replace the "wake up every five seconds and check" loop with event-driven notifications. Works fine today; small optimization, low priority.</td>
     </tr>
@@ -487,10 +471,18 @@
   <h2>Recently shipped</h2>
 
   <div class="shipped-item">
-    <div class="shipped-date">2026-05-16 · commit 736ef45</div>
-    <div class="shipped-title">PM-voice retrofit (Phase 1) + .gitignore hardening</div>
+    <div class="shipped-date">2026-05-17 → 18 · PR #2 (branch <code>voice-retrofit-phases-2-4</code>, 6 commits)</div>
+    <div class="shipped-title">Voice retrofit complete — Phases 2-6 + retroactive verification</div>
     <div class="shipped-detail">
-      Canonical voice rule, a system-prompt style that points at it, and the research-summary handoff rewritten in PM voice instead of dumping grade letters and file paths. Plus a tightened ignore file: credentials covered, future Claude Code state files default-denied, the new workflow-tracking directory caught. <strong>Phases 2-4 are still pending</strong> (rewrite the worst chat replies in the other 13 workflows, add a translation worker for the four highest-volume moments, polish the edge cases).
+      Every chat reply across all 14 workflows now defaults to the PM voice. The safety-net validator hook catches numbered stage labels, file paths, and code fences in chat and forces a rewrite. A reminder hook injects the voice rule each turn. A cheap-model translation worker is wired into 3 of the 4 highest-volume moments. The conversation orchestrator defaults to one recommendation instead of a five-option menu. The status and abandon wrap-ups follow the same plain-English structure. A safety-net kill-switch test confirms all five historical bad examples are now caught. <strong>Honest disclosures:</strong> known gaps deferred — about ten missing evidence files, cherry-picked synthetic samples in the fire-rate test, the conversation example count is 1 vs the plan's 2-3, the translator's malformed/timeout/injection behavior paths only have structural tests, and a soft jargon leak remains at the cheap model. A self-written incident report at <code>docs/incidents/voice-retrofit-2026-05-17.md</code> documents three rounds of corner-cutting that occurred during this work — read it before extending the retrofit.
+    </div>
+  </div>
+
+  <div class="shipped-item">
+    <div class="shipped-date">2026-05-16 · commit 736ef45</div>
+    <div class="shipped-title">PM-voice retrofit Phase 1 + .gitignore hardening</div>
+    <div class="shipped-detail">
+      Canonical voice rule, a system-prompt style that points at it, and the research-summary handoff rewritten in PM voice instead of dumping grade letters and file paths. Plus a tightened ignore file: credentials covered, future Claude Code state files default-denied, the new workflow-tracking directory caught. <strong>Phases 2-6 shipped in PR #2 (see the entry above).</strong>
     </div>
   </div>
 
