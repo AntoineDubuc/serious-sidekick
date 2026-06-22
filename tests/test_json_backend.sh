@@ -23,23 +23,32 @@ assert() {
 echo "=== Test: JSON Backend Detection ==="
 echo ""
 
-# AC: Sourcing sets _SERIOUS_JSON_BACKEND to python3 or jq
-if [ "$_SERIOUS_JSON_BACKEND" = "python3" ] || [ "$_SERIOUS_JSON_BACKEND" = "jq" ]; then
-  assert "_SERIOUS_JSON_BACKEND is set to python3 or jq" "pass"
+# AC: Sourcing sets _SERIOUS_JSON_BACKEND to python3, python, or jq
+if [ "$_SERIOUS_JSON_BACKEND" = "python3" ] || [ "$_SERIOUS_JSON_BACKEND" = "python" ] || [ "$_SERIOUS_JSON_BACKEND" = "jq" ]; then
+  assert "_SERIOUS_JSON_BACKEND is set to python3, python, or jq" "pass"
 else
-  assert "_SERIOUS_JSON_BACKEND is set to python3 or jq" "fail" \
+  assert "_SERIOUS_JSON_BACKEND is set to python3, python, or jq" "fail" \
     "Got: '$_SERIOUS_JSON_BACKEND'"
 fi
 
-# AC: python3 is primary (checked first) — on this machine python3 exists
-if command -v python3 >/dev/null 2>&1; then
-  if [ "$_SERIOUS_JSON_BACKEND" = "python3" ]; then
-    assert "python3 is primary when available" "pass"
+# AC: A working python (python3 or python) is primary when available
+_SERIOUS_DETECTED_PYTHON=""
+if command -v python3 >/dev/null 2>&1 \
+   && [ "$(python3 -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
+  _SERIOUS_DETECTED_PYTHON="python3"
+elif command -v python >/dev/null 2>&1 \
+   && [ "$(python -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
+  _SERIOUS_DETECTED_PYTHON="python"
+fi
+if [ -n "$_SERIOUS_DETECTED_PYTHON" ]; then
+  if [ "$_SERIOUS_JSON_BACKEND" = "$_SERIOUS_DETECTED_PYTHON" ]; then
+    assert "python is primary when available (backend: $_SERIOUS_DETECTED_PYTHON)" "pass"
   else
-    assert "python3 is primary when available" "fail" \
-      "python3 is available but backend is '$_SERIOUS_JSON_BACKEND'"
+    assert "python is primary when available (backend: $_SERIOUS_DETECTED_PYTHON)" "fail" \
+      "working python '$_SERIOUS_DETECTED_PYTHON' is available but backend is '$_SERIOUS_JSON_BACKEND'"
   fi
 fi
+unset _SERIOUS_DETECTED_PYTHON
 
 # AC: Backend is detected once and does not change on re-source
 FIRST_BACKEND="$_SERIOUS_JSON_BACKEND"
@@ -69,17 +78,30 @@ else
 fi
 _SERIOUS_JSON_BACKEND="$SAVED_BACKEND"
 
-# AC: Test python3 backend path by overriding
-_SERIOUS_JSON_BACKEND="python3"
-TMP_DIR=$(mktemp -d)
-echo '{"test": true}' > "$TMP_DIR/valid.json"
-if validate_json "$TMP_DIR/valid.json"; then
-  assert "validate_json works with python3 backend" "pass"
-else
-  assert "validate_json works with python3 backend" "fail"
+# AC: Test python backend path by overriding with whichever python is available
+_SERIOUS_TEST_PYTHON=""
+if command -v python3 >/dev/null 2>&1 \
+   && [ "$(python3 -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
+  _SERIOUS_TEST_PYTHON="python3"
+elif command -v python >/dev/null 2>&1 \
+   && [ "$(python -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
+  _SERIOUS_TEST_PYTHON="python"
 fi
-rm -rf "$TMP_DIR"
-_SERIOUS_JSON_BACKEND="$SAVED_BACKEND"
+if [ -n "$_SERIOUS_TEST_PYTHON" ]; then
+  _SERIOUS_JSON_BACKEND="$_SERIOUS_TEST_PYTHON"
+  TMP_DIR=$(mktemp -d)
+  echo '{"test": true}' > "$TMP_DIR/valid.json"
+  if validate_json "$TMP_DIR/valid.json"; then
+    assert "validate_json works with $_SERIOUS_TEST_PYTHON backend" "pass"
+  else
+    assert "validate_json works with $_SERIOUS_TEST_PYTHON backend" "fail"
+  fi
+  rm -rf "$TMP_DIR"
+  _SERIOUS_JSON_BACKEND="$SAVED_BACKEND"
+else
+  echo "  SKIP: no working python found, skipping python backend test"
+fi
+unset _SERIOUS_TEST_PYTHON
 
 # Negative: No backend available (mock command -v to fail)
 # We simulate this by sourcing in a subshell with overridden PATH

@@ -219,7 +219,7 @@ add_remote_commit "$SETUP_HOME" "$SETUP_REMOTE" "post-corrupt"
 
 CORRUPT_EXIT=0
 CORRUPT_OUTPUT=$(SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$TMP_DIR/nowhere1 $TMP_DIR/nowhere2 $TMP_DIR/nowhere3" bash "$REPO_ROOT/bin/serious-update" 2>&1) || CORRUPT_EXIT=$?
-if [ "$CORRUPT_EXIT" -eq 0 ] && python3 -m json.tool "$SETUP_HOME/manifest.json" >/dev/null 2>&1; then
+if [ "$CORRUPT_EXIT" -eq 0 ] && $_SERIOUS_JSON_BACKEND -m json.tool "$SETUP_HOME/manifest.json" >/dev/null 2>&1; then
   assert "AC2.5: Corrupt manifest.json auto-healed by regen-on-pull" "pass"
 else
   assert "AC2.5: Corrupt manifest.json auto-healed by regen-on-pull" "fail" "exit=$CORRUPT_EXIT"
@@ -236,7 +236,7 @@ add_remote_commit "$SETUP_HOME" "$SETUP_REMOTE" "post-remove"
 
 NOMANI_EXIT=0
 NOMANI_OUTPUT=$(SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$TMP_DIR/nowhere4 $TMP_DIR/nowhere5 $TMP_DIR/nowhere6" bash "$REPO_ROOT/bin/serious-update" 2>&1) || NOMANI_EXIT=$?
-if [ "$NOMANI_EXIT" -eq 0 ] && [ -f "$SETUP_HOME/manifest.json" ] && python3 -m json.tool "$SETUP_HOME/manifest.json" >/dev/null 2>&1; then
+if [ "$NOMANI_EXIT" -eq 0 ] && [ -f "$SETUP_HOME/manifest.json" ] && $_SERIOUS_JSON_BACKEND -m json.tool "$SETUP_HOME/manifest.json" >/dev/null 2>&1; then
   assert "NT2.1: Missing manifest.json auto-recreated by regen-on-pull" "pass"
 else
   assert "NT2.1: Missing manifest.json auto-recreated by regen-on-pull" "fail" "exit=$NOMANI_EXIT"
@@ -295,7 +295,7 @@ else
 fi
 
 # State file valid JSON
-if python3 -c "import json; json.load(open('$TASK3_FIRST/.serious-sidekick-state.json'))" 2>/dev/null; then
+if $_SERIOUS_JSON_BACKEND -c "import json; json.load(open('$TASK3_FIRST/.serious-sidekick-state.json'))" 2>/dev/null; then
   assert "AC3.7: State file is valid JSON" "pass"
 else
   assert "AC3.7: State file is valid JSON" "fail"
@@ -371,7 +371,7 @@ fi
 
 # AC4.4: staleness.json has required fields
 if [ -f "$SETUP_HOME/staleness.json" ]; then
-  SCHEMA_OK=$(python3 -c "
+  SCHEMA_OK=$($_SERIOUS_JSON_BACKEND -c "
 import json
 data = json.load(open('$SETUP_HOME/staleness.json'))
 required = ['checked_at', 'local_commit', 'remote_commit', 'stale_count', 'summary']
@@ -481,7 +481,7 @@ V2_COMMIT=$(git -C "$SETUP_HOME" rev-parse HEAD)
 
 # Verify state file has previous_commit set
 if [ -f "$TASK6_FIRST/.serious-sidekick-state.json" ]; then
-  STATE_PREV=$(python3 -c "
+  STATE_PREV=$($_SERIOUS_JSON_BACKEND -c "
 import json
 data = json.load(open('$TASK6_FIRST/.serious-sidekick-state.json'))
 print(data.get('previous_commit', ''))
@@ -509,12 +509,12 @@ fi
 
 # AC6.4: After rollback, installed = V1, previous = V2
 if [ -f "$TASK6_FIRST/.serious-sidekick-state.json" ]; then
-  POST_INSTALLED=$(python3 -c "
+  POST_INSTALLED=$($_SERIOUS_JSON_BACKEND -c "
 import json
 data = json.load(open('$TASK6_FIRST/.serious-sidekick-state.json'))
 print(data.get('installed_from_commit', ''))
 ")
-  POST_PREVIOUS=$(python3 -c "
+  POST_PREVIOUS=$($_SERIOUS_JSON_BACKEND -c "
 import json
 data = json.load(open('$TASK6_FIRST/.serious-sidekick-state.json'))
 print(data.get('previous_commit', ''))
@@ -1805,7 +1805,7 @@ SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$SCENARIO_B_DIRS" \
 # fake older SHA. HEAD has NOT moved — this simulates an interrupted prior run.
 for d in $SCENARIO_B_DIRS; do
   if [ -f "$d/.serious-sidekick-state.json" ]; then
-    python3 -c "
+    $_SERIOUS_JSON_BACKEND -c "
 import json, sys
 p = sys.argv[1]
 s = json.load(open(p))
@@ -1823,8 +1823,8 @@ SCEN_B_HEAD=$(git -C "$SETUP_HOME" rev-parse HEAD 2>/dev/null || echo "")
 SCEN_B_INSTALLED=""
 SCEN_B_PREV=""
 if [ -f "$SCEN_B_FIRST_DIR/.serious-sidekick-state.json" ]; then
-  SCEN_B_INSTALLED=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('installed_from_commit',''))" "$SCEN_B_FIRST_DIR/.serious-sidekick-state.json" 2>/dev/null || echo "")
-  SCEN_B_PREV=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('previous_commit',''))" "$SCEN_B_FIRST_DIR/.serious-sidekick-state.json" 2>/dev/null || echo "")
+  SCEN_B_INSTALLED=$($_SERIOUS_JSON_BACKEND -c "import json,sys;print(json.load(open(sys.argv[1])).get('installed_from_commit',''))" "$SCEN_B_FIRST_DIR/.serious-sidekick-state.json" 2>/dev/null || echo "")
+  SCEN_B_PREV=$($_SERIOUS_JSON_BACKEND -c "import json,sys;print(json.load(open(sys.argv[1])).get('previous_commit',''))" "$SCEN_B_FIRST_DIR/.serious-sidekick-state.json" 2>/dev/null || echo "")
 fi
 if [ "$SCEN_B_EXIT" -eq 0 ] \
    && [ "$SCEN_B_INSTALLED" = "$SCEN_B_HEAD" ] \
@@ -1852,7 +1852,7 @@ SCEN_C_FIRST_DIR=$(echo "$SCENARIO_C_DIRS" | awk '{print $1}')
 SCEN_C_HEAD=$(git -C "$SETUP_HOME" rev-parse HEAD 2>/dev/null || echo "")
 SCEN_C_INSTALLED=""
 if [ -f "$SCEN_C_FIRST_DIR/.serious-sidekick-state.json" ]; then
-  SCEN_C_INSTALLED=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('installed_from_commit',''))" "$SCEN_C_FIRST_DIR/.serious-sidekick-state.json" 2>/dev/null || echo "")
+  SCEN_C_INSTALLED=$($_SERIOUS_JSON_BACKEND -c "import json,sys;print(json.load(open(sys.argv[1])).get('installed_from_commit',''))" "$SCEN_C_FIRST_DIR/.serious-sidekick-state.json" 2>/dev/null || echo "")
 fi
 if [ "$SCEN_C_EXIT" -eq 0 ] && [ "$SCEN_C_INSTALLED" = "$SCEN_C_HEAD" ]; then
   assert "REL2.AC8 (Scenario C): new upstream → distribute, state at HEAD" "pass"
@@ -1893,7 +1893,7 @@ SCEN_MISS_OUT=$(SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$SCEN_M
   bash "$REPO_ROOT/bin/serious-update" 2>&1) || SCEN_MISS_EXIT=$?
 SCEN_MISS_INSTALLED=""
 if [ -f "$SCEN_MISS_FIRST_DIR/.serious-sidekick-state.json" ]; then
-  SCEN_MISS_INSTALLED=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('installed_from_commit',''))" "$SCEN_MISS_FIRST_DIR/.serious-sidekick-state.json" 2>/dev/null || echo "")
+  SCEN_MISS_INSTALLED=$($_SERIOUS_JSON_BACKEND -c "import json,sys;print(json.load(open(sys.argv[1])).get('installed_from_commit',''))" "$SCEN_MISS_FIRST_DIR/.serious-sidekick-state.json" 2>/dev/null || echo "")
 fi
 SCEN_MISS_HEAD=$(git -C "$SETUP_HOME" rev-parse HEAD 2>/dev/null || echo "")
 # Exit 0 (or 2 if no other dirs were stale and the empty {} is treated as fine —
@@ -1915,7 +1915,7 @@ SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$SCENARIO_B2_DIRS" \
   bash "$REPO_ROOT/bin/serious-update" >/dev/null 2>&1 || true
 for d in $SCENARIO_B2_DIRS; do
   if [ -f "$d/.serious-sidekick-state.json" ]; then
-    python3 -c "
+    $_SERIOUS_JSON_BACKEND -c "
 import json, sys
 p = sys.argv[1]
 s = json.load(open(p))
@@ -1951,7 +1951,7 @@ if [ -f "$SCEN11_VICTIM" ]; then
   rm -f "$SCEN11_VICTIM"
 fi
 # Mark state stale
-python3 -c "
+$_SERIOUS_JSON_BACKEND -c "
 import json, sys
 p = sys.argv[1]
 s = json.load(open(p))
@@ -1979,7 +1979,7 @@ SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$SCEN_S1_DIRS" \
 SCEN_S1_FIRST=$(echo "$SCEN_S1_DIRS" | awk '{print $1}')
 # Embed a unique sentinel inside the list so we can grep audit/stderr/state for it.
 SCEN_S1_SENTINEL="REL2-S1-LEAK-SENTINEL-$$"
-python3 -c "
+$_SERIOUS_JSON_BACKEND -c "
 import json, sys
 p = sys.argv[1]
 s = json.load(open(p))
@@ -1993,8 +1993,8 @@ SCEN_S1_HEAD=$(git -C "$SETUP_HOME" rev-parse HEAD 2>/dev/null || echo "")
 SCEN_S1_NEW_INSTALLED=""
 SCEN_S1_NEW_PREV=""
 if [ -f "$SCEN_S1_FIRST/.serious-sidekick-state.json" ]; then
-  SCEN_S1_NEW_INSTALLED=$(python3 -c "import json,sys;v=json.load(open(sys.argv[1])).get('installed_from_commit','');print(v if isinstance(v,str) else '')" "$SCEN_S1_FIRST/.serious-sidekick-state.json" 2>/dev/null || echo "")
-  SCEN_S1_NEW_PREV=$(python3 -c "import json,sys;v=json.load(open(sys.argv[1])).get('previous_commit','');print(v if isinstance(v,str) else '')" "$SCEN_S1_FIRST/.serious-sidekick-state.json" 2>/dev/null || echo "")
+  SCEN_S1_NEW_INSTALLED=$($_SERIOUS_JSON_BACKEND -c "import json,sys;v=json.load(open(sys.argv[1])).get('installed_from_commit','');print(v if isinstance(v,str) else '')" "$SCEN_S1_FIRST/.serious-sidekick-state.json" 2>/dev/null || echo "")
+  SCEN_S1_NEW_PREV=$($_SERIOUS_JSON_BACKEND -c "import json,sys;v=json.load(open(sys.argv[1])).get('previous_commit','');print(v if isinstance(v,str) else '')" "$SCEN_S1_FIRST/.serious-sidekick-state.json" 2>/dev/null || echo "")
 fi
 SCEN_S1_LOG_LEAK=0
 if grep -q "$SCEN_S1_SENTINEL" "$SETUP_HOME/update.log" 2>/dev/null; then
@@ -2031,7 +2031,7 @@ SCEN_S3_FIRST=$(echo "$SCEN_S3_DIRS" | awk '{print $1}')
 # accidental shell expansion. If the value is ever eval'd or unquoted, the
 # expansion would attempt to create this dir.
 SCEN_S3_PROBE_DIR="$TMP_DIR/rel2_s3_probe_should_not_exist_$$"
-python3 -c "
+$_SERIOUS_JSON_BACKEND -c "
 import json, sys
 p = sys.argv[1]
 s = json.load(open(p))
@@ -2053,8 +2053,8 @@ SCEN_S3_HEAD=$(git -C "$SETUP_HOME" rev-parse HEAD 2>/dev/null || echo "")
 SCEN_S3_NEW_INSTALLED=""
 SCEN_S3_NEW_PREV=""
 if [ -f "$SCEN_S3_FIRST/.serious-sidekick-state.json" ]; then
-  SCEN_S3_NEW_INSTALLED=$(python3 -c "import json,sys;v=json.load(open(sys.argv[1])).get('installed_from_commit','');print(v if isinstance(v,str) else '')" "$SCEN_S3_FIRST/.serious-sidekick-state.json" 2>/dev/null || echo "")
-  SCEN_S3_NEW_PREV=$(python3 -c "import json,sys;v=json.load(open(sys.argv[1])).get('previous_commit','');print(v if isinstance(v,str) else '')" "$SCEN_S3_FIRST/.serious-sidekick-state.json" 2>/dev/null || echo "")
+  SCEN_S3_NEW_INSTALLED=$($_SERIOUS_JSON_BACKEND -c "import json,sys;v=json.load(open(sys.argv[1])).get('installed_from_commit','');print(v if isinstance(v,str) else '')" "$SCEN_S3_FIRST/.serious-sidekick-state.json" 2>/dev/null || echo "")
+  SCEN_S3_NEW_PREV=$($_SERIOUS_JSON_BACKEND -c "import json,sys;v=json.load(open(sys.argv[1])).get('previous_commit','');print(v if isinstance(v,str) else '')" "$SCEN_S3_FIRST/.serious-sidekick-state.json" 2>/dev/null || echo "")
 fi
 if [ "$SCEN_S3_EXIT" -eq 0 ] \
    && [ "$SCEN_S3_WARN" -eq 1 ] \
@@ -2110,10 +2110,10 @@ SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$SCEN_PERF_DIRS" \
   bash "$REPO_ROOT/bin/serious-update" >/dev/null 2>&1 || true
 # Now measure clean-state run.
 PERF_BUDGET_MS_VAL="${PERF_BUDGET_MS:-500}"
-PERF_T0_NS=$(python3 -c "import time;print(int(time.time()*1000))")
+PERF_T0_NS=$($_SERIOUS_JSON_BACKEND -c "import time;print(int(time.time()*1000))")
 SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$SCEN_PERF_DIRS" \
   bash "$REPO_ROOT/bin/serious-update" >/dev/null 2>&1 || true
-PERF_T1_NS=$(python3 -c "import time;print(int(time.time()*1000))")
+PERF_T1_NS=$($_SERIOUS_JSON_BACKEND -c "import time;print(int(time.time()*1000))")
 PERF_DELTA_MS=$((PERF_T1_NS - PERF_T0_NS))
 # Budget × 4 is the hard fail line — exact ms varies on test runners.
 # A regression that blows the budget by 4× is unambiguous.
@@ -2614,7 +2614,7 @@ REL5_AC2_OUT=$(SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$REL5_AC
 REL5_AC2_HEAD=$(git -C "$SETUP_HOME" rev-parse HEAD 2>/dev/null || echo "")
 REL5_AC2_INSTALLED=""
 if [ -f "$REL5_AC2_FIRST_DIR/.serious-sidekick-state.json" ]; then
-  REL5_AC2_INSTALLED=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('installed_from_commit',''))" "$REL5_AC2_FIRST_DIR/.serious-sidekick-state.json" 2>/dev/null || echo "")
+  REL5_AC2_INSTALLED=$($_SERIOUS_JSON_BACKEND -c "import json,sys;print(json.load(open(sys.argv[1])).get('installed_from_commit',''))" "$REL5_AC2_FIRST_DIR/.serious-sidekick-state.json" 2>/dev/null || echo "")
 fi
 if [ "$REL5_AC2_EXIT" -eq 0 ] \
    && [ "$REL5_AC2_INSTALLED" = "$REL5_AC2_HEAD" ] \
@@ -2646,7 +2646,7 @@ SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$REL5_AC3_DIRS" \
 REL5_AC3_FIRST_DIR=$(echo "$REL5_AC3_DIRS" | awk '{print $1}')
 printf 'corrupt_at: 2026-04-01T00:00:00Z\nerror: simulated REL5.AC3\n' \
   > "$REL5_AC3_FIRST_DIR/.serious-sidekick-state.corrupt"
-python3 -c "
+$_SERIOUS_JSON_BACKEND -c "
 import json, sys
 p = sys.argv[1]
 s = json.load(open(p))
@@ -2708,7 +2708,7 @@ REL5_AC5_OUT=$(SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$REL5_AC
 REL5_AC5_HEAD=$(git -C "$SETUP_HOME" rev-parse HEAD 2>/dev/null || echo "")
 REL5_AC5_INSTALLED=""
 if [ -f "$REL5_AC5_FIRST_DIR/.serious-sidekick-state.json" ]; then
-  REL5_AC5_INSTALLED=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('installed_from_commit',''))" "$REL5_AC5_FIRST_DIR/.serious-sidekick-state.json" 2>/dev/null || echo "")
+  REL5_AC5_INSTALLED=$($_SERIOUS_JSON_BACKEND -c "import json,sys;print(json.load(open(sys.argv[1])).get('installed_from_commit',''))" "$REL5_AC5_FIRST_DIR/.serious-sidekick-state.json" 2>/dev/null || echo "")
 fi
 # Step 4: --verify should now exit 0.
 REL5_AC5_VERIFY_EXIT=0
@@ -2742,7 +2742,7 @@ SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$REL5_NEG1_DIRS" \
 # plus a sentinel in the same dir.
 REL5_NEG1_FIRST_DIR=$(echo "$REL5_NEG1_DIRS" | awk '{print $1}')
 REL5_NEG1_FAKE_SHA="aaaaaaa1234567890abcdef1234567890abcdef1"
-python3 -c "
+$_SERIOUS_JSON_BACKEND -c "
 import json, sys
 p = sys.argv[1]
 s = json.load(open(p))
@@ -2757,7 +2757,7 @@ REL5_NEG1_OUT=$(SERIOUS_SIDEKICK_HOME="$SETUP_HOME" SERIOUS_TARGET_DIRS="$REL5_N
 REL5_NEG1_HEAD=$(git -C "$SETUP_HOME" rev-parse HEAD 2>/dev/null || echo "")
 REL5_NEG1_INSTALLED=""
 if [ -f "$REL5_NEG1_FIRST_DIR/.serious-sidekick-state.json" ]; then
-  REL5_NEG1_INSTALLED=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('installed_from_commit',''))" "$REL5_NEG1_FIRST_DIR/.serious-sidekick-state.json" 2>/dev/null || echo "")
+  REL5_NEG1_INSTALLED=$($_SERIOUS_JSON_BACKEND -c "import json,sys;print(json.load(open(sys.argv[1])).get('installed_from_commit',''))" "$REL5_NEG1_FIRST_DIR/.serious-sidekick-state.json" 2>/dev/null || echo "")
 fi
 # Recovery proceeded via Task 4's gate (not do_migrate): exit 0, state at HEAD,
 # sentinel cleared.
@@ -2788,7 +2788,7 @@ REL5_NEG2_HEAD=$(git -C "$SETUP_HOME" rev-parse HEAD 2>/dev/null || echo "")
 REL5_NEG2_FIRST_DIR=$(echo "$REL5_NEG2_DIRS" | awk '{print $1}')
 REL5_NEG2_INSTALLED=""
 if [ -f "$REL5_NEG2_FIRST_DIR/.serious-sidekick-state.json" ]; then
-  REL5_NEG2_INSTALLED=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('installed_from_commit',''))" "$REL5_NEG2_FIRST_DIR/.serious-sidekick-state.json" 2>/dev/null || echo "")
+  REL5_NEG2_INSTALLED=$($_SERIOUS_JSON_BACKEND -c "import json,sys;print(json.load(open(sys.argv[1])).get('installed_from_commit',''))" "$REL5_NEG2_FIRST_DIR/.serious-sidekick-state.json" 2>/dev/null || echo "")
 fi
 # Expected: clean first run, state at HEAD, NO sentinel created anywhere.
 REL5_NEG2_SENTINELS=$(find "$REL5_NEG2_TARGETS" -name ".serious-sidekick-state.corrupt" 2>/dev/null | wc -l | tr -d ' ')

@@ -10,6 +10,18 @@ ERRORS=0
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
+# Detect working python command
+if command -v python3 >/dev/null 2>&1 \
+   && [ "$(python3 -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
+  PYTHON_CMD="python3"
+elif command -v python >/dev/null 2>&1 \
+   && [ "$(python -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
+  PYTHON_CMD="python"
+else
+  echo "SKIP: No working python found" >&2
+  exit 0
+fi
+
 assert() {
   local desc="$1"
   local result="$2"
@@ -268,7 +280,7 @@ PYEOF
 
 test_is_serious() {
   local cmd="$1"
-  python3 "$TMP_DIR/test_is_serious.py" "$cmd"
+  $PYTHON_CMD "$TMP_DIR/test_is_serious.py" "$cmd"
 }
 
 # AC: Rogue serious-evil rejected
@@ -329,7 +341,7 @@ while IFS= read -r cmd; do
     ALL_HOOKS_PASS=false
     HOOK_FAIL_DETAILS="$HOOK_FAIL_DETAILS\n  REJECTED: $cmd"
   fi
-done < <(python3 -c "
+done < <($PYTHON_CMD -c "
 import json
 with open('$REPO_ROOT/.claude/settings.json') as f:
     data = json.load(f)
@@ -421,7 +433,7 @@ else
 fi
 
 # AC: Allowlist governance — EXACTLY {hooks, permissions, env, statusLine}
-ALLOWLIST_CHECK=$(python3 -c "
+ALLOWLIST_CHECK=$($PYTHON_CMD -c "
 import re
 with open('$REPO_ROOT/lib/serious-common.sh') as f:
     content = f.read()
@@ -457,7 +469,7 @@ MERGE_CTRL_OUTPUT=$(merge_settings "$TMP_DIR/installed_test3.json" "$TMP_DIR/tem
 
 # The raw ANSI escape should NOT appear in the error output
 # Use python3 since macOS grep doesn't support -P
-HAS_ANSI=$(python3 -c "
+HAS_ANSI=$($PYTHON_CMD -c "
 import sys
 text = '''$MERGE_CTRL_OUTPUT'''
 print('YES' if '\x1b[31m' in text else 'NO')

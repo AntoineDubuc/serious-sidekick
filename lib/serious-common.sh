@@ -16,10 +16,13 @@ if [ -z "${_SERIOUS_JSON_BACKEND:-}" ]; then
   if command -v python3 >/dev/null 2>&1 \
      && [ "$(python3 -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
     _SERIOUS_JSON_BACKEND="python3"
+  elif command -v python >/dev/null 2>&1 \
+     && [ "$(python -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
+    _SERIOUS_JSON_BACKEND="python"
   elif command -v jq >/dev/null 2>&1; then
     _SERIOUS_JSON_BACKEND="jq"
   else
-    echo "ERROR: Neither working python3 nor jq found. At least one is required." >&2
+    echo "ERROR: Neither working python3/python nor jq found. At least one is required." >&2
     echo "       (On Windows, 'python3' may resolve to the Microsoft Store launcher;" >&2
     echo "       install Python from python.org, or install jq.)" >&2
     return 1 2>/dev/null || exit 1
@@ -61,8 +64,8 @@ validate_json() {
     return 1
   fi
   case "$_SERIOUS_JSON_BACKEND" in
-    python3)
-      python3 -c "
+    python3|python)
+      $_SERIOUS_JSON_BACKEND -c "
 import json, sys
 try:
     with open(sys.argv[1]) as f:
@@ -134,7 +137,7 @@ parse_manifest() {
   fi
 
   local result
-  result=$(python3 -c "
+  result=$($_SERIOUS_JSON_BACKEND -c "
 import json, sys
 
 with open(sys.argv[1]) as f:
@@ -246,11 +249,11 @@ merge_settings() {
     return 1
   }
 
-  # Perform the merge using python3
+  # Perform the merge using the detected python backend
   local merged_tmp
   merged_tmp=$(mktemp)
   local merge_exit=0
-  python3 -c "
+  $_SERIOUS_JSON_BACKEND -c "
 import json, sys, re
 
 installed_path = sys.argv[1]
@@ -439,8 +442,8 @@ update_state() {
   local installed_at
   installed_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-  # Write state file using python3
-  python3 -c "
+  # Write state file using the detected python backend
+  $_SERIOUS_JSON_BACKEND -c "
 import json, sys
 
 commit_sha = sys.argv[1]

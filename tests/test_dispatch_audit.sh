@@ -14,6 +14,18 @@ ERRORS=0
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
+# Detect working python command
+if command -v python3 >/dev/null 2>&1 \
+   && [ "$(python3 -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
+  PYTHON_CMD="python3"
+elif command -v python >/dev/null 2>&1 \
+   && [ "$(python -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
+  PYTHON_CMD="python"
+else
+  echo "SKIP: No working python found" >&2
+  exit 0
+fi
+
 assert() {
   local desc="$1"
   local result="$2"
@@ -220,7 +232,7 @@ if [ -f "$HOOK_LOG_FILE" ]; then
 fi
 
 # AC: Fields truncated to 200 bytes
-LONG_TYPE=$(python3 -c "print('A' * 300)")
+LONG_TYPE=$($PYTHON_CMD -c "print('A' * 300)")
 LONG_JSON="{\"session_id\":\"abc\",\"hook_event_name\":\"PreToolUse\",\"tool_name\":\"Agent\",\"tool_input\":{\"prompt\":\"TASK_ID: task_01\",\"subagent_type\":\"$LONG_TYPE\"},\"tool_use_id\":\"toolu_long\"}"
 run_hook "$LONG_JSON" "test-plan" "yes" "yes"
 if [ -f "$HOOK_LOG_FILE" ]; then
@@ -507,9 +519,9 @@ if [ -f "$HOOK_SCRIPT" ]; then
     echo "test-plan" > "$PERF_PROJECT/.active-code"
   fi
 
-  START_MS=$(python3 -c "import time; print(int(time.time() * 1000))")
+  START_MS=$($PYTHON_CMD -c "import time; print(int(time.time() * 1000))")
   CLAUDE_PROJECT_DIR="$PERF_PROJECT" bash "$HOOK_SCRIPT" < "$FIXTURES_DIR/valid_dispatch.json" >/dev/null 2>&1 || true
-  END_MS=$(python3 -c "import time; print(int(time.time() * 1000))")
+  END_MS=$($PYTHON_CMD -c "import time; print(int(time.time() * 1000))")
   ELAPSED=$((END_MS - START_MS))
 
   if [ "$ELAPSED" -lt 100 ]; then

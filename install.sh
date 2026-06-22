@@ -57,21 +57,29 @@ if ! command -v git >/dev/null 2>&1; then
 fi
 echo -e "  ${GREEN}OK${RESET}  git"
 
-# At least one of python3 or jq is required
-HAS_PYTHON3=false
+# At least one of python3, python, or jq is required.
+# Use the same smoke test as serious-common.sh — command -v alone is unreliable
+# on Windows where python3 can resolve to the Microsoft Store launcher stub.
+HAS_PYTHON=false
 HAS_JQ=false
-if command -v python3 >/dev/null 2>&1; then
-  HAS_PYTHON3=true
+if command -v python3 >/dev/null 2>&1 \
+   && [ "$(python3 -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
+  HAS_PYTHON=true
   echo -e "  ${GREEN}OK${RESET}  python3"
+elif command -v python >/dev/null 2>&1 \
+   && [ "$(python -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
+  HAS_PYTHON=true
+  echo -e "  ${GREEN}OK${RESET}  python"
 fi
 if command -v jq >/dev/null 2>&1; then
   HAS_JQ=true
   echo -e "  ${GREEN}OK${RESET}  jq"
 fi
 
-if [ "$HAS_PYTHON3" = "false" ] && [ "$HAS_JQ" = "false" ]; then
-  echo "ERROR: At least one of python3 or jq is required." >&2
-  echo "Install python3 or jq and try again." >&2
+if [ "$HAS_PYTHON" = "false" ] && [ "$HAS_JQ" = "false" ]; then
+  echo "ERROR: At least one of python3, python, or jq is required." >&2
+  echo "       (On Windows, 'python3' may resolve to the Microsoft Store launcher;" >&2
+  echo "       install Python from python.org, or install jq.)" >&2
   exit 1
 fi
 

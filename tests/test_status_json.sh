@@ -32,6 +32,18 @@ else
   RESET=''
 fi
 
+# Detect working python command
+if command -v python3 >/dev/null 2>&1 \
+   && [ "$(python3 -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
+  PYTHON_CMD="python3"
+elif command -v python >/dev/null 2>&1 \
+   && [ "$(python -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
+  PYTHON_CMD="python"
+else
+  echo "SKIP: No working python found" >&2
+  exit 0
+fi
+
 pass() {
   PASS_COUNT=$((PASS_COUNT + 1))
   TOTAL_COUNT=$((TOTAL_COUNT + 1))
@@ -57,7 +69,7 @@ validate_status_json() {
 
   # Step 1: Valid JSON parse
   local parse_result
-  if ! parse_result=$(python3 -c "
+  if ! parse_result=$($PYTHON_CMD -c "
 import json, sys
 try:
     with open('$file') as f:
@@ -72,7 +84,7 @@ except json.JSONDecodeError as e:
   fi
 
   # Step 2: Full schema validation via python3
-  python3 << PYEOF
+  $PYTHON_CMD << PYEOF
 import json, sys, re
 
 with open('$file') as f:

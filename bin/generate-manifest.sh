@@ -32,8 +32,8 @@ HEAD_SHA=$(cd "$REPO_ROOT" && git rev-parse HEAD 2>/dev/null) || {
   exit 1
 }
 
-# Collect files and build manifest via python3
-python3 -c "
+# Collect files and build manifest via detected python backend
+$_SERIOUS_JSON_BACKEND -c "
 import json, subprocess, sys, os, hashlib
 
 repo_root = sys.argv[1]

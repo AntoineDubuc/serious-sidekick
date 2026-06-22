@@ -111,13 +111,13 @@ echo ""
 # ---------------------------------------------------------------
 # Test 2: Prerequisites check — python3/jq detection
 # ---------------------------------------------------------------
-echo "--- Prerequisites: python3/jq detection ---"
+echo "--- Prerequisites: python3/python/jq detection ---"
 echo ""
 
-if echo "$T1_OUTPUT" | grep -qE "python3|jq"; then
-  assert "Prerequisites: reports python3 or jq status" "pass"
+if echo "$T1_OUTPUT" | grep -qE "python|jq"; then
+  assert "Prerequisites: reports python3, python, or jq status" "pass"
 else
-  assert "Prerequisites: reports python3 or jq status" "fail"
+  assert "Prerequisites: reports python3, python, or jq status" "fail"
 fi
 
 echo ""

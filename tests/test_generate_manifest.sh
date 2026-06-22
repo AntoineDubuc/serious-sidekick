@@ -67,7 +67,7 @@ else
 fi
 
 # AC: version field is 1
-VERSION=$(python3 -c "import json; print(json.load(open('$MANIFEST_OUT'))['version'])")
+VERSION=$($_SERIOUS_JSON_BACKEND -c "import json; print(json.load(open('$MANIFEST_OUT'))['version'])")
 if [ "$VERSION" = "1" ]; then
   assert "version field is 1" "pass"
 else
@@ -76,7 +76,7 @@ fi
 
 # AC: generated_from_commit matches HEAD
 HEAD_SHA=$(cd "$REPO_ROOT" && git rev-parse HEAD)
-GEN_COMMIT=$(python3 -c "import json; print(json.load(open('$MANIFEST_OUT'))['generated_from_commit'])")
+GEN_COMMIT=$($_SERIOUS_JSON_BACKEND -c "import json; print(json.load(open('$MANIFEST_OUT'))['generated_from_commit'])")
 if [ "$GEN_COMMIT" = "$HEAD_SHA" ]; then
   assert "generated_from_commit matches HEAD" "pass"
 else
@@ -85,7 +85,7 @@ else
 fi
 
 # AC: Skills included as template tier
-SKILL_ENTRY=$(python3 -c "
+SKILL_ENTRY=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$MANIFEST_OUT'))
 for k, v in m['files'].items():
@@ -100,7 +100,7 @@ else
 fi
 
 # AC: Agents included as template tier
-AGENT_ENTRY=$(python3 -c "
+AGENT_ENTRY=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$MANIFEST_OUT'))
 for k, v in m['files'].items():
@@ -115,7 +115,7 @@ else
 fi
 
 # AC: settings.json included as merge tier with merge_key "hooks"
-SETTINGS_ENTRY=$(python3 -c "
+SETTINGS_ENTRY=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$MANIFEST_OUT'))
 e = m['files'].get('.claude/settings.json', {})
@@ -128,7 +128,7 @@ else
 fi
 
 # AC: CLAUDE.md included as user-init
-CLAUDE_ENTRY=$(python3 -c "
+CLAUDE_ENTRY=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$MANIFEST_OUT'))
 e = m['files'].get('CLAUDE.md', {})
@@ -141,7 +141,7 @@ else
 fi
 
 # AC: Hook scripts included with correct dest paths
-HOOK_DEST=$(python3 -c "
+HOOK_DEST=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$MANIFEST_OUT'))
 for k, v in m['files'].items():
@@ -156,7 +156,7 @@ else
 fi
 
 # AC: _implementation_plan_template_v6.md included
-TEMPLATE_ENTRY=$(python3 -c "
+TEMPLATE_ENTRY=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$MANIFEST_OUT'))
 e = m['files'].get('_implementation_plan_template_v6.md', {})
@@ -169,7 +169,7 @@ else
 fi
 
 # AC: Template-tier entries have sha256 matching actual hash
-SKILL_SHA=$(python3 -c "
+SKILL_SHA=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$MANIFEST_OUT'))
 for k, v in m['files'].items():
@@ -186,7 +186,7 @@ else
 fi
 
 # AC: Merge-tier entries do NOT have sha256
-MERGE_SHA=$(python3 -c "
+MERGE_SHA=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$MANIFEST_OUT'))
 e = m['files'].get('.claude/settings.json', {})
@@ -208,7 +208,7 @@ else
 fi
 
 # AC: File count is reasonable (should be substantial — skills + agents + hooks + templates)
-FILE_COUNT=$(python3 -c "import json; print(len(json.load(open('$MANIFEST_OUT'))['files']))")
+FILE_COUNT=$($_SERIOUS_JSON_BACKEND -c "import json; print(len(json.load(open('$MANIFEST_OUT'))['files']))")
 if [ "$FILE_COUNT" -gt 10 ]; then
   assert "Manifest has >10 file entries ($FILE_COUNT total)" "pass"
 else
@@ -250,7 +250,7 @@ BF3_TMPMANI=$(mktemp -t bf3manifest.XXXXXX)
 MANIFEST_PATH="$BF3_TMPMANI" bash "$REPO_ROOT/bin/generate-manifest.sh" "$REPO_ROOT" >/dev/null 2>&1
 
 # BF3.A: filter excludes serious-prospect-research entirely.
-BF3_PROSPECT_COUNT=$(python3 -c "import json; d=json.load(open('$BF3_TMPMANI')); print(len([k for k in d['files'] if 'serious-prospect-research' in k]))")
+BF3_PROSPECT_COUNT=$($_SERIOUS_JSON_BACKEND -c "import json; d=json.load(open('$BF3_TMPMANI')); print(len([k for k in d['files'] if 'serious-prospect-research' in k]))")
 if [ "$BF3_PROSPECT_COUNT" -eq 0 ]; then
   assert "BF3.A: regenerated manifest excludes serious-prospect-research entirely" "pass"
 else
@@ -262,7 +262,7 @@ BF3_MISSING=""
 for s in agent-teams checkpointing chrome-integration fast-mode headless-mode hooks \
          keybindings mcp-integration output-styles permissions plan-mode plugins \
          remote-control scheduled-tasks skills-and-commands status-line subagents worktrees; do
-  if ! python3 -c "import json,sys; d=json.load(open('$BF3_TMPMANI')); k='.claude/skills/$s/SKILL.md'; sys.exit(0 if k in d['files'] else 1)"; then
+  if ! $_SERIOUS_JSON_BACKEND -c "import json,sys; d=json.load(open('$BF3_TMPMANI')); k='.claude/skills/$s/SKILL.md'; sys.exit(0 if k in d['files'] else 1)"; then
     BF3_MISSING="$BF3_MISSING $s"
   fi
 done
@@ -273,7 +273,7 @@ else
 fi
 
 # BF3.C: total SKILL.md entries = 31 (13 public serious-* + 18 knowledge).
-BF3_SKILLMD_COUNT=$(python3 -c "import json; d=json.load(open('$BF3_TMPMANI')); print(len([k for k in d['files'] if k.endswith('SKILL.md')]))")
+BF3_SKILLMD_COUNT=$($_SERIOUS_JSON_BACKEND -c "import json; d=json.load(open('$BF3_TMPMANI')); print(len([k for k in d['files'] if k.endswith('SKILL.md')]))")
 if [ "$BF3_SKILLMD_COUNT" -eq 31 ]; then
   assert "BF3.C: regenerated manifest has exactly 31 SKILL.md entries (13 + 18)" "pass"
 else
@@ -288,7 +288,7 @@ echo "// not a skill — has no SKILL.md" > "$BF3_FAKE_REPO/.claude/skills/fake-
 ( cd "$BF3_FAKE_REPO" && git init -q && git config user.email "t@t" && git config user.name "t" && git add -A && git commit -q -m "init" )
 BF3_FAKE_MANI=$(mktemp -t bf3fakemanifest.XXXXXX)
 MANIFEST_PATH="$BF3_FAKE_MANI" bash "$REPO_ROOT/bin/generate-manifest.sh" "$BF3_FAKE_REPO" >/dev/null 2>&1
-BF3_FAKE_COUNT=$(python3 -c "import json; d=json.load(open('$BF3_FAKE_MANI')); print(len([k for k in d['files'] if 'fake-skill-no-md' in k]))")
+BF3_FAKE_COUNT=$($_SERIOUS_JSON_BACKEND -c "import json; d=json.load(open('$BF3_FAKE_MANI')); print(len([k for k in d['files'] if 'fake-skill-no-md' in k]))")
 if [ "$BF3_FAKE_COUNT" -eq 0 ]; then
   assert "BF3.D: filter excludes skill dirs without SKILL.md" "pass"
 else
@@ -297,7 +297,7 @@ fi
 rm -rf "$BF3_FAKE_REPO" "$BF3_FAKE_MANI"
 
 # BF3.E: _shared is still routed through section 1b.
-BF3_SHARED_COUNT=$(python3 -c "import json; d=json.load(open('$BF3_TMPMANI')); print(len([k for k in d['files'] if '_shared/' in k]))")
+BF3_SHARED_COUNT=$($_SERIOUS_JSON_BACKEND -c "import json; d=json.load(open('$BF3_TMPMANI')); print(len([k for k in d['files'] if '_shared/' in k]))")
 if [ "$BF3_SHARED_COUNT" -gt 0 ]; then
   assert "BF3.E: _shared still routed through section 1b" "pass"
 else

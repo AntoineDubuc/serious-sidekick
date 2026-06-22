@@ -54,7 +54,7 @@ else
 fi
 
 # AC: Non-hook keys preserved (statusLine, enabledPlugins, permissions, etc.)
-RESULT=$(python3 -c "
+RESULT=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$TMP_DIR/installed.json'))
 checks = []
@@ -74,7 +74,7 @@ else
 fi
 
 # AC: User's say command Stop hook preserved
-SAY_HOOK=$(python3 -c "
+SAY_HOOK=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$TMP_DIR/installed.json'))
 stop_hooks = m.get('hooks', {}).get('Stop', [])
@@ -91,7 +91,7 @@ else
 fi
 
 # AC: User's PostToolUse verify-plan-gate hook preserved
-PLAN_GATE=$(python3 -c "
+PLAN_GATE=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$TMP_DIR/installed.json'))
 post_hooks = m.get('hooks', {}).get('PostToolUse', [])
@@ -108,7 +108,7 @@ else
 fi
 
 # AC: All 32 PreToolUse hooks from template present
-PRE_COUNT=$(python3 -c "
+PRE_COUNT=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$TMP_DIR/installed.json'))
 count = 0
@@ -123,7 +123,7 @@ else
 fi
 
 # AC: All 6 serious Stop hooks from template present
-SERIOUS_STOP_COUNT=$(python3 -c "
+SERIOUS_STOP_COUNT=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$TMP_DIR/installed.json'))
 count = 0
@@ -140,7 +140,7 @@ else
 fi
 
 # AC: Total Stop hooks = 6 serious + 1 user say = 7
-TOTAL_STOP=$(python3 -c "
+TOTAL_STOP=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$TMP_DIR/installed.json'))
 count = 0
@@ -157,7 +157,7 @@ fi
 # --- Idempotency: merging twice produces same result ---
 cp "$TMP_DIR/installed.json" "$TMP_DIR/after_first_merge.json"
 merge_settings "$TMP_DIR/installed.json" "$TEMPLATE" >/dev/null 2>&1
-DIFF_RESULT=$(python3 -c "
+DIFF_RESULT=$($_SERIOUS_JSON_BACKEND -c "
 import json
 a = json.load(open('$TMP_DIR/after_first_merge.json'))
 b = json.load(open('$TMP_DIR/installed.json'))
@@ -174,7 +174,7 @@ cp "$GLOBAL" "$TMP_DIR/removal_test.json"
 # First merge all serious hooks in
 merge_settings "$TMP_DIR/removal_test.json" "$TEMPLATE" >/dev/null 2>&1
 # Now create a reduced template with only 2 Stop hooks
-python3 -c "
+$_SERIOUS_JSON_BACKEND -c "
 import json
 t = json.load(open('$TEMPLATE'))
 # Keep only first 2 Stop hooks
@@ -183,7 +183,7 @@ with open('$TMP_DIR/reduced_template.json', 'w') as f:
     json.dump(t, f, indent=2)
 "
 merge_settings "$TMP_DIR/removal_test.json" "$TMP_DIR/reduced_template.json" >/dev/null 2>&1
-AFTER_REMOVAL_SERIOUS=$(python3 -c "
+AFTER_REMOVAL_SERIOUS=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$TMP_DIR/removal_test.json'))
 count = 0
@@ -259,7 +259,7 @@ cat > "$TMP_DIR/empty_hooks_template.json" << 'EOF'
 EOF
 cp "$GLOBAL" "$TMP_DIR/preserve_test.json"
 merge_settings "$TMP_DIR/preserve_test.json" "$TMP_DIR/empty_hooks_template.json" >/dev/null 2>&1
-PRESERVED_SAY=$(python3 -c "
+PRESERVED_SAY=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$TMP_DIR/preserve_test.json'))
 for group in m.get('hooks', {}).get('Stop', []):
@@ -281,7 +281,7 @@ cat > "$TMP_DIR/fresh_install.json" << 'EOF'
 }
 EOF
 merge_settings "$TMP_DIR/fresh_install.json" "$TEMPLATE" >/dev/null 2>&1
-FRESH_PRE_COUNT=$(python3 -c "
+FRESH_PRE_COUNT=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$TMP_DIR/fresh_install.json'))
 count = 0
@@ -289,7 +289,7 @@ for group in m.get('hooks', {}).get('PreToolUse', []):
     count += len(group.get('hooks', []))
 print(count)
 ")
-FRESH_STATUSLINE=$(python3 -c "
+FRESH_STATUSLINE=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$TMP_DIR/fresh_install.json'))
 print('found' if 'statusLine' in m else 'missing')

@@ -143,7 +143,7 @@ else
 fi
 
 # AC: State file is valid JSON
-if python3 -c "import json; json.load(open('$T1_FIRST/.serious-sidekick-state.json'))" 2>/dev/null; then
+if $_SERIOUS_JSON_BACKEND -c "import json; json.load(open('$T1_FIRST/.serious-sidekick-state.json'))" 2>/dev/null; then
   assert "First run: state file is valid JSON" "pass"
 else
   assert "First run: state file is valid JSON" "fail"
@@ -166,7 +166,7 @@ echo ""
 
 # The state file should have file_hashes with entries
 if [ -f "$T1_FIRST/.serious-sidekick-state.json" ]; then
-  HASH_COUNT=$(python3 -c "
+  HASH_COUNT=$($_SERIOUS_JSON_BACKEND -c "
 import json
 data = json.load(open('$T1_FIRST/.serious-sidekick-state.json'))
 hashes = data.get('file_hashes', {})
@@ -181,7 +181,7 @@ print(len(hashes))
   fi
 
   # Check that installed_from_commit is set
-  INSTALLED_COMMIT=$(python3 -c "
+  INSTALLED_COMMIT=$($_SERIOUS_JSON_BACKEND -c "
 import json
 data = json.load(open('$T1_FIRST/.serious-sidekick-state.json'))
 print(data.get('installed_from_commit', ''))
@@ -194,7 +194,7 @@ print(data.get('installed_from_commit', ''))
   fi
 
   # Check installed_at is set
-  INSTALLED_AT=$(python3 -c "
+  INSTALLED_AT=$($_SERIOUS_JSON_BACKEND -c "
 import json
 data = json.load(open('$T1_FIRST/.serious-sidekick-state.json'))
 print(data.get('installed_at', ''))

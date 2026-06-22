@@ -58,7 +58,7 @@ else
 fi
 
 # AC: State file conforms to schema
-SCHEMA_CHECK=$(python3 -c "
+SCHEMA_CHECK=$($_SERIOUS_JSON_BACKEND -c "
 import json, sys
 with open('$STATE_FILE') as f:
     data = json.load(f)
@@ -81,7 +81,7 @@ else
 fi
 
 # AC: installed_from_commit matches
-INSTALLED_COMMIT=$(python3 -c "import json; print(json.load(open('$STATE_FILE'))['installed_from_commit'])")
+INSTALLED_COMMIT=$($_SERIOUS_JSON_BACKEND -c "import json; print(json.load(open('$STATE_FILE'))['installed_from_commit'])")
 if [ "$INSTALLED_COMMIT" = "$COMMIT_SHA" ]; then
   assert "installed_from_commit matches" "pass"
 else
@@ -89,7 +89,7 @@ else
 fi
 
 # AC: previous_commit matches
-STATE_PREV=$(python3 -c "import json; print(json.load(open('$STATE_FILE'))['previous_commit'])")
+STATE_PREV=$($_SERIOUS_JSON_BACKEND -c "import json; print(json.load(open('$STATE_FILE'))['previous_commit'])")
 if [ "$STATE_PREV" = "$PREV_COMMIT" ]; then
   assert "previous_commit matches" "pass"
 else
@@ -97,7 +97,7 @@ else
 fi
 
 # AC: installed_at is ISO 8601
-INSTALLED_AT=$(python3 -c "import json; print(json.load(open('$STATE_FILE'))['installed_at'])")
+INSTALLED_AT=$($_SERIOUS_JSON_BACKEND -c "import json; print(json.load(open('$STATE_FILE'))['installed_at'])")
 if echo "$INSTALLED_AT" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}'; then
   assert "installed_at is ISO 8601" "pass"
 else
@@ -105,7 +105,7 @@ else
 fi
 
 # AC: file_hashes maps dest paths to SHA-256 hashes
-HASH_CHECK=$(python3 -c "
+HASH_CHECK=$($_SERIOUS_JSON_BACKEND -c "
 import json
 data = json.load(open('$STATE_FILE'))
 hashes = data['file_hashes']
@@ -136,7 +136,7 @@ fi
 TARGET_DIR2="$TMP_DIR/target2"
 mkdir -p "$TARGET_DIR2"
 update_state "$TARGET_DIR2" "$COMMIT_SHA" "" "$FILE_HASHES"
-EMPTY_PREV=$(python3 -c "import json; print(repr(json.load(open('$TARGET_DIR2/.serious-sidekick-state.json'))['previous_commit']))")
+EMPTY_PREV=$($_SERIOUS_JSON_BACKEND -c "import json; print(repr(json.load(open('$TARGET_DIR2/.serious-sidekick-state.json'))['previous_commit']))")
 if [ "$EMPTY_PREV" = "''" ]; then
   assert "Empty previous_commit on first install is valid" "pass"
 else

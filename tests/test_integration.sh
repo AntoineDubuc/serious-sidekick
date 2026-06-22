@@ -122,7 +122,7 @@ fi
 # ---------------------------------------------------------------
 
 # Check serious hooks present (PreToolUse hooks from template)
-SERIOUS_PRE=$(python3 -c "
+SERIOUS_PRE=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$TARGET/settings.json'))
 count = 0
@@ -139,7 +139,7 @@ else
 fi
 
 # Check user's say command Stop hook preserved
-SAY_HOOK=$(python3 -c "
+SAY_HOOK=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$TARGET/settings.json'))
 for group in m.get('hooks', {}).get('Stop', []):
@@ -155,7 +155,7 @@ else
 fi
 
 # Check user's verify-plan-gate PostToolUse hook preserved
-PLAN_GATE=$(python3 -c "
+PLAN_GATE=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$TARGET/settings.json'))
 for group in m.get('hooks', {}).get('PostToolUse', []):
@@ -173,7 +173,7 @@ fi
 # ---------------------------------------------------------------
 # Step 7: Build file_hashes_json from a few manifest entries
 # ---------------------------------------------------------------
-FILE_HASHES_JSON=$(python3 -c "
+FILE_HASHES_JSON=$($_SERIOUS_JSON_BACKEND -c "
 import json, sys
 
 parsed_lines = sys.argv[1].strip().split('\n')
@@ -189,7 +189,7 @@ for line in parsed_lines:
 print(json.dumps(hashes))
 " "$PARSED")
 
-if validate_json <(echo "$FILE_HASHES_JSON") 2>/dev/null || python3 -c "import json; json.loads('''$FILE_HASHES_JSON''')" 2>/dev/null; then
+if validate_json <(echo "$FILE_HASHES_JSON") 2>/dev/null || $_SERIOUS_JSON_BACKEND -c "import json; json.loads('''$FILE_HASHES_JSON''')" 2>/dev/null; then
   assert "Built valid file_hashes_json from manifest entries" "pass"
 else
   assert "Built valid file_hashes_json from manifest entries" "fail"
@@ -198,7 +198,7 @@ fi
 # ---------------------------------------------------------------
 # Step 8: update_state with a commit SHA, empty previous, and hashes
 # ---------------------------------------------------------------
-COMMIT_SHA=$(python3 -c "
+COMMIT_SHA=$($_SERIOUS_JSON_BACKEND -c "
 import json
 m = json.load(open('$MANIFEST'))
 print(m['generated_from_commit'])
@@ -227,7 +227,7 @@ else
   assert "State file is valid JSON" "fail"
 fi
 
-SCHEMA_CHECK=$(python3 -c "
+SCHEMA_CHECK=$($_SERIOUS_JSON_BACKEND -c "
 import json
 data = json.load(open('$STATE_FILE'))
 checks = []
@@ -251,7 +251,7 @@ else
 fi
 
 # Verify installed_at is ISO 8601
-INSTALLED_AT=$(python3 -c "import json; print(json.load(open('$STATE_FILE'))['installed_at'])")
+INSTALLED_AT=$($_SERIOUS_JSON_BACKEND -c "import json; print(json.load(open('$STATE_FILE'))['installed_at'])")
 if echo "$INSTALLED_AT" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}'; then
   assert "State installed_at is ISO 8601" "pass"
 else

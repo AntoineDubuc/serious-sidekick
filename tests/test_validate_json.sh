@@ -49,14 +49,27 @@ else
   assert "validate_json exits 0 for nested JSON" "fail"
 fi
 
-# AC: validate_json uses detected backend — test with python3
+# AC: validate_json uses detected backend — test with whichever python is available
 SAVED_BACKEND="$_SERIOUS_JSON_BACKEND"
-_SERIOUS_JSON_BACKEND="python3"
-if validate_json "$TMP_DIR/valid.json"; then
-  assert "validate_json works with python3 backend" "pass"
-else
-  assert "validate_json works with python3 backend" "fail"
+_SERIOUS_TEST_PYTHON=""
+if command -v python3 >/dev/null 2>&1 \
+   && [ "$(python3 -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
+  _SERIOUS_TEST_PYTHON="python3"
+elif command -v python >/dev/null 2>&1 \
+   && [ "$(python -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
+  _SERIOUS_TEST_PYTHON="python"
 fi
+if [ -n "$_SERIOUS_TEST_PYTHON" ]; then
+  _SERIOUS_JSON_BACKEND="$_SERIOUS_TEST_PYTHON"
+  if validate_json "$TMP_DIR/valid.json"; then
+    assert "validate_json works with $_SERIOUS_TEST_PYTHON backend" "pass"
+  else
+    assert "validate_json works with $_SERIOUS_TEST_PYTHON backend" "fail"
+  fi
+else
+  echo "  SKIP: no working python found, skipping python backend test"
+fi
+unset _SERIOUS_TEST_PYTHON
 _SERIOUS_JSON_BACKEND="$SAVED_BACKEND"
 
 # Negative: invalid JSON exits 1

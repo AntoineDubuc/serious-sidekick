@@ -13,13 +13,29 @@
 SIDEKICK_HOME="${SERIOUS_SIDEKICK_HOME:-$HOME/.serious-sidekick}"
 STALENESS_FILE="$SIDEKICK_HOME/staleness.json"
 
+# Source shared library for JSON backend detection
+if [ -f "$SIDEKICK_HOME/lib/serious-common.sh" ]; then
+  source "$SIDEKICK_HOME/lib/serious-common.sh"
+else
+  # Fallback: detect python inline (advisory hook, never block)
+  if command -v python3 >/dev/null 2>&1 \
+     && [ "$(python3 -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
+    _SERIOUS_JSON_BACKEND="python3"
+  elif command -v python >/dev/null 2>&1 \
+     && [ "$(python -c "import json,sys; print('ok')" 2>/dev/null)" = "ok" ]; then
+    _SERIOUS_JSON_BACKEND="python"
+  else
+    exit 0  # Advisory hook — no python, no nudge, no block
+  fi
+fi
+
 # If no staleness file, exit silently
 if [ ! -f "$STALENESS_FILE" ]; then
   exit 0
 fi
 
 # Read stale_count from JSON
-STALE_COUNT=$(python3 -c "
+STALE_COUNT=$($_SERIOUS_JSON_BACKEND -c "
 import json, sys
 try:
     with open(sys.argv[1]) as f:

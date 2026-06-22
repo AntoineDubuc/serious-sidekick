@@ -327,7 +327,7 @@ do_git_pull() {
 
     # Step 2: validate that the regenerated file is valid JSON
     local json_err
-    if ! json_err=$(LC_ALL=C python3 -m json.tool "$SIDEKICK_HOME/manifest.json.new" 2>&1 >/dev/null); then
+    if ! json_err=$(LC_ALL=C $_SERIOUS_JSON_BACKEND -m json.tool "$SIDEKICK_HOME/manifest.json.new" 2>&1 >/dev/null); then
       json_err=$(printf '%s' "$json_err" | _redact_creds)
       echo "ERROR: regenerated manifest.json is not valid JSON:" >&2
       printf '  %s\n' "$json_err" >&2
@@ -360,7 +360,7 @@ do_git_pull() {
     local committed_canon="" regen_canon=""
     if [ -f "$SIDEKICK_HOME/manifest.json" ]; then
       committed_short=$(shasum -a 256 "$SIDEKICK_HOME/manifest.json" 2>/dev/null | awk '{print substr($1,1,8)}')
-      committed_canon=$(LC_ALL=C python3 -c "
+      committed_canon=$(LC_ALL=C $_SERIOUS_JSON_BACKEND -c "
 import json, sys, hashlib
 with open(sys.argv[1]) as f:
     m = json.load(f)
@@ -370,7 +370,7 @@ print(hashlib.sha256(out.encode('utf-8')).hexdigest())
 " "$SIDEKICK_HOME/manifest.json" 2>/dev/null)
     fi
     regen_short=$(shasum -a 256 "$SIDEKICK_HOME/manifest.json.new" 2>/dev/null | awk '{print substr($1,1,8)}')
-    regen_canon=$(LC_ALL=C python3 -c "
+    regen_canon=$(LC_ALL=C $_SERIOUS_JSON_BACKEND -c "
 import json, sys, hashlib
 with open(sys.argv[1]) as f:
     m = json.load(f)
@@ -588,7 +588,7 @@ distribute_to_dir() {
           if [ "$current_hash" = "$new_hash" ]; then
             current=$((current + 1))
             # Still record the hash
-            file_hashes=$(python3 -c "
+            file_hashes=$($_SERIOUS_JSON_BACKEND -c "
 import json, sys
 h = json.loads(sys.argv[1])
 h[sys.argv[2]] = sys.argv[3]
@@ -601,7 +601,7 @@ print(json.dumps(h))
         if cp "$source_path" "$dest_path" 2>/dev/null; then
           local new_hash
           new_hash=$(hash_file "$dest_path" 2>/dev/null || echo "")
-          file_hashes=$(python3 -c "
+          file_hashes=$($_SERIOUS_JSON_BACKEND -c "
 import json, sys
 h = json.loads(sys.argv[1])
 h[sys.argv[2]] = sys.argv[3]
@@ -651,7 +651,7 @@ print(json.dumps(h))
           # Record existing hash for state tracking
           local existing_hash
           existing_hash=$(hash_file "$dest_path" 2>/dev/null || echo "")
-          file_hashes=$(python3 -c "
+          file_hashes=$($_SERIOUS_JSON_BACKEND -c "
 import json, sys
 h = json.loads(sys.argv[1])
 h[sys.argv[2]] = sys.argv[3]
@@ -672,7 +672,7 @@ print(json.dumps(h))
           if cp "$source_path" "$dest_path" 2>/dev/null; then
             local new_hash
             new_hash=$(hash_file "$dest_path" 2>/dev/null || echo "")
-            file_hashes=$(python3 -c "
+            file_hashes=$($_SERIOUS_JSON_BACKEND -c "
 import json, sys
 h = json.loads(sys.argv[1])
 h[sys.argv[2]] = sys.argv[3]
@@ -738,7 +738,7 @@ do_check() {
   fi
 
   # Write staleness.json
-  python3 -c "
+  $_SERIOUS_JSON_BACKEND -c "
 import json, sys
 from datetime import datetime, timezone
 
@@ -832,7 +832,7 @@ do_verify() {
     # Unparseable state file → exit 2.
     if ! validate_json "$state_file" 2>/dev/null; then
       local sf_err
-      sf_err=$(python3 -c "
+      sf_err=$($_SERIOUS_JSON_BACKEND -c "
 import json, sys
 try:
     json.load(open(sys.argv[1]))
@@ -846,7 +846,7 @@ except Exception as e:
 
     # Read installed_from_commit + file_hashes from state file.
     local installed_from_commit
-    installed_from_commit=$(python3 -c "
+    installed_from_commit=$($_SERIOUS_JSON_BACKEND -c "
 import json, sys
 data = json.load(open(sys.argv[1]))
 print(data.get('installed_from_commit', ''))
@@ -871,7 +871,7 @@ print(data.get('installed_from_commit', ''))
       if [ -f "$dest_path" ]; then
         local actual_dest_hash recorded_dest_hash
         actual_dest_hash=$(hash_file "$dest_path" 2>/dev/null || echo "")
-        recorded_dest_hash=$(python3 -c "
+        recorded_dest_hash=$($_SERIOUS_JSON_BACKEND -c "
 import json, sys
 data = json.load(open(sys.argv[1]))
 print(data.get('file_hashes', {}).get(sys.argv[2], ''))
@@ -950,13 +950,13 @@ do_rollback() {
     exit 1
   fi
 
-  current_installed=$(python3 -c "
+  current_installed=$($_SERIOUS_JSON_BACKEND -c "
 import json, sys
 data = json.load(open(sys.argv[1]))
 print(data.get('installed_from_commit', ''))
 " "$state_file")
 
-  previous=$(python3 -c "
+  previous=$($_SERIOUS_JSON_BACKEND -c "
 import json, sys
 data = json.load(open(sys.argv[1]))
 print(data.get('previous_commit', ''))
@@ -1054,7 +1054,7 @@ do_migrate() {
       # it signals "do not trust on-disk hashes" to the freshness gate.)
       local migration_ts
       migration_ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-      python3 -c "
+      $_SERIOUS_JSON_BACKEND -c "
 import json, sys
 state = {
     'installed_from_commit': '',
@@ -1087,7 +1087,7 @@ with open(sys.argv[2], 'w') as f:
       local existing_hash
       existing_hash=$(hash_file "$dest_path" 2>/dev/null || echo "")
       if [ -n "$existing_hash" ]; then
-        file_hashes=$(python3 -c "
+        file_hashes=$($_SERIOUS_JSON_BACKEND -c "
 import json, sys
 h = json.loads(sys.argv[1])
 h[sys.argv[2]] = sys.argv[3]
@@ -1192,7 +1192,7 @@ if [ "$NO_GLOBAL" != "true" ]; then
     if [ -f "$_state_file" ]; then
       PRIOR_STATE_PRESENT[$i]="true"
       # S1: isinstance(v,str) wrapper — non-string types coerce to ''.
-      installed=$(python3 -c "import json,sys; v=json.load(open(sys.argv[1])).get('installed_from_commit',''); print(v if isinstance(v,str) else '')" "$_state_file" 2>/dev/null)
+      installed=$($_SERIOUS_JSON_BACKEND -c "import json,sys; v=json.load(open(sys.argv[1])).get('installed_from_commit',''); print(v if isinstance(v,str) else '')" "$_state_file" 2>/dev/null)
       # S3: SHA-shape regex — reject anything that isn't a git short/full SHA.
       if [ -n "$installed" ] && ! [[ "$installed" =~ ^[0-9a-f]{7,40}$ ]]; then
         echo "WARNING: $_state_dir state file has non-SHA installed_from_commit value (corrupt or hand-edited); treating as redistribute" >&2

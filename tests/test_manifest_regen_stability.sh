@@ -240,7 +240,7 @@ setup_sandbox "$T3C_BASE"
 # Make the committed manifest deliberately different from what regen will emit
 # (simulating either an upstream that drifted or a user-edited manifest).
 # Inject a custom field while leaving JSON valid.
-python3 -c "
+$_SERIOUS_JSON_BACKEND -c "
 import json
 p = '$SANDBOX_HOME/manifest.json'
 with open(p) as f:
@@ -366,7 +366,7 @@ echo "--- T3.E: negative — user edit triggers NOTE + override (no silent rever
 T3E_BASE="$TMP_DIR/t3e"
 setup_sandbox "$T3E_BASE"
 # User adds a custom field by hand (simulates "I'm experimenting"):
-python3 -c "
+$_SERIOUS_JSON_BACKEND -c "
 import json
 p = '$SANDBOX_HOME/manifest.json'
 with open(p) as f:

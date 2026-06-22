@@ -66,14 +66,14 @@ fi
 SAVED_BACKEND="$_SERIOUS_JSON_BACKEND"
 _SERIOUS_JSON_BACKEND="jq"
 HASH_JQ=$(hash_file "$TMP_DIR/test.txt")
-_SERIOUS_JSON_BACKEND="python3"
+_SERIOUS_JSON_BACKEND="python"
 HASH_PY=$(hash_file "$TMP_DIR/test.txt")
 _SERIOUS_JSON_BACKEND="$SAVED_BACKEND"
 if [ "$HASH_JQ" = "$HASH_PY" ] && [ "$HASH_JQ" = "$EXPECTED_HASH" ]; then
   assert "hash_file is backend-independent" "pass"
 else
   assert "hash_file is backend-independent" "fail" \
-    "jq=$HASH_JQ, python3=$HASH_PY"
+    "jq=$HASH_JQ, python=$HASH_PY"
 fi
 
 # Negative: hash_file on nonexistent file exits non-zero
