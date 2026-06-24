@@ -6,6 +6,9 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# cross-platform: paths handed to native exes (python) must be readable on Windows; no-op on macOS/Linux
+source "$REPO_ROOT/tests/lib/portable.sh"
+REPO_ROOT="$(winpath "$REPO_ROOT")"
 HOOK_SCRIPT="$REPO_ROOT/.claude/skills/serious-code/hooks/log-dispatch.sh"
 SETTINGS_FILE="$REPO_ROOT/.claude/settings.json"
 FIXTURES_DIR="$REPO_ROOT/tests/fixtures/dispatch-audit"

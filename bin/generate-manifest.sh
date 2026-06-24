@@ -56,6 +56,12 @@ def hash_file(path):
 
 def add_file(source_rel, ownership, dest, merge_key=None):
     \"\"\"Add a file entry to the manifest.\"\"\"
+    # Cross-platform: emit POSIX forward-slash separators in manifest keys and
+    # dest values regardless of host OS. os.path.relpath/os.path.join produce
+    # backslashes on Windows; normalizing here keeps manifest.json identical on
+    # macOS and Windows so SHA-verified distribution works on both. No-op on POSIX.
+    source_rel = source_rel.replace(os.sep, '/')
+    dest = dest.replace(os.sep, '/')
     full_path = os.path.join(repo_root, source_rel)
     if not os.path.isfile(full_path):
         print(f'WARNING: File disappeared (TOCTOU): {source_rel}', file=sys.stderr)

@@ -3,6 +3,9 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# cross-platform: paths handed to native exes (python) must be readable on Windows; no-op on macOS/Linux
+source "$REPO_ROOT/tests/lib/portable.sh"
+REPO_ROOT="$(winpath "$REPO_ROOT")"
 source "$REPO_ROOT/lib/serious-common.sh"
 
 ERRORS=0

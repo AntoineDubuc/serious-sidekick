@@ -180,6 +180,11 @@
       "ownership": "template",
       "sha256": "3e466b09668414407a48900c13e96f3a629641c083229e54d85e93fe3e884dc4"
     },
+    ".claude/skills/serious-code/hooks/protected-path-guard.sh": {
+      "dest": "skills/serious-code/hooks/protected-path-guard.sh",
+      "ownership": "template",
+      "sha256": "e3b1cac5acd4d857e8086531ac4eeecf872b40448dfb3c2392972f5b402a9873"
+    },
     ".claude/skills/serious-code/hooks/tdd-gate.sh": {
       "dest": "skills/serious-code/hooks/tdd-gate.sh",
       "ownership": "template",
@@ -365,6 +370,11 @@
       "ownership": "template",
       "sha256": "f0a5873d3929af7a498f55dbf746028a6acbc4f423f7ca2d4c6351ad49bf9b6b"
     },
+    ".claude/skills/serious-simple-plan/SKILL.md": {
+      "dest": "skills/serious-simple-plan/SKILL.md",
+      "ownership": "template",
+      "sha256": "7f443d2c9f67b62cec57e6921c8cf3ea2cfe1a8af8371aa6506b392cfcb76c96"
+    },
     ".claude/skills/serious-status/SKILL.md": {
       "dest": "skills/serious-status/SKILL.md",
       "ownership": "template",
@@ -398,7 +408,7 @@
     "CLAUDE.md": {
       "dest": "CLAUDE.md",
       "ownership": "user-init",
-      "sha256": "06ff3620adee4f6108f459b24578dbcceb15c3122c30ac0eb562f4a0962cfcf4"
+      "sha256": "77e86cca807011b73ee1adeb3366a91b488fe0ddc83c24521e4f1e183a08a8a7"
     },
     "_anti-rationalization-core.md": {
       "dest": "../_anti-rationalization-core.md",
@@ -411,6 +421,6 @@
       "sha256": "c65b3acedb85cee57151957f0ace6e9261a81f693e5cc17466032693a95f139d"
     }
   },
-  "generated_from_commit": "9f9fdd473a4d75b9d7721050122b3a40764caa3b",
+  "generated_from_commit": "2df13121b94bf41ab71dfb7e7568a03522efb21c",
   "version": 1
 }
