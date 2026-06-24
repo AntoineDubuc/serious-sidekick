@@ -10,6 +10,17 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # cross-platform: paths handed to native exes (python) must be readable on Windows; no-op on macOS/Linux
 source "$REPO_ROOT/tests/lib/portable.sh"
 REPO_ROOT="$(winpath "$REPO_ROOT")"
+# Source the shared lib so $_SERIOUS_JSON_BACKEND (python3/python/jq, detected here)
+# is set for this test's own JSON assertions; otherwise `set -u` aborts as unbound.
+source "$REPO_ROOT/lib/serious-common.sh"
+
+# Windows speed/stability: force core.autocrlf=false for every git op in this test
+# (and in serious-update, which inherits this env). The fixtures copy 80+ files; with
+# the host's global autocrlf=true, each clone/pull reprocesses line endings, which is
+# the dominant cost on Windows and floods stderr with LF->CRLF warnings. Forcing LF
+# also keeps file hashes aligned with the LF-based manifest. No-op on macOS/Linux.
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.autocrlf GIT_CONFIG_VALUE_0=false
+
 ERRORS=0
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
@@ -91,7 +102,7 @@ add_remote_commit() {
 
   # Clone remote, make changes, push back
   local tmp_clone="$TMP_DIR/tmp_clone_$$_$RANDOM"
-  git clone -q "$remote_dir" "$tmp_clone"
+  git clone -q --local "$remote_dir" "$tmp_clone"
   cd "$tmp_clone"
   git config user.email "test@test.com"
   git config user.name "Test"
