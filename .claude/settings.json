@@ -206,6 +206,11 @@
             "if": "Edit(*review_verdict*)",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-review/hooks/review-theater-gate.sh\"",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-code/hooks/protected-path-guard.sh\"",
+            "timeout": 10
           }
         ]
       }
