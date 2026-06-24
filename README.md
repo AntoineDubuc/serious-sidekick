@@ -152,6 +152,7 @@ Seven core pipeline steps, plus an optional ingestion step. Each produces artifa
 | `/serious-mock-ups` | UI wireframes and visuals before planning |
 | `/serious-scope` | Scope manifest — splits research into plan boundaries |
 | `/serious-plan` | Implementation plan with TDD protocol |
+| `/serious-simple-plan` | Restraint-focused alternative to `/serious-plan` — reuse-first, minimal blast radius, `--avoid` fences enforced at code time |
 | `/serious-review` | Plan quality gate — 3 mandatory agents, 10 anti-slop checks |
 | `/serious-code` | Plan execution with 5 verification agents |
 | `/serious-debug` | Systematic debugging — 3 modes, reproducer-driven feedback |

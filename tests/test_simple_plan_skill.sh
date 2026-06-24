@@ -105,7 +105,7 @@ if echo "$SKILL_CONTENT" | grep -qiE 'strip.*(CR/LF|control)'; then
 else
   assert "AC3: instructs stripping CR/LF and control characters" 1
 fi
-if echo "$SKILL_CONTENT" | grep -qF '..' && echo "$SKILL_CONTENT" | grep -qiE 'reject.*(\.\.|leading|/)'; then
+if echo "$SKILL_CONTENT" | grep -qiE 'reject.*\.\.' && echo "$SKILL_CONTENT" | grep -qiE 'leading.*(/|slash)'; then
   assert "AC3: rejects entries with .. segments or a leading /" 0
 else
   assert "AC3: rejects entries with .. segments or a leading /" 1
@@ -251,11 +251,11 @@ else
   assert "AC11: instructs annotating invented restraint criteria with [NO SOURCE: reason]" 1
 fi
 
-# --- NEGATIVE: working planner untouched (git diff --exit-code) ---
-if git -C "$REPO_ROOT" diff --exit-code -- .claude/skills/serious-plan/SKILL.md >/dev/null 2>&1; then
-  assert "NEG: .claude/skills/serious-plan/SKILL.md has no uncommitted changes" 0
+# --- NEGATIVE: working planner untouched (vs committed HEAD — catches staged + unstaged) ---
+if git -C "$REPO_ROOT" diff HEAD --exit-code -- .claude/skills/serious-plan/SKILL.md >/dev/null 2>&1; then
+  assert "NEG: .claude/skills/serious-plan/SKILL.md unchanged vs HEAD" 0
 else
-  assert "NEG: .claude/skills/serious-plan/SKILL.md has no uncommitted changes" 1
+  assert "NEG: .claude/skills/serious-plan/SKILL.md unchanged vs HEAD" 1
 fi
 
 # --- NEGATIVE: no stub patterns ---
