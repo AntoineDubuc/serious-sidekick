@@ -108,6 +108,8 @@ Seven core pipeline steps, plus an optional ingestion step. Each produces artifa
 | 6 | `/serious-review` | Adversarial plan review — 3 mandatory agents read the plan cold |
 | 7 | `/serious-code` | Execution with 5 verification agents, TDD enforcement, and completion gates |
 
+> **Alternative at step 5:** `/serious-simple-plan` is a restraint-focused stand-in for `/serious-plan` — same pipeline slot, leaner output (reuse-first, minimal blast radius), with an optional `--avoid` fence list enforced at code time.
+
 **Research feeds plans.** Findings become constraints. Nothing is invented mid-implementation.
 
 **Plans feed code.** TDD sequences are defined before a single line is written. Anti-rationalization tables tell the AI what it's NOT allowed to skip.
