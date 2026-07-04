@@ -133,6 +133,21 @@ Run all structural checks against the plan artifact. For each check, produce spe
 
 ---
 
+### Check 7: Integration Seam Ownership
+
+**What it catches:** New components the plan builds but never wires — a task creates a class/service/handler/coordinator/widget/route, but no task names the call site that instantiates it and invokes its entry method.
+
+**What to look for:**
+- Enumerate every NEW component the plan creates (new files under Key components / new classes).
+- For each, find a task that names its call site (`file:function`) OR an explicit `[SEAM DEFERRED: ...]` annotation.
+- For features split across 2+ component tasks, verify a dedicated integration task exists with an end-to-end, runtime-phrased acceptance criterion.
+
+**PASS/FAIL criterion:** PASS if every new component has a named caller (existing, owned by a task, or explicitly deferred) and multi-component features have an integration task. FAIL if any new component is an unowned seam.
+
+**Severity guidance:** Critical per unowned seam in a multi-component feature (plan will ship dead code). Major per single new component with no named caller.
+
+---
+
 ## Output
 
 Produce the following structured markdown report:
@@ -142,7 +157,7 @@ Produce the following structured markdown report:
 
 **Plan:** {plan file path}
 **Verdict:** PASS | FAIL
-**Checks run:** 6
+**Checks run:** 7
 **Checks passed:** {N} / 6
 **Total findings:** {N}
 
@@ -185,6 +200,12 @@ Produce the following structured markdown report:
   - Task {N}: {issue} — {severity}
   - ...
 
+#### Check 7: Integration Seam Ownership — PASS | FAIL
+- **New components with a named caller:** {N} / {total}
+- **Unowned seams:**
+  - {Component}: no call site named — {severity}
+  - ...
+
 ### Finding Summary
 
 | # | Check | Severity | Location | Finding |
@@ -198,13 +219,13 @@ Produce the following structured markdown report:
 
 ## Verdict Rules
 
-- **PASS** — All 6 checks pass (zero Critical or Major findings)
+- **PASS** — All 7 checks pass (zero Critical or Major findings)
 - **FAIL** — Any check has a Critical finding, OR 3+ Major findings across all checks
 - Findings are tagged: **Critical** (blocks implementation), **Major** (causes rework), **Minor** (cosmetic or low-risk)
 
 ## Rules
 
-1. **Run all 6 checks.** No skipping.
+1. **Run all 7 checks.** No skipping.
 2. **No fixes.** You are a reviewer, not an editor. Do not modify any files.
 3. **Be specific.** Quote exact text, reference section headers and task numbers.
 4. **Do NOT assess business value or feature correctness.** That is the persona pipeline's job. You verify structure only.

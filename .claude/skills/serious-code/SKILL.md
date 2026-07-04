@@ -215,6 +215,7 @@ source: # Set to the path of the implementation_plan.md consumed
 | 5 | "The guardrail table doesn't apply to this situation" | It applies unconditionally. If you're reasoning about why a row doesn't apply, that IS the rationalization the row describes. | Second-order rationalization. The table exists because of situations that "seemed different." |
 | 6 | "The plan says X but that's not actually needed" | The plan is the contract. If it's wrong, flag it as BLOCKED. Do not silently skip. | Silent scope reduction is the #1 cause of downstream plan failures. Every skipped item cascades. |
 | 7 | "A general description captures the intent — the implementer will know what to do" | Name the file, the function, the type, the line range. No hedge words. | Every downstream failure in the evidence log traces to vague language ("consider", "as needed") in upstream artifacts. Vague inputs produce vague outputs. |
+| 8 | "Each component task passed its own gate, so the feature is done" | A feature split across component tasks is NOT done until a task OWNS the integration seam: every new component is instantiated and its entry method called from real lifecycle code. Grep for non-test callers of each new class's entry method before declaring done. | Component tasks build parts; nobody builds the wiring. Each part passes in isolation while the assembled feature is disconnected and fails silently on device — `RegionMonitorService.startMonitoring` (0 callers) and `WanderingBurstCoordinator` (never instantiated), 2026-07. |
 
 <!-- END GUARDRAILS -->
 
@@ -477,21 +478,38 @@ INSTRUCTIONS:
    a. Search the codebase for implementing code (grep, read files)
    b. Determine: does code exist that implements this criterion?
    c. Report: PASS (with file:line evidence) or FAIL (not found)
-3. For EACH "visible to user" acceptance criterion, run the
-   REACHABILITY CHECK (see below)
+3. For EACH NEW component this task introduces — widget, screen, service,
+   handler, coordinator, route, use-case, cubit/bloc, or ANY class with a
+   public entry method — run the REACHABILITY CHECK (see below). This is
+   NOT limited to "visible to user" ACs: a background service the user
+   never sees can still be dead code.
 4. Output a structured report with every AC, its verdict, and evidence
 
-REACHABILITY CHECK (for "visible to user" ACs):
+REACHABILITY CHECK (for EVERY new component — user-visible or not):
 Code existing in a file is NOT enough. The code must be WIRED IN.
-For each new component/widget/view/endpoint:
-   a. Find the new component (class, function, widget, route handler)
-   b. Find its PARENT CONTAINER — the file that should render/call/mount it
-   c. Verify the parent container IMPORTS the new component
-   d. Verify the parent container INSTANTIATES or CALLS the new component
-   e. If the new component REPLACES an old one, verify the old one is
-      REMOVED from the parent container
-   f. Report: WIRED (with parent file:line showing import + usage)
-      or DEAD CODE (component exists but no parent references it)
+A component is "wired in" only if PRODUCTION (non-test) code
+instantiates it AND calls its entry method(s) at a real lifecycle moment.
+For each new component/widget/view/endpoint/service/handler/coordinator:
+   a. Find the new component (class, function, widget, route/platform handler, service)
+   b. MECHANICAL CALLER GREP (mandatory — do this before reasoning):
+      grep the whole source tree for the class name AND for each public
+      entry method, then EXCLUDE test files and the definition file itself:
+        grep -rn "ClassName" <src> | grep -v _test | grep -v <def_file>
+        grep -rn "\.entryMethod(" <src> | grep -v _test
+      ZERO non-test callers of the constructor OR the entry method = DEAD
+      CODE = FAIL. A doc-comment mention (/// [ClassName]) is NOT a caller.
+      A string constant equal to the method name is NOT a caller.
+   c. Find its PARENT CONTAINER / CALL SITE — the file:function that
+      instantiates, mounts, or calls it at a real lifecycle moment
+      (app start, DI registration, route push, an arming/enable toggle,
+      an event/platform-channel handler).
+   d. Verify the call site IMPORTS the new component
+   e. Verify the call site INSTANTIATES the component AND reaches its entry
+      method (a class constructed but whose entry method is never called
+      is still dead)
+   f. If the new component REPLACES an old one, verify the old one is REMOVED
+   g. Report: WIRED (caller file:line showing import + instantiation +
+      entry-method call) or DEAD CODE (exists but no non-test caller)
 
 DEAD CODE = FAIL. A component that exists but is never rendered,
 called, or mounted is not implemented — it is dead code.
@@ -686,7 +704,7 @@ If `/serious-code --resume` is invoked or the orchestrator detects an existing `
 11. **The completion report is not optional.** Generate `completion_report.md` with full evidence summary. If the session is interrupted, resume must generate it.
 12. **The Completion Gate is enforced by a stop hook.** The hook (registered in `.claude/settings.json` by `/serious-init`) checks that every task evidence directory contains `gate_passed.md`. If any are missing, the session cannot exit (exit code 2). You MUST run Step 2.5 for every task. There is no way around this — the hook runs outside your control.
 13. **"INFRASTRUCTURE READY" is not a valid status.** Every acceptance criterion is either PASS or FAIL. There is no partial credit. If code doesn't exist for an AC, it's a FAIL, even if related infrastructure was built.
-14. **Dead code is not implementation.** A widget/component/handler that exists in its own file but is never imported, instantiated, or mounted by a parent container is dead code. The Completion Gate must verify reachability for all "visible to user" ACs: find the parent container, confirm it imports the new component, confirm it instantiates/renders it, confirm any replaced component is removed. Dead code = FAIL.
+14. **Dead code is not implementation.** Any NEW component — widget, screen, service, handler, coordinator, route, use-case, cubit/bloc, or any class with a public entry method — that exists in its own file but is never imported, instantiated, mounted, or called by PRODUCTION (non-test) code is dead code. This is NOT limited to "visible to user" ACs: a background service the user never sees (a geofence monitor, a burst coordinator) is dead code if nothing wires it in. The Completion Gate must run the REACHABILITY CHECK for EVERY new component the task introduces: (a) mechanically grep for non-test callers of the class AND its public entry methods — zero callers = DEAD CODE = FAIL; a doc-comment mention or a same-named string constant is NOT a caller; (b) confirm the call site imports it; (c) confirm it is instantiated AND its entry method is reached at a real lifecycle moment; (d) confirm any replaced component is removed. Dead code = FAIL.
 15. **Stub code must be caught before verification.** Step 1.25 scans for `{STUB_PATTERNS}` after implementation. If stubs are found, the implementer must replace them with real code before proceeding. An empty method body or TODO placeholder that reaches verification is a process failure.
 16. **Inter-plan regression is mandatory for multi-plan phases.** After merging a phase's worktrees (Step 1f), re-verify all previous phases' visible-to-user ACs using `{RUNTIME_VERIFY_CMD}`. If any regress, stop and report before starting the next phase. A green phase that silently breaks a previous phase is worse than a red phase.
 

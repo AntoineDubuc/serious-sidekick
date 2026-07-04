@@ -739,6 +739,9 @@ This section provides context for each task. Read the relevant description befor
 - [Component/file 2]
 - [Component/file 3]
 
+**Call site (new components only):** For every NEW class/service/handler/coordinator/widget/route this task creates, name the exact `file:function` that instantiates it and calls its entry method, plus the lifecycle moment it fires. If the caller is built by another task, name that task (it owns the seam). If nothing calls it yet, annotate `[SEAM DEFERRED: closed by <plan/task>]` and add the component to Out of Scope.
+- [NewComponent] <- instantiated + entry method called from `[file:function]` at [lifecycle moment]
+
 **Acceptance criteria:**
 - [ ] [Positive criterion 1 — specific, testable, behavioral]
 - [ ] [Positive criterion 2]
@@ -774,6 +777,9 @@ This section provides context for each task. Read the relevant description befor
 **Key components:**
 - [Component/file 1]
 - [Component/file 2]
+
+**Call site (new components only):** For every NEW class/service/handler/coordinator/widget/route this task creates, name the exact `file:function` that instantiates it and calls its entry method, plus the lifecycle moment it fires. If the caller is built by another task, name that task (it owns the seam). If nothing calls it yet, annotate `[SEAM DEFERRED: closed by <plan/task>]` and add the component to Out of Scope.
+- [NewComponent] <- instantiated + entry method called from `[file:function]` at [lifecycle moment]
 
 **Acceptance criteria:**
 - [ ] [Positive criterion 1]

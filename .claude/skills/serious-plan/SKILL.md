@@ -253,6 +253,12 @@ After Task 0, create implementation tasks:
 
 **The final task must always be a user-visible verification:** the same smoke test from Task 0, which should now pass.
 
+**Multi-component features require a dedicated integration task.** If the feature is decomposed into 2+ tasks that only produce a working feature once wired together (e.g., a Dart facade + native platform code + a state machine), the plan MUST include one task whose sole job is to CLOSE THE SEAM between them. This integration task:
+- Is separate from the component-build tasks. A build task ("create X") may NOT double as the seam owner unless it is named as such and carries the end-to-end AC below.
+- Has at least one **end-to-end acceptance criterion phrased as a runtime behavior spanning the components** — e.g. "With the screen locked, arming the safe-zone registers the native boundary AND a `WanderingBurstCoordinator` instance is live and receiving callbacks." NOT "component X is called."
+- Names the call site: which `file:function` instantiates each component and invokes its entry method, at which lifecycle moment.
+Building N components and never wiring them is the #1 silent-failure mode: every part passes its own gate while the assembled feature is disconnected. The seam is real work — give it a task and an owner.
+
 ### Evidence Generation Protocol
 - Copy from the v6 template — adapt the evidence types table to this project's task categories
 - Set up the evidence directory structure
@@ -275,6 +281,10 @@ For each task, fill in:
   - What renders data from the changed data source?
   - What caches/indexes recompute when this data changes?
   - List each downstream consumer and whether it handles the new behavior correctly.
+- **Call site (for every NEW component)** — for each new class/service/handler/coordinator/widget/route/cubit this task creates, name the EXACT `file:function` in the lifecycle that will instantiate it AND call its entry method (app bootstrap, DI/get_it registration, route push, an arming/enable toggle, an event handler, a platform-channel listener, etc.). "Built and unit-tested" is NOT "wired in." Exactly one of three cases must be true and stated:
+  - **Caller already exists** → cite `file:function`, and add an acceptance criterion asserting that caller now invokes the new component.
+  - **Caller is built by another task in THIS plan** → name that task number. That task now OWNS the seam and must carry an acceptance criterion that wires this component in. (If no such task exists, create one — see the Master Checklist integration-task rule.)
+  - **Nothing calls it yet** (a future plan closes the seam) → annotate `[SEAM DEFERRED: closed by <plan/task>; feature is INERT until then]` AND list it under Out of Scope. A component with no current and no planned caller is dead code — do not plan it.
 - **Reference implementation** *(when applicable)* — if the research identified sync pairs (functions that must produce equivalent output), specify the counterpart function that this task's code must match. Format: `Match [function name] at [file:line] — case-for-case, field-for-field.` This tells the implementer exactly what to stay in sync with, preventing drift between parallel code paths.
 - **Source traceability** — for each acceptance criterion, cite the upstream source: `[Source: research.md#Finding-3]` or `[Source: manifest.md#Plan-1]`. Criteria without a source citation are either invented (remove them) or represent a research gap (flag for user review with `[NO SOURCE: reason]`).
 - **Acceptance criteria** — concrete, testable `- [ ]` items (see quality bar below)
@@ -325,6 +335,8 @@ Before presenting to the user, verify each plan:
 - [ ] If research identified sync pairs, every task that modifies one side of a pair has a Reference Implementation field pointing to the other side
 - [ ] **No hedge language in task descriptions.** No "consider whether", "you might want to", "think about", "it may be worth". Every Note must state a decision with a file:line reference, not present options for the implementing agent to choose from. If a decision hasn't been made, it's a planning gap — resolve it now, don't defer it to the implementer.
 - [ ] **Every acceptance criterion has a `[Source: ...]` citation** or an explicit `[NO SOURCE: reason]` annotation. Criteria without either are unsigned — they may be invented by the agent rather than derived from research.
+- [ ] **Every NEW component names its call site.** For each new class/service/handler/coordinator/widget/route the plan creates, a `file:function` call site is named — existing, or an owning task number, or an explicit `[SEAM DEFERRED: ...]` annotation. No new component is left with an unnamed caller.
+- [ ] **Multi-component features have a dedicated integration task** with at least one end-to-end, runtime-phrased acceptance criterion that spans the components and names the wiring call site. (N/A only if the feature is genuinely single-component.)
 
 ---
 
