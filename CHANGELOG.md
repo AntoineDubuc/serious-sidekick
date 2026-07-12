@@ -6,6 +6,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ---
 
+## [1.9.0] — 2026-07-12
+
+### Code-aware review + a debloat pass — catch wrongness AND over-building before code
+
+The cold-read reviewers (anti-slop, structural, security) judge a plan on its own words — they can't open the codebase. That let two whole classes of defect through: a plan that's beautifully written but **wrong against the real source** (an inert/partial fix, a half-coupled change, a bug that's already fixed), and a plan that's correct but **twice the size it needs to be** (a helper that already exists, a fix broader than the bug). Both bit us repeatedly. This release adds two code-aware reviewers and a standalone trim pass, and makes the review gate actually enforce them.
+
+#### Added
+- **`serious-review-correctness` agent** — the code-aware correctness reviewer. Reads the real codebase to verify a plan's technical claims, that the fix covers *every* path the bug can take (not just the one the author noticed), that coupled changes are complete, and that the premise is still true. This is the reviewer that caught two critical regressions and a "guarded 1 of 3 hang sites" partial fix that all three cold-read agents passed clean.
+- **`serious-review-restraint` agent** — the code-aware bloat reviewer. Reads the codebase to flag reinvented idioms ("this helper already exists at file:line"), over-broad fixes, and new scaffolding, with a **premise-check-first** rule (a lean plan for a non-existent bug is worse than a bloated one) and a hard rule to never trust a `grep` miss for existence (the sandbox grep silently skips binary-looking files — a real false-negative that produced a confidently wrong claim).
+- **`/serious-debloat` skill** — a standalone restraint pass you can point at a plan *or* a real diff (`--staged`, `--branch <base>`, `--apply`). Report-first; applies only tradeoff-free cuts on request. It's the "trim what's written" counterpart to `serious-simple-plan`'s "write it lean."
+
+#### Changed
+- **`/serious-review` now runs 5 mandatory reviewers** (was 3): the cold-read trio plus restraint and correctness. Restraint is advisory-strong (bloat is flagged, doesn't by itself fail the gate); correctness counts toward the verdict like the trio.
+- **The review Stop-hook (`check-verdict.sh`) now enforces all 5** agent sections in `review_verdict.md`, so the two new reviewers are genuinely required, not just documented. Section-header contract and its tests updated accordingly.
+
+#### Why it matters
+"Plan passes review, code doesn't work" and "plan ships twice the change it needed" are the two failure modes this closes. A well-written plan is no longer enough — a reviewer now opens the code and checks it's right and minimal.
+
+---
+
 ## [1.8.0] — 2026-04-14
 
 ### Observability spike — silent-pass events become visible

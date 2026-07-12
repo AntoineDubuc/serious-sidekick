@@ -137,17 +137,21 @@ Read the plan's `source:` frontmatter field. Store this path — it will be pass
 
 ## Phase 2: Agent Dispatch
 
-**Goal:** Spawn the 3 mandatory reviewer agents and any conditional agents.
+**Goal:** Spawn the 5 mandatory reviewer agents and any conditional agents.
 
 ### 2a. Mandatory agents
 
-Spawn all 3 agents using the Agent tool, passing them the plan file path:
+Spawn all 5 agents using the Agent tool, passing them the plan file path:
 
 1. **`serious-review-anti-slop`** — Pass: plan path, source path (from 1b), project root path
 2. **`serious-review-structural`** — Pass: plan path, project root path
 3. **`serious-review-security`** — Pass: plan path
+4. **`serious-review-restraint`** — Pass: plan path, project root / **codebase** path, and the plan's stated problem/goal (from its Executive Summary). **This agent is the exception to cold-read: it READS THE CODEBASE** to detect reinvented idioms and over-broad fixes — bloat that is invisible from the plan alone. It reports LEAN / TRIMMABLE / BLOATED with concrete cuts. Its findings are advisory-strong: a BLOATED verdict does not by itself FAIL the plan (bloat is not a correctness defect), but its recommended cuts and any flagged correctness-vs-simplicity tradeoffs MUST be surfaced to the user in the verdict synthesis so they can decide before coding.
+5. **`serious-review-correctness`** — Pass: plan path, project root / **codebase** path. **Also reads the codebase** — it verifies the plan's technical claims, fix-mechanism completeness (does the fix cover EVERY path the bug can take?), coupling, and premise against real source. Its verdict counts toward the gate like the cold-read trio: a FAIL here (flawed premise, phantom anchor, partial/inert fix, incomplete coupling, real regression) FAILs the plan. This is the agent that catches source-level defects a plan can hide behind clean prose.
 
 Each agent runs independently and produces a structured report with a per-agent verdict.
+
+> **Why two code-aware agents (4 & 5) exist:** the cold-read trio (1–3) verifies the plan on its own terms but cannot open the codebase. Agent 4 (restraint) catches BLOAT — a proposed helper/param/SQL that already exists, or a fix broader than the bug. Agent 5 (correctness) catches WRONGNESS — a fix that's inert, partial (guards 1 of N paths), half-coupled, or built on an already-fixed/false premise. Both are documented, repeated saves; a plan can pass 1–3 cleanly and still be twice too big (4 catches) or simply not work (5 catches). For a plan with no codebase (pure greenfield), 4 and 5 note "N/A — no codebase" for the reuse/verification parts and run what they can.
 
 ### 2a-err. Agent dispatch failure handling
 
@@ -155,7 +159,7 @@ If any agent fails to spawn, returns empty output, or times out:
 
 1. **Log the failure:** Record which agent failed and how (spawn error, empty output, timeout) in the verdict file.
 2. **Retry once:** Re-spawn the failed agent. If it fails again, treat it as a Critical finding: "Agent {name} failed to produce a report after 2 attempts. Reason: {error}. This plan cannot be fully reviewed."
-3. **Do NOT proceed with a partial review.** All 3 mandatory agents must produce reports. A missing report means the plan has an unreviewed surface — treat it as FAIL with the specific gap identified.
+3. **Do NOT proceed with a partial review.** All 5 mandatory agents must produce reports. A missing report means the plan has an unreviewed surface — treat it as FAIL with the specific gap identified. (Exception: if `serious-review-restraint` or `serious-review-correctness` reports "N/A — no codebase" for the reuse/verification parts because the plan is greenfield, that is a valid report, not a failure.)
 
 ### 2b. Conditional agents
 
@@ -228,7 +232,7 @@ If the user overrides a FAIL verdict, write:
 
 ### 4b. Create review_verdict.md
 
-Write a `review_verdict.md` file in the same directory as the plan. Use frontmatter: `skill: serious-review`, `slug: {plan-slug}`, `status: done`, `created: {date}`. Include: plan path, verdict, date, round, full agent reports (Anti-Slop Auditor, Structural Reviewer, Security Mind, any conditional agents), a synthesis section, and conditions (if PASS-WITH-CONDITIONS).
+Write a `review_verdict.md` file in the same directory as the plan. Use frontmatter: `skill: serious-review`, `slug: {plan-slug}`, `status: done`, `created: {date}`. Include: plan path, verdict, date, round, full agent reports (Anti-Slop Auditor, Structural Reviewer, Security Mind, **Restraint Reviewer**, **Code-Aware Correctness Reviewer**, any conditional agents), a synthesis section, and conditions (if PASS-WITH-CONDITIONS). **The synthesis MUST include a "Restraint / simplification" subsection** listing the restraint agent's recommended cuts and any correctness-vs-simplicity tradeoffs, even when the overall verdict is PASS — a passing plan can still be trimmed, and the user should get that choice.
 
 ---
 

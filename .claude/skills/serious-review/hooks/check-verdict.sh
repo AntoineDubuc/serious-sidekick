@@ -82,17 +82,28 @@ locations in the plan, not just generic approval."
 fi
 
 # --- Agent dispatch validation (Layer 3) ---
-# Verify all 3 mandatory review agents contributed to the verdict
-# Section headers are a shared contract with the review agent definitions
+# Verify all 5 mandatory review agents contributed to the verdict.
+# Section headers are a shared contract with the review agent definitions:
+#   serious-review-anti-slop   -> "## Anti-Slop Audit Report"
+#   serious-review-structural  -> "## Structural Review Report"
+#   serious-review-security    -> "## Security Review Report"
+#   serious-review-restraint   -> "## Restraint Review Report"          (code-aware: bloat)
+#   serious-review-correctness -> "## Code-Aware Correctness Review"     (code-aware: correctness)
+# The two code-aware agents report "N/A — no codebase" for greenfield plans but still
+# emit their section header, so this presence check holds.
 if [ -f "${REVIEW_DIR}/review_verdict.md" ]; then
   MISSING_AGENTS=""
   ANTI_SLOP=$(grep -c '## Anti-Slop Audit Report' "${REVIEW_DIR}/review_verdict.md" || true)
   STRUCTURAL=$(grep -c '## Structural Review Report' "${REVIEW_DIR}/review_verdict.md" || true)
   SECURITY=$(grep -c '## Security Review Report' "${REVIEW_DIR}/review_verdict.md" || true)
+  RESTRAINT=$(grep -c '## Restraint Review Report' "${REVIEW_DIR}/review_verdict.md" || true)
+  CORRECTNESS=$(grep -c '## Code-Aware Correctness Review' "${REVIEW_DIR}/review_verdict.md" || true)
 
   [ "$ANTI_SLOP" -eq 0 ] && MISSING_AGENTS="${MISSING_AGENTS}  - Anti-Slop Auditor\n"
   [ "$STRUCTURAL" -eq 0 ] && MISSING_AGENTS="${MISSING_AGENTS}  - Structural Reviewer\n"
   [ "$SECURITY" -eq 0 ] && MISSING_AGENTS="${MISSING_AGENTS}  - Security Mind\n"
+  [ "$RESTRAINT" -eq 0 ] && MISSING_AGENTS="${MISSING_AGENTS}  - Restraint Reviewer\n"
+  [ "$CORRECTNESS" -eq 0 ] && MISSING_AGENTS="${MISSING_AGENTS}  - Code-Aware Correctness Reviewer\n"
 
   if [ -n "$MISSING_AGENTS" ]; then
     type _log_outcome >/dev/null 2>&1 && _log_outcome BLOCK "missing-agent-sections"
@@ -100,7 +111,7 @@ if [ -f "${REVIEW_DIR}/review_verdict.md" ]; then
 
 Review verdict at ${REVIEW_DIR}/review_verdict.md is missing reports from:
 $(echo -e "$MISSING_AGENTS")
-All 3 mandatory agents must produce reports before a verdict is accepted."
+All 5 mandatory agents must produce reports before a verdict is accepted."
   fi
 fi
 

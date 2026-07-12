@@ -1,6 +1,7 @@
 #!/bin/bash
 # test_check_verdict.sh — Task 2: Agent dispatch validation in check-verdict.sh
-# Tests that review_verdict.md must contain all 3 mandatory agent sections.
+# Tests that review_verdict.md must contain all 5 mandatory agent sections
+# (anti-slop, structural, security, restraint, code-aware correctness).
 #
 # Usage: bash tests/hooks/test_check_verdict.sh
 # Exit: 0 if all tests pass, 1 if any fail
@@ -28,8 +29,8 @@ run_test() {
 echo "=== Task 2: Agent Dispatch Validation — check-verdict.sh ==="
 echo ""
 
-# --- Test 1: Verdict with all 3 sections → exit 0 ---
-echo "Test 1: Verdict with all 3 mandatory agent sections"
+# --- Test 1: Verdict with all 5 sections → exit 0 ---
+echo "Test 1: Verdict with all 5 mandatory agent sections"
 SIM_ROOT=$(mktemp -d)
 export CLAUDE_PROJECT_DIR="$SIM_ROOT"
 mkdir -p "$SIM_ROOT/testdata"
@@ -60,13 +61,23 @@ Cross-checked: implementation_plan.md:22 against research.md:8
 ### Input Validation — PASS
 Verified: src/api.ts:55 validates all inputs.
 Reference: implementation_plan.md:30 includes sanitization steps.
+
+## Restraint Review Report
+
+### Reuse check — LEAN
+Reuse verified: src/util.ts:12 already provides this; no reinvention.
+
+## Code-Aware Correctness Review
+
+### Mechanism — PASS
+Fix covers all paths: src/handler.ts:88 and src/handler.ts:120.
 VERDICT
 
 echo "testdata" > "$SIM_ROOT/.active-review"
 bash "$HOOK" 2>/dev/null
 EXIT_CODE=$?
 rm -rf "$SIM_ROOT"
-run_test "All 3 agent sections present → exit 0" 0 "$EXIT_CODE"
+run_test "All 5 agent sections present → exit 0" 0 "$EXIT_CODE"
 echo ""
 
 # --- Test 2: Verdict with only Anti-Slop → exit 2 (missing structural + security) ---
@@ -144,8 +155,8 @@ else
 fi
 echo ""
 
-# --- Test 4: All 3 sections but no file:line refs → exit 2 (Layer 2 review theater) ---
-echo "Test 4: All 3 sections but PASS with zero file:line refs (Layer 2 triggers)"
+# --- Test 4: All 5 sections but no file:line refs → exit 2 (Layer 2 review theater) ---
+echo "Test 4: All 5 sections but PASS with zero file:line refs (Layer 2 triggers)"
 SIM_ROOT=$(mktemp -d)
 export CLAUDE_PROJECT_DIR="$SIM_ROOT"
 mkdir -p "$SIM_ROOT/testdata"
@@ -173,6 +184,16 @@ All tasks are well structured and complete.
 
 ### Input Validation — PASS
 Security looks good across the board.
+
+## Restraint Review Report
+
+### Reuse check — LEAN
+Nothing to cut, looks minimal.
+
+## Code-Aware Correctness Review
+
+### Mechanism — PASS
+The fix looks correct and complete.
 VERDICT
 
 echo "testdata" > "$SIM_ROOT/.active-review"
@@ -186,6 +207,52 @@ if echo "$OUTPUT" | grep -q "REVIEW QUALITY WARNING"; then
   PASS=$((PASS + 1))
 else
   echo "  FAIL: Expected REVIEW QUALITY WARNING from Layer 2"
+  echo "  Got: $OUTPUT"
+  FAIL=$((FAIL + 1))
+fi
+echo ""
+
+# --- Test 5: Old 3-section verdict (no restraint/correctness) → exit 2 ---
+echo "Test 5: Only the original 3 sections (missing restraint + correctness)"
+SIM_ROOT=$(mktemp -d)
+export CLAUDE_PROJECT_DIR="$SIM_ROOT"
+mkdir -p "$SIM_ROOT/testdata"
+cat > "$SIM_ROOT/testdata/review_verdict.md" << 'VERDICT'
+---
+skill: serious-review
+slug: test
+status: done
+---
+# Review Verdict
+
+**Verdict:** PASS
+
+## Anti-Slop Audit Report
+
+### Check 1 — PASS
+Reference: implementation_plan.md:15 is concrete.
+
+## Structural Review Report
+
+### Completeness — PASS
+Cross-checked: implementation_plan.md:22 against research.md:8
+
+## Security Review Report
+
+### Input Validation — PASS
+Verified: src/api.ts:55 validates inputs.
+VERDICT
+
+echo "testdata" > "$SIM_ROOT/.active-review"
+OUTPUT=$(bash "$HOOK" 2>&1)
+EXIT_CODE=$?
+rm -rf "$SIM_ROOT"
+run_test "Missing restraint + correctness → exit 2" 2 "$EXIT_CODE"
+if echo "$OUTPUT" | grep -q "Restraint Reviewer" && echo "$OUTPUT" | grep -q "Code-Aware Correctness Reviewer"; then
+  echo "  PASS: Error message lists the two new missing reviewers"
+  PASS=$((PASS + 1))
+else
+  echo "  FAIL: Error message should list Restraint Reviewer and Code-Aware Correctness Reviewer"
   echo "  Got: $OUTPUT"
   FAIL=$((FAIL + 1))
 fi

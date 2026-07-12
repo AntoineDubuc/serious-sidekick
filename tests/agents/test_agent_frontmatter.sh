@@ -71,7 +71,8 @@ echo ""
 echo "disallowedTools field:"
 check_no_field "$AGENTS_DIR/serious-code-implementer.md" "disallowedTools"
 for agent in serious-code-reviewer serious-code-test-runner serious-code-runtime-checker serious-code-qa \
-             serious-review-anti-slop serious-review-structural serious-review-security; do
+             serious-review-anti-slop serious-review-structural serious-review-security \
+             serious-review-restraint serious-review-correctness; do
   check_field "$AGENTS_DIR/${agent}.md" "disallowedTools" "Edit,Write,NotebookEdit"
 done
 echo ""
@@ -86,6 +87,8 @@ check_field "$AGENTS_DIR/serious-code-qa.md" "effort" "high"
 check_field "$AGENTS_DIR/serious-review-anti-slop.md" "effort" "high"
 check_field "$AGENTS_DIR/serious-review-structural.md" "effort" "high"
 check_field "$AGENTS_DIR/serious-review-security.md" "effort" "high"
+check_field "$AGENTS_DIR/serious-review-restraint.md" "effort" "high"
+check_field "$AGENTS_DIR/serious-review-correctness.md" "effort" "high"
 echo ""
 
 # --- Body preservation ---
