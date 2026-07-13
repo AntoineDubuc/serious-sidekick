@@ -1251,6 +1251,9 @@ if [ "$NO_GLOBAL" = "true" ]; then
   TOTAL_UPDATED=0
   TOTAL_NEW=0
   TOTAL_CURRENT=0
+  DIR_REPORTS=()   # declare in BOTH branches — the global loop below populates it,
+                   # but --no-global skips that loop; without this, the summary loop
+                   # references an unset array (fatal under `set -u` on bash 3.2).
 else
   TOTAL_DIRS=${#TARGET_DIRS[@]}
   DIRS_OK=0
@@ -1348,7 +1351,10 @@ log_audit "UPDATE home=$SIDEKICK_HOME $OLD_COMMIT->$NEW_COMMIT files=$TOTAL_FILE
 echo ""
 echo "Serious Sidekick updated to $NEW_COMMIT (was $OLD_COMMIT)"
 echo ""
-for report in "${DIR_REPORTS[@]}"; do
+# `${arr[@]+"${arr[@]}"}` expands to nothing when the array is empty/unset —
+# safe under `set -u` on bash 3.2 (where a bare "${arr[@]}" on an empty array
+# is treated as unbound). Preserves element quoting when non-empty.
+for report in ${DIR_REPORTS[@]+"${DIR_REPORTS[@]}"}; do
   echo "  $report"
 done
 echo ""
