@@ -1,38 +1,38 @@
 # Serious Sidekick — Product Roadmap
 
-> **Last updated:** 2026-05-16 · **Current version:** v1.8.0 · **Claude Code:** v2.1.143 (latest) / new substantive releases since last update: v2.1.111 (`/ultrareview`, `/less-permission-prompts`, xhigh effort), v2.1.117 (fork-subagent externally enabled, 1M-context Opus 4.7 fix, default effort raised), v2.1.118 (hooks invoke MCP tools, fork-subagent GA), v2.1.121 (PostToolUse `updatedToolOutput` for all tools — but broken at runtime, see Issue #54196), v2.1.126 (gateway model discovery, `claude project purge`), v2.1.139 (`claude agents` view, `/goal` command, hook `args:` exec form, hook `continueOnBlock`). See §A of `CLAUDE_CODE_CHANGELOG.md` for the condensed digest.
+> **Last updated:** 2026-06-17 · **Current version:** v1.8.0 · **Claude Code:** v2.1.179 (latest) / new substantive releases since last update (v2.1.144 → v2.1.179): **v2.1.145** (`claude agents --json` for scripting — later gains `waitingFor`/`id`/`state` fields), **v2.1.147/152** (`/simplify` → `/code-review` with effort levels + `--fix`), **v2.1.152** (`MessageDisplay` hook for message transformation, `SessionStart` skill reload + title set, `/reload-skills`, skill `disallowed-tools` frontmatter), **v2.1.154** (dynamic workflows for large-scale orchestration, Opus 4.8 high-effort default + fast mode at reduced cost, lean system prompt default, `claude --bg --exec`, `/chrome`), **v2.1.157** (plugins auto-load from `.claude/skills` without a marketplace, `claude plugin init`), **v2.1.163** (hook `additionalContext`, `/plugin list`, skill `\$` escape), **v2.1.166** (`fallbackModel` chain setting, glob patterns in deny rules, dynamic-workflow keyword → "ultracode"), **v2.1.169** (`post-session` hook, `--safe-mode`, `/cd`, `disableBundledSkills`), **v2.1.170** (Claude Fable 5 model), **v2.1.172** (sub-agents spawn 5 levels deep, marketplace plugin search), **v2.1.176** (hook `if` conditions match Read/Edit/Write path patterns), **v2.1.178** (`Tool(param:value)` permission matching on tool input, nested `.claude` closest-wins precedence). **STALE-REF:** `CLAUDE_CODE_CHANGELOG.md` still stops at v2.1.143 — its §A digest is now 36 releases behind and should be re-synced (tracked in Operations below).
 
 ---
 
 ## What's Next
 
-The April roadmap had eight engineer-ranked features. Since then, Claude Code shipped two big features that move the rest of the list around (`claude agents` and `/goal`), and we shipped the first phase of the PM-voice retrofit. Below is the rewritten "next" list, sorted by **what the user feels** — not what's easiest to build.
+The April roadmap had eight engineer-ranked features. Since then, Claude Code shipped two big features that moved the list around (`claude agents` and `/goal`), and we shipped the first phase of the PM-voice retrofit. The v2.1.144 → v2.1.179 window (this update) shipped a run of features that touch this list directly: a **`MessageDisplay` hook** that can rewrite a message before it's shown (the seam the voice retrofit was waiting on), **`claude agents --json`** (the scriptable output the workflow-screen item needed), a native **dynamic-workflow orchestration engine**, **plugin auto-loading from `.claude/skills`**, and two new models (**Opus 4.8** defaults, **Fable 5**). None of it changes the top-4 order, but several items below are now unblocked or cheaper than when they were ranked. Below is the list, sorted by **what the user feels** — not what's easiest to build.
 
 ### Now (the next two months of work — sorted by what the user feels)
 
 | # | What we ship | What it does for the user | What it costs us |
 |--:|--------------|---------------------------|------------------|
-| 1 | **One-click install** | Anyone with Claude Code can add Serious Sidekick by typing one command instead of cloning a repo and running a shell script. Updates become one command too. Today the install flow filters out most non-engineers — this opens the door. | Medium-large. Repackage the file layout into the Claude-Code-native plugin format, set up a tiny marketplace, write a migration path for existing users. |
-| 2 | **Finish the voice retrofit** | Today only the research-summary handoff speaks in PM voice. The next phase rewrites the worst chat replies in the other thirteen workflows — `/serious-code` per-task reports, `/serious-plan` reveals, `/serious-review` verdicts, all the status banners — so every reply, not just one, is human-readable. | 6-8 hours of edits to the playbooks. Optional follow-on: a small translation worker for the four highest-volume moments (another 5-7 hours). |
-| 3 | **One screen for all your workflows** | Claude Code now ships a "one screen for every session" view (`claude agents`). Right now our `/serious-status` lives separately and tells you about your active workflows in a different place. Either we sit on top of the new screen and feed it our workflow info, or our status command starts looking outdated next to it. | Medium. Either pipe `/serious-status` data into the new view, or deprecate `/serious-status` and rely on the built-in. Open question on which is cleaner. |
-| 4 | **Walk-away mode for `/serious-code`** | Tell `/serious-code` "fix this bug and don't come back until tests pass." Walk away. Come back to a working fix instead of fifty approval prompts. Today, even for low-risk work, you sit through "Go?" between every phase. This adds an unattended option for runs where you trust the plan. | Medium. Wire `/serious-code` into Claude Code's new "keep working until condition met" command, with a clean fail-safe that drops back to manual gating if anything goes red. |
+| 1 | **One-click install** | Anyone with Claude Code can add Serious Sidekick by typing one command instead of cloning a repo and running a shell script. Updates become one command too. Today the install flow filters out most non-engineers — this opens the door. | Medium (was Medium-large). **Update 2026-06-17:** plugins now auto-load from `.claude/skills` without a marketplace (v2.1.157) and `claude plugin init` scaffolds the manifest (v2.1.157), so the repackaging is smaller than when this was ranked. Marketplace plugin search (v2.1.172) makes a self-hosted marketplace discoverable. **Also surfaced this session:** the *current* `install.sh` hard-fails on Windows — native PowerShell/cmd can't run the `curl \| bash` one-liner at all, and Git Bash aborts mid-install because the cron step's `detect_os` rejects `MINGW*` under `set -e`. A small fix (make cron skip cleanly off-platform + README WSL note) is a prerequisite cleanup regardless of the plugin repackage. |
+| 2 | **Finish the voice retrofit** | Today only the research-summary handoff speaks in PM voice. The next phase rewrites the worst chat replies in the other thirteen workflows — `/serious-code` per-task reports, `/serious-plan` reveals, `/serious-review` verdicts, all the status banners — so every reply, not just one, is human-readable. | 6-8 hours of edits to the playbooks. **Update 2026-06-17:** the optional translation worker now has a real seam — the `MessageDisplay` hook (v2.1.152) transforms a message before it's shown. Needs a spike to confirm it can reach sub-agent output (this is the capability Issue #54196 / item O was waiting for, via a *different* mechanism than PostToolUse). If the spike passes, the follow-on drops from 5-7 hours of per-call-site rewrites to one hook. |
+| 3 | **One screen for all your workflows** | Claude Code now ships a "one screen for every session" view (`claude agents`). Right now our `/serious-status` lives separately and tells you about your active workflows in a different place. Either we sit on top of the new screen and feed it our workflow info, or our status command starts looking outdated next to it. | Medium. **Update 2026-06-17:** the blocking open question is RESOLVED — `claude agents --json` shipped (v2.1.145) and gained `waitingFor`/`id`/`state` fields (v2.1.162, v2.1.169). Option A (our `/serious-status` reads the JSON and merges it with breadcrumb data) is now buildable today. This is the recommended first step. |
+| 4 | **Walk-away mode for `/serious-code`** | Tell `/serious-code` "fix this bug and don't come back until tests pass." Walk away. Come back to a working fix instead of fifty approval prompts. Today, even for low-risk work, you sit through "Go?" between every phase. This adds an unattended option for runs where you trust the plan. | Medium. Wire `/serious-code` into Claude Code's `/goal` command, with a clean fail-safe that drops back to manual gating if anything goes red. **Update 2026-06-17:** more pieces shipped — auto mode no longer needs opt-in (v2.1.152), `--safe-mode` (v2.1.169) and `claude --bg --exec` (v2.1.154) exist, and background sessions matured. A second route opened too: the native **dynamic-workflow engine** (v2.1.154, "ultracode") could host the unattended orchestration instead of `/goal` — see new §Q. |
 
 ### Soon (the next quarter — depends on Anthropic shipping)
 
 | # | What we ship | What it does for the user | What we're waiting on |
 |--:|--------------|---------------------------|----------------------|
 | 5 | **Quick-skills (two-step recipes)** | Light-weight skills for the operational work between builds: ingest a video and discuss it, audit your workflows for stuck breadcrumbs, lint your skills for inconsistencies. Three steps, no TDD, no plan. Fast tools for the housekeeping the heavy pipeline doesn't fit. | Nothing — Anthropic shipped the underlying capability already. Effort dropped from a week to two days. Bumped down only because items 1-4 hit more pain. |
-| 6 | **Skills that only load when relevant** | Today some skills load on every session even when they're irrelevant. Anthropic is expected to add a way to scope skills to file patterns ("only load this when I'm editing TypeScript"). Smaller context, faster sessions, no behavior change for the user. | Anthropic to ship file-pattern skill scoping. No new info in the last month — still waiting. |
-| 7 | **Catch stale plans automatically** | If you write research on Monday, plan on Tuesday, and someone edits the research file Wednesday before you start coding, today nothing warns you. This adds a one-line warning when the source has shifted under a downstream plan. | Anthropic to ship file-change hooks. Still waiting. |
-| 8 | **Safe unattended mode for risky operations** | Today, headless runs are all-or-nothing — either nothing prompts and dangerous ops fly through, or every prompt blocks the run. This adds a middle path: dangerous operations pause and wait for a human, harmless denials auto-retry. | Anthropic to ship two new hook types (pause-on-dangerous + retry-on-deny). Still waiting. |
+| 6 | **Skills that only load when relevant** | Today some skills load on every session even when they're irrelevant. Anthropic is expected to add a way to scope skills to file patterns ("only load this when I'm editing TypeScript"). Smaller context, faster sessions, no behavior change for the user. | File-pattern *skill* scoping still NOT shipped as of v2.1.179. **Adjacent progress:** hook `if` conditions now match Read/Edit/Write path patterns (v2.1.176) and nested `.claude/skills` got closest-wins precedence (v2.1.178) — neither scopes auto-loading by file glob, so still waiting. |
+| 7 | **Catch stale plans automatically** | If you write research on Monday, plan on Tuesday, and someone edits the research file Wednesday before you start coding, today nothing warns you. This adds a one-line warning when the source has shifted under a downstream plan. | A dedicated `FileChanged` event still NOT shipped. **Adjacent progress:** the `post-session` hook (v2.1.169) and hook path-pattern `if` conditions (v2.1.176) could power a cruder session-boundary drift check — worth a feasibility spike rather than continuing to wait. |
+| 8 | **Safe unattended mode for risky operations** | Today, headless runs are all-or-nothing — either nothing prompts and dangerous ops fly through, or every prompt blocks the run. This adds a middle path: dangerous operations pause and wait for a human, harmless denials auto-retry. | The specific `defer` + `PermissionDenied` hook pair still NOT shipped. **Adjacent progress:** `Tool(param:value)` permission matching (v2.1.178), glob deny rules (v2.1.166), `--safe-mode` (v2.1.169), and the auto-mode classifier now evaluating sub-agent spawns before launch (v2.1.178) cover part of the need. Re-scope this item around what shipped. |
 
 ### Watching (track-only, not actively building)
 
 | # | Item | What changes when this resolves |
 |--:|------|--------------------------------|
-| 9 | **Anthropic Issue #54196** | When Anthropic fixes the broken hook that should rewrite tool output, the voice retrofit gets ~10x simpler — sub-agent output gets translated at the seam instead of per-call-site in every playbook. |
+| 9 | **Anthropic Issue #54196** | **Downgraded 2026-06-17.** This was the blocker for translating sub-agent output at the seam (PostToolUse `updatedToolOutput` silently dropped for built-in tools). A *different* seam shipped — the `MessageDisplay` hook (v2.1.152) — that may make #54196 moot for the voice retrofit. Still watch the issue, but the voice work no longer strictly depends on it. See item #2 and §O. |
 | 10 | **Interactive diagrams** | Third-party canvas tool (Excalidraw) for live editable diagrams during research and planning. Nice-to-have, our existing static-image generator covers most cases. Ship when someone asks for it. |
-| 11 | **Event-driven progress monitoring** | Replace the `/serious-code` "wake up every five seconds and check" loop with event-driven notifications. Works fine today; small optimization, low priority. |
+| 11 | **Event-driven progress monitoring** | Replace the `/serious-code` "wake up every five seconds and check" loop with event-driven notifications. Works fine today; small optimization, low priority. **Update 2026-06-17:** the native dynamic-workflow engine (§Q) supersedes this entirely if we re-platform `/serious-code` orchestration onto it — fold this item into that decision. |
 
 ### Killed / merged
 
@@ -311,8 +311,8 @@ All 3 Tier 0 spikes are resolved. Feature work is unblocked.
 **Why #12.** High impact on workflow visibility for the user, no upstream blockers (features shipped), Medium effort. Option A is the safest first step.
 
 **Open questions:**
-- Does `claude agents` have a `--json` or scriptable output mode? (Need to check v2.1.143 docs.)
-- Can a breadcrumb be promoted into an actual background-session entry?
+- ~~Does `claude agents` have a `--json` or scriptable output mode?~~ **RESOLVED (2026-06-17):** yes — `claude agents --json` shipped in v2.1.145 and now emits `waitingFor` (v2.1.162) and `id`/`state` (v2.1.169). Option A is buildable today.
+- Can a breadcrumb be promoted into an actual background-session entry? (Now more interesting given `claude --bg --exec` in v2.1.154.)
 - What's the right naming convention so the user can read the merged list?
 
 ### M. `/goal`-driven unattended `/serious-code` (#13)
@@ -355,9 +355,11 @@ All 3 Tier 0 spikes are resolved. Feature work is unblocked.
 
 ### O. Watch Anthropic Issue #54196 (#15)
 
-**Status: WATCH (2026-05-16). Track-only.**
+**Status: DOWNGRADED (2026-06-17). Was WATCH/track-only — now likely moot for the voice retrofit.**
 
-**The dependency.** v2.1.121 shipped: "PostToolUse hooks can now replace tool output for all tools via `hookSpecificOutput.updatedToolOutput` (previously MCP-only)." But Anthropic's own GitHub Issue #54196 (OPEN as of 2026-05-16, multiple reproducers across macOS and Ubuntu, versions v2.1.121–v2.1.123) reports the field is silently dropped at runtime for built-in tools including the Agent/Task tool.
+**What changed.** v2.1.152 shipped a `MessageDisplay` hook "for message transformation." This is a *different* seam than the broken PostToolUse `updatedToolOutput` path #54196 is about — it intercepts at message-display time rather than at tool-result time. If it can see and rewrite sub-agent output before the parent renders it, the voice translator (item #2 / §P Phase 3) no longer needs the #54196 fix at all. **Action:** run a one-session spike against `MessageDisplay` before doing any per-call-site voice rewrites. Keep watching #54196 only as a fallback path. Do NOT assume either works until the spike proves it — this is exactly the "empirical trumps secondhand" lesson from April.
+
+**The original dependency (kept for context).** v2.1.121 shipped: "PostToolUse hooks can now replace tool output for all tools via `hookSpecificOutput.updatedToolOutput` (previously MCP-only)." But Anthropic's own GitHub Issue #54196 (OPEN as of 2026-05-16, multiple reproducers across macOS and Ubuntu, versions v2.1.121–v2.1.123) reports the field is silently dropped at runtime for built-in tools including the Agent/Task tool.
 
 **Why it matters here.** The voice-retrofit research (`Research/features/skill-voice-retrofit/`) found that sub-agent output translation is the single highest-leverage improvement available — but cannot be implemented today via PostToolUse because the field doesn't actually rewrite the tool output. The retrofit's Phase 3 (Haiku translator for high-value touchpoints) currently has to spawn the translator from inside the skill prose instead of intercepting tool results.
 
@@ -381,6 +383,28 @@ Phase 1 of the voice retrofit shipped today. The research output at `Research/fe
 
 **Why optional.** Phase 1 covers ~60-70% of daily pain (per the research). The user explicitly asked for the lighter cut. Phases 2-4 ship only if Phase 1 measurement shows meaningful residual slop.
 
+### Q. Re-platform `/serious-code` orchestration onto native dynamic workflows (#17)
+
+**Status: NEW (2026-06-17). Evaluate, do not commit. Driven by v2.1.154 — v2.1.178.**
+
+**The opportunity.** v2.1.154 introduced **dynamic workflows** ("ultracode" after the v2.1.166 rename) — a native, deterministic multi-agent orchestration engine. A workflow script fans out agents, pipelines work across stages without barriers, runs adversarial-verify passes, and loops-until-dry — exactly the orchestration shape `/serious-code` hand-rolls today with git worktrees + a `while sleep 5` poll loop + manual evidence aggregation.
+
+**Why it's interesting for us.** `/serious-code` currently owns three brittle things the engine does natively:
+1. **Parallel plan execution via worktrees** — the engine offers `isolation: 'worktree'` per agent.
+2. **The sleep-poll evidence loop (Watching #11)** — the engine is event-driven; this loop disappears.
+3. **Dispatch fan-out + verification panels (the dispatch-audit and 5-agent verification design, §A)** — the engine's pipeline/parallel/adversarial-verify primitives map directly onto our implementer → reviewer → test-runner → runtime-checker → qa fan-out.
+
+**Why NOT to jump.** This is a re-platform of the single most load-bearing skill in the toolkit. The risk is the "battle vs. war" failure mode from CLAUDE.md — a clean-looking migration that quietly breaks the verification guarantees that are the entire value proposition. Our enforcement is *shell-level hooks the AI can't reason around*; we must confirm those hooks still fire inside a native workflow run before trusting it. Also: dynamic workflows are explicitly opt-in/billed and gated behind the "ultracode" keyword — adoption friction for non-power users.
+
+**Recommended path.** A scoped feasibility spike, not a rewrite: (1) port ONE simple plan's execution to a dynamic-workflow script; (2) confirm the completion gate, TDD gate, and dispatch-audit hooks still fire and still block; (3) compare wall-clock and token cost against the current poll-loop run; (4) only then decide whether to re-platform. If hooks don't fire inside workflow agents, this item dies here.
+
+**Why #17.** Potentially high impact (kills the poll loop, simplifies worktree orchestration, scales fan-out) but high risk and not user-visible. Ranked below the top-4 "feels different" items. Folds in Watching #11.
+
+**Open questions.**
+- Do our `PreToolUse`/`Stop` enforcement hooks fire for agents spawned *inside* a dynamic workflow, or only for the top-level session?
+- Does worktree isolation in the engine give each agent the same `$CLAUDE_PROJECT_DIR` resolution our worktree-safe hooks (v1.5.0) depend on?
+- Billing/opt-in: is the "ultracode" gating acceptable for a skill we want non-engineers to run?
+
 ---
 
 ## Operations (do alongside features)
@@ -394,6 +418,8 @@ These are housekeeping/cleanup items from this session's discoveries. They don't
 | O3 | **Update `lessons.md`** with two new lessons from this session | (1) "Empirical trumps secondhand" — first draft of dispatch hook research relied on stale GitHub issues and almost shipped a wrong conclusion. (2) "Grep `Research/bugs/` before proposing changes to systems with bug history" — second draft missed the architectural risk from the April 7 incident. | XS |
 | O4 | **Update `/serious-research` skill** with mandatory empirical-test step in Phase 0 | When a research topic's feasibility hinges on observable behavior, "I searched the docs" is not sufficient evidence. Add a "smoke-test the claim" step before writing the feasibility verdict. | S |
 | O5 | **Update `/serious-plan` skill** with mandatory `Research/bugs/` grep in Phase 0 | Before proposing changes to any system the project has a bug history with, grep `Research/bugs/` for related keywords. If a past incident is found, the plan must reference its findings. | S |
+| O6 | **Re-sync `CLAUDE_CODE_CHANGELOG.md`** with the v2.1.144 — v2.1.179 digest | The roadmap header now references releases the changelog file doesn't cover — its §A digest stops at v2.1.143, leaving a dangling reference. Add a §B (or extend §A) digest for the 36 releases in this window, filtered for project impact. | S |
+| O7 | **Fix the Windows `install.sh` hard-fail** (surfaced 2026-06-17) | Native Windows can't run the `curl \| bash` one-liner; Git Bash aborts mid-install because the cron step's `detect_os` rejects `MINGW*`/`MSYS*` under `set -e`. Make `install_cron` skip cleanly (return 0 with a SKIP notice) on unsupported platforms, add a Git-Bash/WSL preflight + README note. Turns a mid-install crash into a clean install. Prereq for the one-click-install item (#1). | S |
 
 ---
 
@@ -457,6 +483,20 @@ The "5 durable web verticals" video (`Research/youtube/five-durable-web-vertical
 
 These shipped upstream and benefit us automatically. No work needed, just tracking what we got.
 
+**Claude Code v2.1.144 — v2.1.179 (May 16 — June 2026) — directly relevant:**
+
+- **`MessageDisplay` hook (v2.1.152)** — transforms a message before it's shown. Candidate seam for the voice translator (see #2, §O). NOT a free win until a spike confirms it reaches sub-agent output, but it's the most consequential new hook for this project.
+- **`post-session` lifecycle hook (v2.1.169)** — fires at session end; candidate for a drift check (#7) and for the YouTube-progress / completion hooks.
+- **`claude agents --json` (v2.1.145) + `waitingFor`/`id`/`state` (v2.1.162, v2.1.169)** — scriptable session list. Unblocks #3 / §L Option A.
+- **Parallel tool calls with independent results (v2.1.161)** — independent tool calls run concurrently. Speeds up read-heavy phases in `/serious-code` and the review agents at no cost to us.
+- **Sub-agents spawn 5 levels deep (v2.1.172)** — was a hard limit before; relevant to any nested orchestration in `/serious-code`.
+- **Skills can set `disallowed-tools` in frontmatter (v2.1.152)** — complements our agent-level `disallowedTools`; lets a *skill* (not just an agent) drop Edit/Write.
+- **`Tool(param:value)` permission matching (v2.1.178)** — match permission rules on tool *input parameters*, not just tool name. Tightens any future enforcement rule.
+- **`fallbackModel` chain setting (v2.1.166) + compaction honors it (v2.1.178)** — long `/serious-code` runs survive a model outage instead of dying.
+- **Opus 4.8 default high effort + fast mode at reduced cost (v2.1.154); Claude Fable 5 (v2.1.170)** — better/cheaper default reasoning across every workflow. Lean system prompt is now default (v2.1.154).
+- **Windows hook reliability** — "Fixed Windows bash hook invocation" (v2.1.161, v2.1.163), "Improved Windows PowerShell installer error reporting" (v2.1.153), WSL clipboard via PowerShell fallback (v2.1.160), `claude -p` Windows hang fix (v2.1.169). Directly relevant to the Windows-install investigation: once `install.sh` is fixed, our bash *hooks* are now far more likely to actually run on native Windows than they were at v2.1.143.
+- **`--safe-mode` (v2.1.169)** — disables all customizations for troubleshooting; useful when a user reports "Serious Sidekick broke my Claude Code" — bisect with one flag.
+
 **Claude Code v2.1.101 (April 10, 2026) — directly relevant fixes:**
 
 - **Subagents in isolated worktrees can now Read/Edit files inside their own worktree** — Critical for `/serious-code` multi-plan execution. Likely fixes silent failures we hadn't pinned down.
@@ -497,6 +537,8 @@ These shipped upstream and benefit us automatically. No work needed, just tracki
 5. **How often does upstream drift actually happen in `/serious-code` runs?** Affects feature #7 priority. Could be lower than estimated in solo workflows.
 6. **What `if:` field syntax scopes a hook to "only when `.active-code` exists"?** Implementation detail for any new PreToolUse hook. Resolved during planning, not blocking ranking.
 7. **Is multi-plan `/serious-code` actually exercised in practice?** SKILL.md describes plan-agent orchestration that may not physically work given subagent tool restrictions. Worth verifying before optimizing it.
+8. **Can the `MessageDisplay` hook (v2.1.152) see and rewrite sub-agent output before the parent renders it?** If yes, the voice retrofit's translator (item #2 / §P Phase 3) ships as one hook and Issue #54196 becomes irrelevant. Spike before any per-call-site rewrites. (§O)
+9. **Do our shell-level enforcement hooks fire for agents spawned inside a native dynamic workflow (v2.1.154)?** This is the make-or-break question for re-platforming `/serious-code` orchestration (§Q). If hooks only fire at the top level, the migration dies — the hooks are the whole value proposition.
 
 ---
 

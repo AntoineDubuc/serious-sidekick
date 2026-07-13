@@ -312,16 +312,16 @@
   <div>
     <h1>Serious Sidekick — Product Roadmap</h1>
     <p class="meta">
-      <strong>Last updated:</strong> 2026-05-17 &nbsp;·&nbsp;
+      <strong>Last updated:</strong> 2026-06-17 &nbsp;·&nbsp;
       <strong>Current version:</strong> v1.8.0 &nbsp;·&nbsp;
-      <strong>Claude Code:</strong> v2.1.143
+      <strong>Claude Code:</strong> v2.1.179
     </p>
   </div>
   <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">☀ Light</button>
 </header>
 
 <div class="intro">
-  The April roadmap had eight engineer-ranked features. Since then, Claude Code shipped two big features that move the rest of the list around (an agent-view screen and a "keep working until done" command), and we shipped the first phase of the PM-voice retrofit. Below is the rewritten list, sorted by <strong>what the user feels</strong> — not what's easiest to build.
+  Since the last update, Claude Code shipped a run of features that move things on this list. Three matter most: a new way to <strong>rewrite a message right before you see it</strong> (the missing piece for our plain-English voice work), the <strong>built-in session screen now hands out its data</strong> in a form our tools can read (the thing the "one screen" item was waiting on), and Claude Code shipped <strong>its own engine for running many agents in parallel</strong>. Plus two new, stronger models for free. None of it reshuffles the top four, but several items below are now unblocked or cheaper. Sorted by <strong>what the user feels</strong> — not what's easiest to build.
 </div>
 
 <h2>Now <span class="subtitle">— the next two months of work</span></h2>
@@ -342,6 +342,10 @@
       <div class="card-label">What it costs us</div>
       <div class="card-value">Medium-large. Repackage the file layout into the Claude-Code-native plugin format, set up a tiny marketplace, write a migration path for existing users.</div>
     </div>
+    <div class="card-row">
+      <div class="card-label">Since last update</div>
+      <div class="card-value">Got easier — add-ons now load straight from a folder with no marketplace setup, and there's a one-command tool that scaffolds the package. <strong>Heads-up:</strong> today's installer is broken on Windows — native Windows can't run it at all, and the common workaround (Git Bash) crashes partway through, leaving a half-installed mess. A small fix is a prerequisite before this ships.</div>
+    </div>
   </div>
 
   <div class="card">
@@ -358,6 +362,10 @@
       <div class="card-label">What it costs us</div>
       <div class="card-value">6-8 hours of edits to the playbooks. Optional follow-on: a small translation worker for the four highest-volume moments (another 5-7 hours).</div>
     </div>
+    <div class="card-row">
+      <div class="card-label">Since last update</div>
+      <div class="card-value">The piece we were waiting for shipped: Claude Code can now rewrite a message right before you see it. If a quick test confirms it reaches the helper agents' output, the optional translation worker drops from ~6 hours of hand-edits to flipping one switch.</div>
+    </div>
   </div>
 
   <div class="card">
@@ -372,7 +380,11 @@
     </div>
     <div class="card-row">
       <div class="card-label">What it costs us</div>
-      <div class="card-value">Medium. Either pipe our workflow data into the new view, or deprecate our own status command and rely on the built-in. Open question on which is cleaner.</div>
+      <div class="card-value">Medium. Either pipe our workflow data into the new view, or deprecate our own status command and rely on the built-in.</div>
+    </div>
+    <div class="card-row">
+      <div class="card-label">Since last update</div>
+      <div class="card-value">The open question is settled. The built-in session screen now hands out its data in a form our tools can read, so the clean path — our status command feeds the built-in screen instead of competing with it — is buildable today. Recommended first step.</div>
     </div>
   </div>
 
@@ -389,6 +401,10 @@
     <div class="card-row">
       <div class="card-label">What it costs us</div>
       <div class="card-value">Medium. Wire the code workflow into Claude Code's new "keep working until condition met" command, with a clean fail-safe that drops back to manual gating if anything goes red.</div>
+    </div>
+    <div class="card-row">
+      <div class="card-label">Since last update</div>
+      <div class="card-value">More of the plumbing shipped — a no-prompt auto mode, a safe-troubleshooting switch, and run-in-the-background execution. Claude Code also shipped its own engine for running many agents in parallel, which is a possible second route for this. We'll test which is safer before committing — the gates that catch the AI's fake "done" must keep firing either way.</div>
     </div>
   </div>
 
@@ -416,19 +432,19 @@
       <td class="num">6</td>
       <td class="title">Skills that only load when relevant</td>
       <td>Some skills load on every session even when they're irrelevant. Anthropic is expected to add a way to scope skills to file patterns ("only load this when I'm editing TypeScript"). Smaller context, faster sessions.</td>
-      <td>Anthropic to ship file-pattern skill scoping. No new info in the last month.</td>
+      <td>Still not shipped as of this update. Related things landed (smarter folder precedence), but the exact "only load this for these files" control isn't here yet. Still waiting.</td>
     </tr>
     <tr>
       <td class="num">7</td>
       <td class="title">Catch stale plans automatically</td>
       <td>If you write research on Monday, plan on Tuesday, and someone edits the research file Wednesday before you code, today nothing warns you. This adds a one-line warning when the source has shifted under a downstream plan.</td>
-      <td>Anthropic to ship file-change hooks. Still waiting.</td>
+      <td>No dedicated file-change alert yet — but a new end-of-session checkpoint could power a rougher version of this. Worth a quick feasibility test instead of just waiting.</td>
     </tr>
     <tr>
       <td class="num">8</td>
       <td class="title">Safe unattended mode for risky operations</td>
       <td>Headless runs today are all-or-nothing — either nothing prompts and dangerous ops fly through, or every prompt blocks the run. This adds a middle path: dangerous operations pause, harmless denials auto-retry.</td>
-      <td>Anthropic to ship two new hook types (pause-on-dangerous + retry-on-deny). Still waiting.</td>
+      <td>The exact two controls aren't here, but several related safety pieces shipped (finer-grained permission rules, a safe-troubleshooting switch). Worth re-scoping this around what actually landed.</td>
     </tr>
   </tbody>
 </table>
@@ -447,7 +463,7 @@
     <tr>
       <td class="num">9</td>
       <td class="title">Anthropic Issue #54196</td>
-      <td>When Anthropic fixes the broken hook that should rewrite tool output, the voice retrofit gets ~10x simpler — sub-agent output gets translated at the seam instead of per-call-site in every playbook.</td>
+      <td><strong>Downgraded.</strong> This was the bug blocking automatic plain-English translation of the helper agents' output. A different, working path shipped instead (rewrite a message right before you see it), so the voice work no longer depends on this fix. Still tracked, but only as a backup.</td>
     </tr>
     <tr>
       <td class="num">10</td>
@@ -457,10 +473,12 @@
     <tr>
       <td class="num">11</td>
       <td class="title">Event-driven progress monitoring</td>
-      <td>Replace the "wake up every five seconds and check" loop with event-driven notifications. Works fine today; small optimization, low priority.</td>
+      <td>Replace the "wake up every five seconds and check" loop with event-driven notifications. Works fine today; small optimization, low priority. <strong>Now folded into #12:</strong> Claude Code's new parallel-agent engine would replace this loop entirely if we move the code workflow onto it.</td>
     </tr>
-  </tbody>
-</table>
+    <tr>
+      <td class="num">12</td>
+      <td class="title">Native parallel-agent engine</td>
+      <td><strong>New.</strong> Claude Code shipped its own engine for running many agents in parallel — close to what our code workflow hand-builds today (parallel runs, the check-every-few-seconds loop, the verification panel). Tempting to move onto it, but high-risk: it's the most load-bearing part of the toolkit, and the gates that catch the AI's fake "done" must keep firing inside it. Evaluate with a small test before committing — don't win the battle and lose the war.</td>
 
 <h2>Killed / merged</h2>
 
@@ -485,6 +503,14 @@
 
 <div class="recently-shipped">
   <h2>Recently shipped</h2>
+
+  <div class="shipped-item">
+    <div class="shipped-date">May–June 2026 · upstream, free to us</div>
+    <div class="shipped-title">Claude Code shipped a month of features we get for nothing</div>
+    <div class="shipped-detail">
+      Two new, stronger models on by default. A new way to rewrite a message right before you see it (the missing piece for our plain-English voice work). The built-in session screen now shares its data so our tools can plug in. An engine for running many agents in parallel. Add-ons that load straight from a folder. And a batch of Windows reliability fixes — which matter because, once we fix our installer, our safety checks are now far more likely to actually run on Windows. No work on our side; several roadmap items got cheaper or unblocked.
+    </div>
+  </div>
 
   <div class="shipped-item">
     <div class="shipped-date">2026-05-16 · commit 736ef45</div>
