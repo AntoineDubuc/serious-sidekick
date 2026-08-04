@@ -75,6 +75,16 @@
       "ownership": "template",
       "sha256": "8193ae19b2e400f2803de3fcc4d92c02acd2596e3c60ff3e71f25fb508cd0deb"
     },
+    ".claude/skills/_shared/plan-lint.py": {
+      "dest": "skills/_shared/plan-lint.py",
+      "ownership": "template",
+      "sha256": "5deae08d129cc97ce9265133d115bd692e01fabc1a930386f6d0dae04b546b2a"
+    },
+    ".claude/skills/_shared/plan-lint.test.sh": {
+      "dest": "skills/_shared/plan-lint.test.sh",
+      "ownership": "template",
+      "sha256": "e248a97250f05b766633b7139547d88d1bdb231fbd216331a01e28ddc74f2d36"
+    },
     ".claude/skills/_shared/status-schema.md": {
       "dest": "skills/_shared/status-schema.md",
       "ownership": "template",
@@ -426,6 +436,6 @@
       "sha256": "889c6d24f79a22f6e9a6f6a66e2334174737ad5ee2dc66a036b66a91760061ac"
     }
   },
-  "generated_from_commit": "05c321e4e05536b16cb56f18d740ee750309609a",
+  "generated_from_commit": "9e9dac80e34cea33d5a19edd6d9975c8898cca64",
   "version": 1
 }
