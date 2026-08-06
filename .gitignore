@@ -33,6 +33,9 @@ linkedin_images/
 # Personal images
 cpap_*.png
 
+# Downloaded installers / disk images (never part of the template)
+*.dmg
+
 # OS
 .DS_Store
 Thumbs.db
