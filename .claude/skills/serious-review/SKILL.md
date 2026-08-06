@@ -205,6 +205,21 @@ Wait for all dispatched agents to complete. Collect their individual reports and
 
 **Maximum 2 rounds.** This is the first round.
 
+**Same-class rule — check this before proposing a third revision.** Classify every finding by its cause, not
+its location. If **two consecutive rounds fail on the same class**, stop revising and report to the user:
+
+> "Two rounds have failed on the same cause: *{class}*. That is a signal the plan is the wrong shape, not
+> that it needs another pass. Options: re-scope, cut the section generating the findings, or override."
+
+Common classes worth naming: *invented environment values* · *procedure for a system the author cannot reach*
+· *stale references to things a prior revision deleted* · *reasoning that outlived the code it justified* ·
+*fixes applied to the named instance rather than the class*.
+
+**Why this rule exists.** A documented run went five rounds on one small change. Every round closed the prior
+round's findings and generated new ones of the same class, all in scaffolding rather than in the change
+itself. The reviews were correct each time; the loop was the defect. A revision that fixes what the last
+review named — without asking whether the *category* is sound — will keep converging on nothing.
+
 - If **PASS** or **PASS-WITH-CONDITIONS**: proceed to Phase 4.
 - If **FAIL** (Round 1): Present findings to the user. Ask: "This plan failed review. Options: (1) Fix the issues and re-run review, (2) Override and proceed anyway, (3) Re-scope the plan."
   - If user fixes and re-runs: this is Round 2. Re-dispatch all agents. If Round 2 also fails, escalate.
@@ -232,7 +247,23 @@ If the user overrides a FAIL verdict, write:
 
 ### 4b. Create review_verdict.md
 
-Write a `review_verdict.md` file in the same directory as the plan. Use frontmatter: `skill: serious-review`, `slug: {plan-slug}`, `status: done`, `created: {date}`. Include: plan path, verdict, date, round, full agent reports (Anti-Slop Auditor, Structural Reviewer, Security Mind, **Restraint Reviewer**, **Code-Aware Correctness Reviewer**, any conditional agents), a synthesis section, and conditions (if PASS-WITH-CONDITIONS). **The synthesis MUST include a "Restraint / simplification" subsection** listing the restraint agent's recommended cuts and any correctness-vs-simplicity tradeoffs, even when the overall verdict is PASS — a passing plan can still be trimmed, and the user should get that choice.
+Write a `review_verdict.md` file in the same directory as the plan.
+
+> **Include each agent's report under its own canonical heading, verbatim.** `hooks/check-verdict.sh` greps
+> for these five literal strings, and they are a shared contract with the agent definitions:
+>
+> - `## Anti-Slop Audit Report`
+> - `## Structural Review Report`
+> - `## Security Review Report`
+> - `## Restraint Review Report`
+> - `## Code-Aware Correctness Review`
+>
+> **A summary under your own heading will fail the hook, and the hook is right to fail it** — the verdict file
+> is meant to carry the reports, not a précis of them. Observed failure: five rounds of review recorded as
+> hand-written syntheses under invented headings, so the hook reported the reports missing every round and the
+> orchestrator dismissed a correct signal six times before reading the script.
+
+Use frontmatter: `skill: serious-review`, `slug: {plan-slug}`, `status: done`, `created: {date}`. Include: plan path, verdict, date, round, full agent reports (Anti-Slop Auditor, Structural Reviewer, Security Mind, **Restraint Reviewer**, **Code-Aware Correctness Reviewer**, any conditional agents), a synthesis section, and conditions (if PASS-WITH-CONDITIONS). **The synthesis MUST include a "Restraint / simplification" subsection** listing the restraint agent's recommended cuts and any correctness-vs-simplicity tradeoffs, even when the overall verdict is PASS — a passing plan can still be trimmed, and the user should get that choice.
 
 ---
 
@@ -271,6 +302,11 @@ Display the verdict to the user:
 
 ## Operating Rules
 
+0. **Audit the whole plan, not the diff.** A value introduced in revision 1 and never touched since is the
+   least-audited thing in the document — reviewers naturally focus on what changed. Two documented Criticals
+   (an unpassable lint flag, a test command that could run schema DDL against a live database) survived four
+   rounds for exactly this reason. Re-check the Project Configuration table **every round**, regardless of
+   whether it changed.
 1. **Cold-read is policy, not enforcement.** Shared filesystem means we cannot prevent file reads. The explicit negative instructions in Phase 1 document the intended behavior. Agents that violate cold-read produce lower-quality reviews, but we cannot mechanically enforce this.
 2. **Do not auto-invoke `/serious-plan` on FAIL.** The user decides whether to fix, re-scope, or override. The review gate does not make that decision.
 3. **Write every finding to disk immediately.** The `review_verdict.md` file is created as soon as agent reports are collected. Context compaction will not lose review findings.

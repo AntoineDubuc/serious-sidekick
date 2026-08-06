@@ -15,21 +15,39 @@
 
 ## Project Configuration
 
-> **Fill this section before starting any tasks.** These values are referenced throughout the plan as `{VARIABLE_NAME}` placeholders.
+> **Every value in this table must be VERIFIED, not guessed.** These are referenced throughout the plan as
+> `{VARIABLE_NAME}` placeholders, and a wrong one poisons every gate that consumes it.
+>
+> **The rule: run it, or cite it, or mark it unverified.**
+>
+> | For a… | You must… |
+> |---|---|
+> | **command** (`{TEST_CMD}`, `{STATIC_ANALYSIS_CMD}`, `{BUILD_CMD}`, …) | **Execute it** against the current tree and paste the exit code in the Source column. Prefer the repo's own script (`package.json`, `Makefile`, `justfile`) over one you compose — a hand-written variant silently drops the flags the real script sets. |
+> | **path, id, credential key, environment fact** | Cite `file:line` where you read it. |
+> | **anything you could not run or cite** | Write `[UNVERIFIED — <the question>]` and **stop**. Ask the user. Do not substitute a plausible value. |
+>
+> **Do not write "verified" anywhere in the plan for something you did not execute or read.** The failure
+> this prevents: a plan asserting "paths and commands verified" over invented commands, which then fail at
+> Pre-Flight and read as if the implementer's diff caused them.
+>
+> **Composing a command instead of using the repo's is the single highest-frequency defect here.** Two real
+> examples: appending `--max-warnings 0` to a lint command whose repo script omits it, making it unpassable
+> at baseline; and dropping the `DATABASE_URL= REDIS_URL=` prefix from a test script that sets it
+> deliberately, which let unit specs run schema DDL against a live database.
 
-| Variable | Value | Description |
-|----------|-------|-------------|
-| `{EVIDENCE_ROOT}` | `./evidence` | Root directory for all evidence artifacts |
-| `{STATIC_ANALYSIS_CMD}` | e.g. `npm run lint && npm run typecheck` | Static analysis command(s) for changed files |
-| `{DEV_SERVER_CMD}` | e.g. `npm run dev` | Command to start the development server |
-| `{TEST_CMD}` | e.g. `npm test` | Command to run unit/integration tests |
-| `{RUNTIME_LOGS_CMD}` | e.g. `browser console` or `tail -f app.log` | How to capture runtime errors |
-| `{BUILD_CMD}` | e.g. `npm run build` | Production build command |
-| `{VERIFICATION_AGENT}` | e.g. `Playwright MCP`, `Puppeteer`, `curl` | Primary tool for runtime verification |
-| `{SCREENSHOT_TOOL}` | e.g. `Playwright screenshot`, `browser_take_screenshot` | Tool used to capture visual evidence |
-| `{MAX_RETRIES}` | `3` | Max verification failures before escalating to user |
-| `{STUB_PATTERNS}` | e.g. `["throw UnimplementedException", "// TODO", "placeholder"]` | Code patterns that indicate stub/hollow implementations. The implementer must not leave these in production code. Checked after each file write. |
-| `{RUNTIME_VERIFY_CMD}` | e.g. `flutter test integration_test/`, `npx playwright test`, `curl` | Command or tool to verify the app works at runtime (not just compiles). Used for inter-plan regression checks. Leave empty if no runtime verification is available. |
+| Variable | Value | Source (run output / `file:line` / `[UNVERIFIED]`) | Description |
+|----------|-------|---------------------------------------------------|-------------|
+| `{EVIDENCE_ROOT}` | `./evidence` | n/a — plan-local | Root directory for all evidence artifacts |
+| `{STATIC_ANALYSIS_CMD}` | the repo's own lint/typecheck script | **run it** — paste exit code | Static analysis command(s) for changed files |
+| `{DEV_SERVER_CMD}` | the repo's own dev script | **run it** — confirm it serves | Command to start the development server |
+| `{TEST_CMD}` | the repo's own test script, verbatim | **run it** — paste pass count | Unit/integration tests. Copy the script from `package.json` etc. — do NOT compose your own invocation |
+| `{RUNTIME_LOGS_CMD}` | e.g. `browser console`, `tail -f app.log` | `file:line` or run it | How to capture runtime errors |
+| `{BUILD_CMD}` | the repo's own build script | **run it** — paste exit code | Production build command |
+| `{VERIFICATION_AGENT}` | e.g. Playwright MCP, curl, `none` | `file:line`, or `none` if no UI | Primary tool for runtime verification |
+| `{SCREENSHOT_TOOL}` | e.g. Playwright screenshot | `none` if no UI | Tool used to capture visual evidence |
+| `{MAX_RETRIES}` | `3` | n/a — policy | Max verification failures before escalating to user |
+| `{STUB_PATTERNS}` | per file class — source vs spec | `file:line` for each pattern's precedent | Patterns indicating stub/hollow code. **Split source from spec**: an idiom banned in source may be the repo's normal test idiom, and a blanket ban forces bad workarounds |
+| `{RUNTIME_VERIFY_CMD}` | the command that proves it runs | **run it**, or `[UNVERIFIED]` | Verify the app works at runtime, not just compiles. **Must target an environment the branch actually runs in** — a feature branch is not deployed anywhere until it merges. Check the repo's deploy docs before naming a shared environment |
 
 ---
 

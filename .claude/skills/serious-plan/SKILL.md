@@ -162,8 +162,27 @@ The outer `( ... )` subshell scopes `umask 077` so the caller's umask is unchang
 | 5 | "This component is too simple for the full process" | The process applies regardless of perceived simplicity. Follow every phase. | The 4 documented /serious-plan failures ALL occurred in "simple" features where shortcuts seemed safe. Complexity is not the threshold. |
 | 6 | "The guardrail table doesn't apply to this situation" | It applies unconditionally. If you're reasoning about why a row doesn't apply, that IS the rationalization the row describes. | This is second-order rationalization. The table exists because of situations that "seemed different." |
 | 7 | "I'll resolve this ambiguity during implementation — no need to decide now" | Resolve it now. If you lack information, ask the user. Do not ship an unresolved decision to the implementer. | Deferred decisions become deferred failures. The implementer guesses wrong, builds the wrong thing, rework follows. |
+| 8 | "`npm test` / `npm run lint` is the obvious command — I'll fill it in" | **RUN IT.** Copy the repo's own script verbatim from `package.json`/`Makefile`. Paste the exit code into the config table's Source column. If you cannot run it, write `[UNVERIFIED]` and ask. | Every Project Configuration slot is a blank that *looks* answerable from convention. A composed command silently drops flags the real script sets. Documented: `--max-warnings 0` appended to a lint command made five gates unpassable at baseline; a dropped `DATABASE_URL=` prefix let unit specs run schema DDL against a live database. Both survived multiple review rounds because nobody re-audits a value that looks plausible. |
+| 9 | "The plan says the runtime check happens on staging / dev — that's where it runs" | **Read the repo's deploy documentation and name the environment the branch is actually in.** A feature branch is deployed nowhere until it merges. If runtime verification needs a running app, that app is local unless you can cite the deploy path. | A plan asserted end-to-end behaviour on a shared environment its branch could never reach. Five review rounds missed it, because every reviewer checks whether *claims* are true and none checks whether a required *step* exists. |
 
 <!-- END GUARDRAILS -->
+
+## Phase 0e: Verify the Project Configuration — MANDATORY GATE
+
+**Do this before writing any task.** Every `{VARIABLE}` the plan will reference must be verified now, because
+every downstream gate consumes them.
+
+1. **Find the repo's own scripts first** — `package.json`, `Makefile`, `justfile`, `pyproject.toml`. Copy them
+   verbatim. Do not compose your own invocation; a hand-written variant drops flags the real script sets.
+2. **Run every command** against the current tree. Record the exit code and enough output to prove it ran.
+3. **Cite every non-command value** with `file:line`.
+4. **Anything you cannot run or cite** goes in as `[UNVERIFIED — <question>]`, and you **ask the user before
+   generating the plan.** Do not substitute a plausible value.
+5. **Name the runtime environment honestly.** If a task needs a running application, read the deploy docs and
+   confirm the branch can actually reach that environment. A feature branch is deployed nowhere until merge —
+   so runtime verification is local unless you can cite otherwise.
+
+**Never write the word "verified" in a plan for something you did not execute or read.**
 
 ## Pre-Generation Commitment
 
@@ -233,6 +252,21 @@ Then work through each section in order, filling it in based on the input materi
 - Copy the v6 Inline QA Protocol section verbatim — it is non-negotiable
 - The protocol must appear in every plan so the implementing agent has it in context
 - v6 integrates TDD: every acceptance criterion gets a failing test FIRST, then implementation, then QA sub-agent verification
+
+### Scale the apparatus to the change — MANDATORY judgement call
+
+Before building the checklist, size the work:
+
+| If the change is… | Then… |
+|---|---|
+| **Small** — one file or one call site, additive, no migration, no new dependency, no UI | Use **3–4 tasks**: a failing test, the change, wiring if any, and one runtime check. **Skip** the evidence-report protocol, the per-task evidence directories, and the seed/teardown apparatus. A short plan whose every line is verified beats a long one carrying invented scaffolding. |
+| **Medium or large**, or touching shared state, auth, money, or migrations | Use the full protocol below. |
+
+**Say which you chose and why, in one line, at the top of the Master Checklist.** If the apparatus would be
+larger than the change, that is a signal to shrink the apparatus — not to justify it. The documented failure:
+a plan for a one-method change accumulated staging setup, evidence redaction rules, database guards and
+verification commands, and **every** finding across five review rounds came from that scaffolding rather than
+from the change.
 
 ### Master Checklist / Progress Dashboard
 
@@ -333,6 +367,11 @@ Before presenting to the user, verify each plan:
 - [ ] Inline QA Protocol v6 section is present and unmodified
 - [ ] Input source is documented in the Appendix
 - [ ] If research identified sync pairs, every task that modifies one side of a pair has a Reference Implementation field pointing to the other side
+- [ ] **Every Project Configuration value carries a Source** — a pasted run result, a `file:line`, or `[UNVERIFIED]`. Zero blank Source cells.
+- [ ] **Every command in the plan has been executed at least once** against the current tree.
+- [ ] **The word "verified" appears only where something was executed or read.** Grep for it and check each hit.
+- [ ] **Any task requiring a running application names an environment the branch can actually reach**, with the deploy path cited.
+- [ ] **The apparatus is proportionate** — for a small change, the evidence protocol and seed/teardown machinery are absent, not filled in.
 - [ ] **No hedge language in task descriptions.** No "consider whether", "you might want to", "think about", "it may be worth". Every Note must state a decision with a file:line reference, not present options for the implementing agent to choose from. If a decision hasn't been made, it's a planning gap — resolve it now, don't defer it to the implementer.
 - [ ] **Every acceptance criterion has a `[Source: ...]` citation** or an explicit `[NO SOURCE: reason]` annotation. Criteria without either are unsigned — they may be invented by the agent rather than derived from research.
 - [ ] **Every NEW component names its call site.** For each new class/service/handler/coordinator/widget/route the plan creates, a `file:function` call site is named — existing, or an owning task number, or an explicit `[SEAM DEFERRED: ...]` annotation. No new component is left with an unnamed caller.
