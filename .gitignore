@@ -36,6 +36,9 @@ cpap_*.png
 # Downloaded installers / disk images (never part of the template)
 *.dmg
 
+# serious-update audit log (machine-generated, rewritten on every run)
+update.log
+
 # OS
 .DS_Store
 Thumbs.db
