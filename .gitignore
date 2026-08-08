@@ -39,6 +39,11 @@ cpap_*.png
 # serious-update audit log (machine-generated, rewritten on every run)
 update.log
 
+# Generated per-run by serious-update / serious-staleness-hook.sh.
+# Left untracked it keeps `git status` permanently dirty, which is how a
+# previous run aborted a pull (see update.log 2026-07-12).
+staleness.json
+
 # OS
 .DS_Store
 Thumbs.db
