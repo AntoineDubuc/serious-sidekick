@@ -434,6 +434,16 @@
       "dest": "../_implementation_plan_template_v6.md",
       "ownership": "template",
       "sha256": "63fb3bf5e8921e52e86affb75375a2720bfdbea04a4bf463c0c2c7f002d2234c"
+    },
+    ".claude/skills/_shared/validate-refs.sh": {
+      "dest": "skills/_shared/validate-refs.sh",
+      "ownership": "template",
+      "sha256": "df12a83356ff90a9bae083a74c0f7b5b3d5cb0f5380b6bb9d3aa49b225e8aef1"
+    },
+    ".claude/skills/_shared/validate-refs.test.sh": {
+      "dest": "skills/_shared/validate-refs.test.sh",
+      "ownership": "template",
+      "sha256": "f1b81d8601e28fe6f2cbbd236fcc1bde43fe84e176236faab46c4b2a522d5f66"
     }
   },
   "generated_from_commit": "15559f75d3c2001953d0ca543fe1297187caf961",

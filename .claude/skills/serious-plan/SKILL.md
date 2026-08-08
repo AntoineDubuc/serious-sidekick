@@ -202,6 +202,50 @@ Verification: [grep for hedge language, count test file references, verify seed 
 
 **STOP. If an upstream artifact was specified in Phase 0, does `_extracted_items.md` exist in the output folder? If not, go back to Phase 0d. DO NOT generate a plan without the extraction inventory — this is the #1 cause of drift.**
 
+### ⛔ 1-pre. YOU DO NOT WRITE THE PLAN. A SUBAGENT DOES. — MANDATORY, NOT ADVISORY
+
+**Spawn a code-aware subagent to AUTHOR the plan. You review it. Never the reverse.**
+
+Use the Agent tool with `subagent_type: "serious-review-correctness"` (a code-aware reviewer — it
+reads the real source rather than reasoning from memory). Give it: the research/upstream artifact,
+`_extracted_items.md`, the v6 template, the mock-ups if any, and the standards below. It writes
+`implementation_plan.md`. You then review it as an adversary and send findings back.
+
+**Why this is structural rather than a suggestion — evidence, 2026-08-07.** The orchestrating agent
+wrote five consecutive drafts of one plan. All five FAILED review: 17 CRITICAL and 26 MAJOR findings,
+with several *repeating across four rounds*. The failure mode was consistent and is not fixable by
+trying harder: **the orchestrator asserts file paths, symbols, types and line ranges from memory
+instead of opening them.** Acceptance criteria named callbacks that were already wired, forbade the
+only trigger that could fire them, cited a boolean where the consumer could only read a string, and
+counted three of six code paths while the evidence file it had itself commissioned listed six.
+
+A reviewer then authored the same plan from the same evidence. Its first draft drew 2 CRITICAL — and
+by round 4 every prior finding was verified fixed with no regression. **Same task, same evidence, same
+standards; the difference was who held the pen.**
+
+⛔ **If you find yourself reasoning "this plan is small enough for me to write" — that IS the
+rationalization this gate exists to stop.** The five failed drafts were for a nine-unit plan whose
+research was already complete.
+
+**The authoring subagent's brief MUST include:**
+- ⛔ Every acceptance criterion must be able to go **RED against today's tree** and must name the
+  counter-implementation it rejects. A criterion that is green when the guarded thing is deleted is a
+  defect.
+- ⛔ Every criterion naming a data flow must name the **TYPE and the identifier** that carries it.
+  "the confirm field" is not a name.
+- ⛔ **The author decides — in the plan.** Never write "the implementer picks the value / names the
+  channel / chooses the target". Four review rounds were lost to exactly that.
+- ⛔ For every piece of state introduced or widened: **what owns it, how long it lives, where it is
+  reset, and who else consumes it.** Two of three criticals in the reference case were lifetime/scope
+  errors; this single question would have caught both.
+- ⛔ Estimates are **floors** (this project runs 30-70% low); pre-name every split.
+- ⛔ Per-unit rollback, forward edits only. Flag every unit needing a deploy.
+- ⛔ Never offer a defer/simplify option.
+
+**Your job after it returns:** review adversarially, send findings back, and iterate to a clean PASS.
+Do not "fix it yourself" — a fix you paste in is a draft you authored, and this gate exists because
+those fail.
+
 Read the v6 template file first. If a `mock-ups/mock-up-summary.md` exists alongside the research, read it too — use the component inventory for task breakdown, design decisions for acceptance criteria, screen flow for navigation tasks, and responsive notes for breakpoint tasks.
 
 **While generating the plan, cross-reference `_extracted_items.md` continuously.** Every extracted item must appear as a task, acceptance criterion, or explicit `[DEFERRED: reason]` in the plan. Do not rely on memory of the upstream artifact — use the extracted inventory as a checklist.
