@@ -338,7 +338,7 @@
     ".claude/skills/serious-plan/SKILL.md": {
       "dest": "skills/serious-plan/SKILL.md",
       "ownership": "template",
-      "sha256": "da495dccf0492de07b2c217036dfb80782ac841b590ece22f16c45efc0aa703b"
+      "sha256": "a92ece8fb3d7c852ebc5d35f8f063fa3f3ce1f3bd6b8dd903efaef644f7ef492"
     },
     ".claude/skills/serious-plan/hooks/check-extraction.sh": {
       "dest": "skills/serious-plan/hooks/check-extraction.sh",
@@ -359,6 +359,16 @@
       "dest": "skills/serious-research/hooks/capture-research.sh",
       "ownership": "template",
       "sha256": "56952d5ff4afcf7e5fac06f6f6f7644cb2981ec9ee3d3697387a14f1c0e4dd29"
+    },
+    ".claude/skills/serious-research/hooks/validate-refs.sh": {
+      "dest": "skills/serious-research/hooks/validate-refs.sh",
+      "ownership": "template",
+      "sha256": "df12a83356ff90a9bae083a74c0f7b5b3d5cb0f5380b6bb9d3aa49b225e8aef1"
+    },
+    ".claude/skills/serious-research/hooks/validate-refs.test.sh": {
+      "dest": "skills/serious-research/hooks/validate-refs.test.sh",
+      "ownership": "template",
+      "sha256": "f1b81d8601e28fe6f2cbbd236fcc1bde43fe84e176236faab46c4b2a522d5f66"
     },
     ".claude/skills/serious-review/SKILL.md": {
       "dest": "skills/serious-review/SKILL.md",
@@ -434,18 +444,8 @@
       "dest": "../_implementation_plan_template_v6.md",
       "ownership": "template",
       "sha256": "63fb3bf5e8921e52e86affb75375a2720bfdbea04a4bf463c0c2c7f002d2234c"
-    },
-    ".claude/skills/_shared/validate-refs.sh": {
-      "dest": "skills/_shared/validate-refs.sh",
-      "ownership": "template",
-      "sha256": "df12a83356ff90a9bae083a74c0f7b5b3d5cb0f5380b6bb9d3aa49b225e8aef1"
-    },
-    ".claude/skills/_shared/validate-refs.test.sh": {
-      "dest": "skills/_shared/validate-refs.test.sh",
-      "ownership": "template",
-      "sha256": "f1b81d8601e28fe6f2cbbd236fcc1bde43fe84e176236faab46c4b2a522d5f66"
     }
   },
-  "generated_from_commit": "15559f75d3c2001953d0ca543fe1297187caf961",
+  "generated_from_commit": "09d2fa627b605e4d9dc24c225359c02ca923bde9",
   "version": 1
 }

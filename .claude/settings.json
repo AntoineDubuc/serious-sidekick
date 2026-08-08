@@ -206,6 +206,18 @@
             "if": "Edit(*review_verdict*)",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-review/hooks/review-theater-gate.sh\"",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(*Research/*.md)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-research/hooks/validate-refs.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(*Research/*.md)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/serious-research/hooks/validate-refs.sh\"",
+            "timeout": 10
           }
         ]
       }
