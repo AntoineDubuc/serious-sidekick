@@ -34,25 +34,29 @@ git -C ~/.serious-sidekick pull
 ## What Gets Installed
 
 1. **CLAUDE.md** — Mandatory rules + feature index, loaded every session (user-init: copy on first install, ask before overwriting on update)
-2. **.claude/skills/** — All skills (11 workflow + feature auto-loaders + hooks subfolder + Agent Teams agents)
-3. **.claude/agents/** — 8 Agent Teams agents (5 code + 3 review)
+2. **.claude/skills/** — All skills (15 workflow + feature auto-loaders + hooks subfolder + Agent Teams agents). `serious-prospect-research` is deliberately NOT distributed — it carries internal sales positioning and is skipped by `bin/generate-manifest.sh`.
+3. **.claude/agents/** — 10 Agent Teams agents (5 code + 5 review)
 4. **.claude/settings.json** — Hook registration via composite-key merge (never overwrites non-hook user settings)
 5. **Claude Code Features/** — 39 folders with detailed research.md files + README index
 6. **_implementation_plan_template_v6.md** — The v6 implementation plan template (required by `/serious-plan`)
 7. **_anti-rationalization-core.md** — Anti-rationalization reference (required by `/serious-review`)
 
-### Workflow Skills (11)
+### Workflow Skills (15)
 
 | Skill | Purpose |
 |-------|---------|
 | `serious-init` | Scaffold/update project |
+| `serious-youtube-tldr` | Video ingestion — transcripts and summaries |
 | `serious-conversation` | Persona panel for ideation |
 | `serious-research` | Structured investigation |
 | `serious-mock-ups` | UI wireframes before planning |
 | `serious-scope` | Scope manifest from research findings |
 | `serious-plan` | Implementation planning (v6 template) |
 | `serious-review` | Plan quality gate with mandatory review personas |
+| `serious-fit` | Codebase-grounded restraint pass — duplication, over-building, convention fit |
+| `serious-debloat` | Bloat audit on a plan or diff — recommends the smaller version |
 | `serious-code` | Plan execution with TDD + Agent Teams |
+| `serious-debug` | Systematic debugging — 3 modes |
 | `serious-status` | Workflow tree + status dashboard |
 | `serious-abandon` | Bail out of sub-workflows |
 | `serious-bananas` | Image generation via Gemini |

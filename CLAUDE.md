@@ -66,7 +66,7 @@ For communication style (brevity, one-question-at-a-time, lead-with-recommendati
 
 ## Workflow Skills
 
-This project includes eight workflow skills for structured development:
+This project includes ten workflow skills for structured development:
 
 - **`/serious-youtube-tldr`** — Ingest YouTube videos via transcripts and produce structured summaries. Supports single videos or batch jobs with cross-video synthesis. Outputs to `Research/youtube/` as first-class research artifacts that feed into `/serious-research` or `/serious-conversation`. Requires `youtube-transcript-api` Python package. Pipeline order: 0.5 (ingestion, before conversation).
 - **`/serious-conversation`** — Think out loud with a panel of personas (hub-and-spoke model). Pick from 10 built-in personas or create custom ones. Each round: personas respond independently via sub-agents, Orchestrator synthesizes, user refines. Creates versioned artifacts in `Research/conversations/`.
@@ -75,9 +75,11 @@ This project includes eight workflow skills for structured development:
 - **`/serious-scope`** — Generates a scope manifest from research findings. Defines plan boundaries, dependencies, shared contracts, and tags. Splits complex implementations into discrete, independently-plannable units. Outputs a manifest consumed by `/serious-plan`.
 - **`/serious-plan`** — Generates a single implementation plan from a scope manifest entry. Uses the v6 template at `./_implementation_plan_template_v6.md`. Includes TDD protocol, inline QA, and split-agent verification. Auto-detects mock-ups for component inventory and design decisions.
 - **`/serious-review`** — Plan quality gate with adaptive persona pipeline. Reviews implementation plans before code execution. Uses anti-slop auditor and structural reviewer agents. Mandatory step between planning and coding.
+- **`/serious-fit`** — Codebase-grounded restraint pass on a reviewed plan (or a real diff). Answers four questions against the actual source: does this DUPLICATE something that already exists, is every new piece minimal, does it FIT the code's conventions, and does it stay self-consistent. Recommends the smallest COMPLETE version — never a blind cut, and a human verifies every recommendation. Runs after `/serious-review`, before `/serious-code`.
+- **`/serious-debloat`** — Bloat audit on a plan or a diff: reinvented idioms, over-broad fixes, new scaffolding, redundant mechanisms. Recommends (or applies) the smaller version. Use standalone when you suspect over-building.
 - **`/serious-code`** — Executes implementation plans from `/serious-plan`. Orchestrates parallel plan execution via git worktrees, manages TDD cycles through 5 Agent Teams agents (implementer, reviewer, test-runner, runtime-checker, qa), handles phase-by-phase verification, and generates evidence reports.
 
-**Typical workflow:** (`/serious-youtube-tldr` →) `/serious-conversation` → `/serious-research` → `/serious-mock-ups` → `/serious-scope` → `/serious-plan` → `/serious-review` → `/serious-code` → done
+**Typical workflow:** (`/serious-youtube-tldr` →) `/serious-conversation` → `/serious-research` → `/serious-mock-ups` → `/serious-scope` → `/serious-plan` → `/serious-review` → `/serious-fit` → `/serious-code` → done
 
 ## Workflow Frontmatter Standard
 

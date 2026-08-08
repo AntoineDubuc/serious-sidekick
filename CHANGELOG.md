@@ -6,6 +6,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ---
 
+## [1.10.0] — 2026-08-08
+
+### Phantom references blocked at write time, and the skills you already had are finally installable
+
+Two skills existed on disk but were effectively invisible: `/serious-fit` had never been committed at all, and `/serious-debloat` shipped in the manifest but appeared in no skill list, so nobody knew it was there. This release closes the gap between "written" and "distributed," and adds a hook that blocks a plan or research doc from citing a file:line that does not exist.
+
+#### Added
+- **`/serious-fit` skill** — a codebase-grounded restraint pass that runs after `/serious-review` and before `/serious-code`. Four questions against the real source: does this DUPLICATE something that already exists, is every new piece minimal, does it FIT the code's conventions, does it stay self-consistent (fix X without leaving copy or behavior that contradicts X). Recommend-only — it proposes the smallest COMPLETE version and a human verifies every cut. It had been in use locally for weeks while living in no commit; the missing manifest entry was also what dirtied the working tree on every `serious-update` run and aborted the next `git pull`.
+- **Phantom-reference hook** (`serious-research/hooks/validate-refs.sh`) — a PreToolUse gate that BLOCKS writing any `Research/**.md` citing a `file:line` that does not resolve: no such file, or a line past end-of-file. Fenced code blocks and URLs are ignored. Project-agnostic: a reference is "claimed by this project" when its first path segment is a real directory at the project root.
+- **Plan-authoring gate on `/serious-plan`** — the plan is written by a subagent; the orchestrator may only review it. Evidence: the orchestrating agent wrote five consecutive drafts of one plan, all five FAILED review (17 CRITICAL, 26 MAJOR, several findings repeating across four rounds), consistently asserting paths and symbols from memory rather than opening them. A reviewer authoring the same plan from the same evidence reached a clean PASS.
+
+#### Fixed
+- **The phantom-reference hook could never fire.** It shipped at `skills/_shared/`, but the distributor only merges hook commands matching `skills/serious-<name>/hooks/<file>.sh` — a supply-chain check against path traversal. Any registration at the old path was silently filtered out of every install. Moved under `serious-research/hooks/` and registered, scoped to `Write(*Research/*.md)` and `Edit(*Research/*.md)`.
+- **Skill rosters were two skills behind reality.** `/serious-fit` and `/serious-debloat` are now listed in the README, the project `CLAUDE.md` template, the landing guide, and `/serious-init`. The agent count in `/serious-init` was also stale (8 → 10, now 5 code + 5 review), and `/serious-init` now records *why* `serious-prospect-research` is absent from every install — it carries internal sales positioning and is deliberately skipped by the manifest generator.
+- **Generated files no longer dirty the tree.** `staleness.json` and `update.log` are ignored; a dirty tree is what aborted a `git pull` in July per the audit log.
+
+#### Note for maintainers
+The installer, updater and `/serious-init` needed **no code change** to pick any of this up — all three are manifest-driven and enumerate skills from `manifest.json`. Adding a skill is: commit the skill, regenerate the manifest, commit that too. Skipping the regenerate is what produces the recurring pull conflict.
+
+---
+
 ## [1.9.0] — 2026-07-12
 
 ### Code-aware review + a debloat pass — catch wrongness AND over-building before code

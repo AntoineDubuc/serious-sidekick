@@ -272,12 +272,14 @@ else
   assert "BF3.B: all 18 knowledge skills present in manifest" "fail" "missing:$BF3_MISSING"
 fi
 
-# BF3.C: total SKILL.md entries = 32 (14 public serious-* + 18 knowledge).
+# BF3.C: total SKILL.md entries = 33 (15 public serious-* + 18 knowledge).
+# 15, not 16: serious-prospect-research is skipped by the generator (internal
+# sales content), which BF3.A asserts separately.
 BF3_SKILLMD_COUNT=$($_SERIOUS_JSON_BACKEND -c "import json; d=json.load(open('$BF3_TMPMANI')); print(len([k for k in d['files'] if k.endswith('SKILL.md')]))")
-if [ "$BF3_SKILLMD_COUNT" -eq 32 ]; then
-  assert "BF3.C: regenerated manifest has exactly 32 SKILL.md entries (14 + 18)" "pass"
+if [ "$BF3_SKILLMD_COUNT" -eq 33 ]; then
+  assert "BF3.C: regenerated manifest has exactly 33 SKILL.md entries (15 + 18)" "pass"
 else
-  assert "BF3.C: regenerated manifest has exactly 32 SKILL.md entries (14 + 18)" "fail" "got $BF3_SKILLMD_COUNT"
+  assert "BF3.C: regenerated manifest has exactly 33 SKILL.md entries (15 + 18)" "fail" "got $BF3_SKILLMD_COUNT"
 fi
 
 # BF3.D: filter excludes skill-shaped directories without a SKILL.md (silent skip).

@@ -142,7 +142,7 @@ Seven core pipeline steps, plus an optional ingestion step. Each produces artifa
 
 ## What You Get
 
-### 13 Workflow Commands
+### 15 Workflow Commands
 
 | Command | Purpose |
 |:--------|:--------|
@@ -153,8 +153,11 @@ Seven core pipeline steps, plus an optional ingestion step. Each produces artifa
 | `/serious-scope` | Scope manifest — splits research into plan boundaries |
 | `/serious-plan` | Implementation plan with TDD protocol |
 | `/serious-review` | Plan quality gate — 3 mandatory agents, 10 anti-slop checks |
+| `/serious-fit` | Codebase-grounded restraint pass — duplication, over-building, convention fit |
+| `/serious-debloat` | Bloat audit on a plan or diff — recommends the smaller version |
 | `/serious-code` | Plan execution with 5 verification agents |
 | `/serious-debug` | Systematic debugging — 3 modes, reproducer-driven feedback |
+| `/serious-bananas` | Image and diagram generation via Gemini |
 | `/serious-init` | Scaffold a new project with the toolkit |
 | `/serious-status` | View active and completed workflows |
 | `/serious-abandon` | Abandon a sub-workflow and restore parent context |
