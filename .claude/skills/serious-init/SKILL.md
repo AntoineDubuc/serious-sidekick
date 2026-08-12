@@ -188,6 +188,30 @@ for each hook in settings.hooks.Stop[*].hooks[*]:
     EXIT with error
 ```
 
+1b. ⛔ **REGISTRATION IS NOT ENFORCEMENT — EXECUTE EVERY STOP HOOK AND PROVE IT CAN BLOCK.**
+Added 2026-08-12 after an audit found `verify-completion-gate.sh` had fired **1,336 times and SKIPped
+every single one.** It was registered — in two places — and did nothing, for months, because (a) both
+registrations named paths where no file existed and (b) the script resolved its project root from
+`CLAUDE_PROJECT_DIR`, which pointed one directory *above* the project, so it looked for its breadcrumb
+in the wrong place, found nothing and exited 0. **Every previous init "validated" that registration by
+reading the JSON. Reading JSON proves nothing.**
+
+For each `settings.hooks.Stop[*].hooks[*]`, do all three:
+
+```bash
+# (a) the command must actually resolve to a file that exists
+#     — run the command's own resolution, do not eyeball the path string
+# (b) run it. Exit 0 or 2 is fine; "No such file or directory" is a FAIL.
+# (c) PROVE IT DISCRIMINATES — the only check that matters.
+#     Construct a state it MUST block on (e.g. a task evidence dir with no
+#     gate_passed.md, in a scratch copy), run the hook, and require exit 2.
+#     Then restore and require exit 0. A hook that never returns 2 is decoration.
+```
+
+⛔ **If a Stop hook cannot be made to return 2 on a deliberately-bad state, the init FAILS.** Report it
+as a broken gate, not as an installed one. Silence from a gate is indistinguishable from success, which
+is exactly how this one survived unnoticed.
+
 2. **PreToolUse matcher must be `"Edit|Write"`, not `"Write"`.** A `"Write"`-only matcher misses Edit tool calls, creating an enforcement gap.
 
 3. **All `if` patterns must include the tool name.** `if: "Write(*verdict*)"` is correct. `if: "*verdict*"` without a tool name is invalid.

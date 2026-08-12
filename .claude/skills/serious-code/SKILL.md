@@ -544,13 +544,41 @@ RULES:
 
 **If ALL ACs PASS:**
 - Write `gate_passed.md` to `evidence/task_{NN}/` with:
+  - ⛔ **A MACHINE-READABLE VERDICT LINE, as the FIRST line of the file:**
+    ```
+    GATE: PASS — {N}/{N} ({X} acceptance criteria + {Y} negative tests)
+    ```
+    or `GATE: FAIL — …`. **The stop hook reads only this line.** Everything else in the
+    file is free prose it ignores.
+    ⛔ **Why this exists:** the hook used to grep the whole file for the words "pass" and
+    "fail" and blocked on any "fail". A thorough gate report *necessarily* discusses
+    failure — *"no criterion failed"*, *"PASS or FAIL"*, *"this mutation would FAIL"* — so
+    every genuinely-passing gate was rejected. On 2026-08-12 three real gates (17/17, 11/11,
+    12/12) were all read as failures. A gate that cannot tell a verdict from a sentence
+    about verdicts gets switched off by the first person who meets it.
+    ⛔ **A missing verdict line BLOCKS.** Absence is not consent.
   - Timestamp
   - Full AC-by-AC verification log (criterion text, PASS/FAIL, file:line evidence)
   - For visible-to-user ACs: parent file:line showing import + instantiation
   - Count: {N}/{N} passed
 - Only THEN may the task be marked `completed` in progress.md
 
-> **A stop hook enforces this.** The hook is registered in `.claude/settings.json` (installed by `/serious-init`) and runs `verify-completion-gate.sh`. If any task evidence directory exists without `gate_passed.md`, the session cannot exit (hook returns exit code 2). The agent is forced to run the gate.
+> **A stop hook enforces this.** `verify-completion-gate.sh` is registered as a `Stop` hook in the
+> repo-tracked `.claude/settings.json`. If any task evidence directory exists without a
+> `gate_passed.md` carrying a `GATE: PASS` line, the session cannot exit (exit code 2).
+>
+> ⛔ **Do not assume it is running — it was not.** Audited 2026-08-12: the hook had fired **1,336
+> times and SKIPped every one.** Two stacked faults: it was registered only in personal settings at
+> paths where no file existed, and it resolved its project root from `CLAUDE_PROJECT_DIR`, which
+> pointed one directory *above* the project — so it looked for the breadcrumb in the wrong place,
+> found nothing, and exited 0. It reported success by doing nothing, for months.
+> **It now derives its own root from its own location and fails loudly when it cannot.**
+>
+> **Alongside `gate_passed.md` the hook also requires a written task record — EITHER shape:**
+> the legacy five (`implementation.md`, `review.md`, `tests.md`, `runtime.md`, `qa.md`) **or** a v6
+> task report at `evidence/task_{NN}_report.md`. v6 plans deliberately drop the separate `Nv`
+> verification task for code tasks, so demanding five files named after five agents a v6 plan never
+> spawns would block every conforming plan.
 
 ### Step 3: Evaluate
 

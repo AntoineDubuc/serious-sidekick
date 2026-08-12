@@ -31,19 +31,60 @@ guard_stop_hook_active
 # the write side will need the same PROJECT_ROOT fix.
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 [ ! -d "$PROJECT_ROOT" ] && exit 0
-[ -f "$PROJECT_ROOT/.claude/settings.json" ] || echo "WARNING: CLAUDE_PROJECT_DIR may be incorrect: $PROJECT_ROOT" >&2
 
 # Dual-read breadcrumb gate (Task 4 of multi-terminal-breadcrumb-collision-verify).
 # Prefer the per-session path; fall back to legacy with a stderr WARN.
 SKILL=code
-PID_BC="${PROJECT_ROOT}/.claude-active/$(claude_pid)-${SKILL}"
-LEGACY_BC="${PROJECT_ROOT}/.active-${SKILL}"
-if [ -f "$PID_BC" ]; then
-  bc="$PID_BC"
-elif [ -f "$LEGACY_BC" ]; then
-  bc="$LEGACY_BC"
-  echo "WARN: dual-read fallback for ${SKILL} from legacy path" >&2
-else
+
+# ---------------------------------------------------------------------------
+# ROOT SELF-CORRECTION (2026-08-12) — search the breadcrumb, not a marker file.
+#
+# Found by audit: this gate had fired 1,336 times in one installation and
+# SKIPped every one. Claude Code sets CLAUDE_PROJECT_DIR to the directory the
+# session was OPENED in. When that sits a level ABOVE the actual project — e.g.
+# opened at "Workspace/" while the project is "Workspace/app/" — the breadcrumb
+# is written under the real project root and this hook looked under the wrong
+# one, found nothing, logged SKIP and exited 0. It reported success by doing
+# nothing, for months.
+#
+# ⛔ TWO WRONG FIXES, both tried and rejected on 2026-08-12 — do not reintroduce:
+#   1. Scan sibling directories for a .claude/settings.json. Ambiguous: it
+#      cheerfully selected an unrelated project that sorted first.
+#   2. Treat "no .claude/settings.json under CLAUDE_PROJECT_DIR" as proof the
+#      root is wrong, and swap in the script's own root. That HIJACKS any
+#      legitimately-rooted session whose project has no settings.json — which is
+#      exactly what a mktemp test fixture is. It silently retargeted the hook at
+#      the real repo and turned three blocking tests green (exit 0 where 2 was
+#      required), i.e. it broke the gate in the very way this audit was about.
+#
+# The breadcrumb IS the signal. Try the given root first — always winning when
+# it has one, so fixtures and normal sessions are untouched — and only then the
+# script's own root, which is unambiguous because this file always lives at
+#   <PROJECT_ROOT>/.claude/skills/serious-code/hooks/verify-completion-gate.sh
+# No breadcrumb under either root means no active /serious-code session, which
+# is a legitimate exit 0 — the pre-existing behaviour, unchanged.
+# ---------------------------------------------------------------------------
+_self_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." 2>/dev/null && pwd)"
+bc=""
+for _root in "$PROJECT_ROOT" "$_self_root"; do
+  [ -n "$_root" ] && [ -d "$_root" ] || continue
+  _pid_bc="${_root}/.claude-active/$(claude_pid)-${SKILL}"
+  _legacy_bc="${_root}/.active-${SKILL}"
+  if [ -f "$_pid_bc" ]; then
+    bc="$_pid_bc"
+  elif [ -f "$_legacy_bc" ]; then
+    bc="$_legacy_bc"
+    echo "WARN: dual-read fallback for ${SKILL} from legacy path" >&2
+  else
+    continue
+  fi
+  if [ "$_root" != "$PROJECT_ROOT" ]; then
+    echo "NOTE: no ${SKILL} breadcrumb under CLAUDE_PROJECT_DIR ($PROJECT_ROOT); using $_root" >&2
+  fi
+  PROJECT_ROOT="$_root"
+  break
+done
+if [ -z "$bc" ]; then
   type _log_outcome >/dev/null 2>&1 && _log_outcome SKIP "no-active-code"
   exit 0
 fi
@@ -87,26 +128,55 @@ for task_dir in "${PLAN_DIR}/evidence"/task_*/; do
     MISSING="${MISSING}  - ${task_name}\n"
   fi
 
-  # --- Evidence file completeness check ---
-  # All 5 agents must produce evidence files (shared contract with agent definitions)
-  REQUIRED_FILES="implementation.md review.md tests.md runtime.md qa.md"
-  for req_file in $REQUIRED_FILES; do
-    if [ ! -f "${task_dir}/${req_file}" ]; then
-      MISSING_EVIDENCE="${MISSING_EVIDENCE}  - ${task_name}/${req_file}\n"
+  # --- Evidence completeness check ---
+  # TWO ACCEPTED SHAPES (widened 2026-08-12). The teeth of this gate are
+  # gate_passed.md above and its verdict validation below — those are NOT
+  # relaxed. This check only asks "is there a written task record beside it".
+  #
+  #   LEGACY  — the 5-agent-per-task shape: implementation/review/tests/runtime/qa.md
+  #   CURRENT — the v6 plan shape: a single task report at the plan's evidence
+  #             root, e.g. evidence/task_01_report.md, carrying the Inline QA Log.
+  #
+  # Why both: the v6 template deliberately REMOVED the separate `Nv` verification
+  # task for code tasks, replacing it with a per-criterion independent QA
+  # sub-agent plus this gate. Demanding five files named after five agents that a
+  # v6 plan never spawns blocks every conforming plan — so the hook has to be
+  # disabled to get work done, which is how gates die.
+  # ⛔ Accepting two shapes is NOT accepting no evidence. Neither shape still blocks.
+  _num="${task_name#task_}"
+  if [ -f "${PLAN_DIR}/evidence/task_${_num}_report.md" ]; then
+    :   # CURRENT shape satisfied
+  else
+    REQUIRED_FILES="implementation.md review.md tests.md runtime.md qa.md"
+    _legacy_missing=""
+    for req_file in $REQUIRED_FILES; do
+      [ -f "${task_dir}/${req_file}" ] || _legacy_missing="${_legacy_missing}  - ${task_name}/${req_file}\n"
+    done
+    if [ -n "$_legacy_missing" ]; then
+      MISSING_EVIDENCE="${MISSING_EVIDENCE}${_legacy_missing}  - ...or a v6 task report at evidence/task_${_num}_report.md\n"
     fi
-  done
+  fi
 
-  # --- gate_passed.md content validation ---
-  # The gate verdict file must contain PASS and must NOT contain FAIL.
-  # Both checks are needed: an empty file has neither (should block).
+  # --- gate_passed.md verdict validation ---
+  # ⛔ REWRITTEN 2026-08-12. The previous version grepped the WHOLE file for the
+  # bare words "pass" / "fail" and blocked on any "fail". That is unusable: a
+  # thorough gate report necessarily discusses failure — "no criterion failed",
+  # "PASS or FAIL", "this mutation would FAIL". Three genuinely passing gates
+  # (17/17, 11/11, 12/12) were all rejected as "contains FAIL verdict". A gate
+  # that cannot distinguish a verdict from a sentence about verdicts gets
+  # switched off by the first person who meets it.
+  #
+  # The verdict is now a MACHINE-READABLE LINE the gate sub-agent must emit:
+  #     GATE: PASS      (or)      GATE: FAIL
+  # Everything else in the file is free prose and is ignored.
+  # ⛔ A missing marker BLOCKS. Absence is not consent.
   if [ -f "${task_dir}/gate_passed.md" ]; then
-    GATE_CONTENT=$(cat "${task_dir}/gate_passed.md")
-    HAS_PASS=$(echo "$GATE_CONTENT" | grep -ciE '\bpass\b' || true)
-    HAS_FAIL=$(echo "$GATE_CONTENT" | grep -ciE '\bfail\b' || true)
-    if [ "$HAS_FAIL" -gt 0 ]; then
-      INVALID_GATE="${INVALID_GATE}  - ${task_name}/gate_passed.md (contains FAIL verdict)\n"
-    elif [ "$HAS_PASS" -eq 0 ]; then
-      INVALID_GATE="${INVALID_GATE}  - ${task_name}/gate_passed.md (does not contain PASS verdict)\n"
+    GATE_LINE=$(grep -iE '^[[:space:]]*(\*\*)?GATE(\*\*)?:[[:space:]]*(\*\*)?(PASS|FAIL)' \
+                  "${task_dir}/gate_passed.md" | head -1 || true)
+    if [ -z "$GATE_LINE" ]; then
+      INVALID_GATE="${INVALID_GATE}  - ${task_name}/gate_passed.md (no 'GATE: PASS' / 'GATE: FAIL' verdict line)\n"
+    elif echo "$GATE_LINE" | grep -qiE 'FAIL'; then
+      INVALID_GATE="${INVALID_GATE}  - ${task_name}/gate_passed.md (verdict line says FAIL)\n"
     fi
   fi
 done
