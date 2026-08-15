@@ -1,7 +1,8 @@
 #!/bin/bash
-# test_smoke_baseline.sh — Baseline smoke test proving the current update system is insufficient
+# test_smoke_baseline.sh — Structural smoke test of the update system's shape
 #
-# This test inspects the existing scripts/update.sh and filesystem state.
+# AC1/AC2 were inverted 2026-08-15: they characterised deficiencies that are now FIXED.
+# This test inspects scripts/update.sh and filesystem state.
 # It does NOT execute update.sh — no side effects.
 
 set -euo pipefail
@@ -26,31 +27,49 @@ assert() {
 echo "=== Smoke Test: Baseline Current State ==="
 echo ""
 
-# AC 1: update.sh copies skills to exactly 1 directory (~/.claude/skills/)
-# Inspect the script — it should reference ~/.claude/skills/ but NOT ~/.claude-work/ or ~/.claude-alex/
-if [ -f "$REPO_ROOT/scripts/update.sh" ]; then
-  COPIES_TO_CLAUDE=$(grep -c 'HOME/.claude/skills\|GLOBAL_DIR.*\.claude/skills' "$REPO_ROOT/scripts/update.sh" || true)
-  COPIES_TO_WORK=$(grep -c '\.claude-work' "$REPO_ROOT/scripts/update.sh" || true)
-  COPIES_TO_ALEX=$(grep -c '\.claude-alex' "$REPO_ROOT/scripts/update.sh" || true)
+# ⛔ AC1 and AC2 WERE INVERTED ON 2026-08-15, AND THAT IS THE POINT.
+#
+# They were written as RED-phase characterisation assertions — this file's header still says
+# "proving the current update system is insufficient". They pinned two deficiencies:
+# update.sh reached only ~/.claude, and it never copied agents. Both are now FIXED
+# (scripts/update.sh is manifest-driven), so the old assertions failed precisely BECAUSE the
+# work they were written to motivate had been done. A characterisation test that outlives the
+# behaviour it characterises reports a regression where there is a fix.
+#
+# They now pin the GREEN state. Behavioural coverage — real syncing, backups, ownership,
+# idempotence, spaced paths — lives in tests/test_update_sync.sh; these two stay cheap and
+# structural so a revert of update.sh is caught immediately.
 
-  if [ "$COPIES_TO_CLAUDE" -gt 0 ] && [ "$COPIES_TO_WORK" -eq 0 ] && [ "$COPIES_TO_ALEX" -eq 0 ]; then
-    assert "update.sh copies to ~/.claude/skills/ only (not work or alex)" "pass"
+# AC 1: update.sh is NOT hardcoded to a single profile directory
+if [ -f "$REPO_ROOT/scripts/update.sh" ]; then
+  READS_MANIFEST=$(grep -c 'manifest.json' "$REPO_ROOT/scripts/update.sh" || true)
+  HARDCODED_ONLY=$(grep -c 'GLOBAL_DIR="\$HOME/.claude/skills"' "$REPO_ROOT/scripts/update.sh" || true)
+  DISCOVERS=$(grep -c 'ROOTS' "$REPO_ROOT/scripts/update.sh" || true)
+
+  if [ "$READS_MANIFEST" -gt 0 ] && [ "$HARDCODED_ONLY" -eq 0 ] && [ "$DISCOVERS" -gt 0 ]; then
+    assert "update.sh is manifest-driven and discovers multiple installations" "pass"
   else
-    assert "update.sh copies to ~/.claude/skills/ only (not work or alex)" "fail" \
-      "claude=$COPIES_TO_CLAUDE, work=$COPIES_TO_WORK, alex=$COPIES_TO_ALEX"
+    assert "update.sh is manifest-driven and discovers multiple installations" "fail" \
+      "manifest refs=$READS_MANIFEST, hardcoded-single-dir=$HARDCODED_ONLY, discovery=$DISCOVERS"
   fi
 else
   assert "update.sh exists" "fail" "scripts/update.sh not found"
 fi
 
-# AC 2: update.sh does NOT copy any files from .claude/agents/
-if [ -f "$REPO_ROOT/scripts/update.sh" ]; then
-  COPIES_AGENTS=$(grep -c 'agents' "$REPO_ROOT/scripts/update.sh" || true)
-  if [ "$COPIES_AGENTS" -eq 0 ]; then
-    assert "update.sh does NOT copy agents" "pass"
+# AC 2: the synced file set covers agents (it is the manifest's, not a hardcoded skills glob)
+if [ -f "$REPO_ROOT/scripts/update.sh" ] && [ -f "$REPO_ROOT/manifest.json" ]; then
+  AGENT_ENTRIES=$(python3 -c "
+import json,sys
+f=json.load(open('$REPO_ROOT/manifest.json'))['files']
+print(sum(1 for p,m in f.items() if m.get('ownership')=='template' and '/agents/' in p))
+" 2>/dev/null || echo 0)
+  SKILLS_GLOB=$(grep -c 'SKILL_SRC"/serious-\*/' "$REPO_ROOT/scripts/update.sh" || true)
+
+  if [ "$AGENT_ENTRIES" -gt 0 ] && [ "$SKILLS_GLOB" -eq 0 ]; then
+    assert "update.sh covers agents ($AGENT_ENTRIES template-owned agent files)" "pass"
   else
-    assert "update.sh does NOT copy agents" "fail" \
-      "Found $COPIES_AGENTS references to 'agents' in update.sh"
+    assert "update.sh covers agents" "fail" \
+      "template agent entries=$AGENT_ENTRIES, legacy skills-only glob=$SKILLS_GLOB"
   fi
 fi
 
