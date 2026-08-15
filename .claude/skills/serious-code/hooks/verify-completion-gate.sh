@@ -171,10 +171,46 @@ for task_dir in "${PLAN_DIR}/evidence"/task_*/; do
   # Everything else in the file is free prose and is ignored.
   # ⛔ A missing marker BLOCKS. Absence is not consent.
   if [ -f "${task_dir}/gate_passed.md" ]; then
-    GATE_LINE=$(grep -iE '^[[:space:]]*(\*\*)?GATE(\*\*)?:[[:space:]]*(\*\*)?(PASS|FAIL)' \
-                  "${task_dir}/gate_passed.md" | head -1 || true)
+    # ⛔ THIRD VERDICT ADDED 2026-08-13: BLOCKED.
+    # A structural review found the hole: this hook understood only PASS and FAIL, so a task
+    # that genuinely CANNOT be verified — because it waits on something outside its control —
+    # had to lie in one direction or the other. Five plans in that review depend on uncommitted
+    # code; in a worktree cut from HEAD their headline symbols do not exist. "FAIL" reads as
+    # "the work is wrong" and invites an implementer to weaken criteria until they compile.
+    # BLOCKED is the honest answer, so the hook must be able to hear it.
+    #
+    # ⛔ BLOCKED IS NOT A BYPASS. It is only accepted with a BLOCKED-ON: line naming the external
+    # dependency. Without one it is treated as a missing verdict and BLOCKS, because "just write
+    # BLOCKED" must never be cheaper than doing the work.
+    # Markdown emphasis is STRIPPED before matching. The previous regex tried to spell out
+    # optional `**` at each position and missed the commonest bold form of all — `**GATE:** **PASS**`
+    # — because the colon sits INSIDE the emphasis. A gate agent that bolded its verdict was read as
+    # having written no verdict at all. Safe direction (it blocked), but it blocked PASSING tasks
+    # on formatting. Normalising once is both simpler and complete.
+    # ⛔ ACCEPTED KEYS: GATE | VERDICT | STATUS. Measured against all 367 gate files in this repo:
+    # `**Verdict:** PASS` is the established convention (166 files) and `GATE:` the newer one (10).
+    # Accepting only GATE: would have blocked every resumed legacy plan for a naming difference.
+    # ⛔ NOT ACCEPTED: a markdown heading such as `# Task 03 — Gate Passed` (109 files). A title is
+    # not an assertion — accepting it would pass any file merely NAMED "gate passed", which is the
+    # exact rubber stamp this hook exists to prevent. Those files must add one explicit line.
+    #
+    # ⛔ ALL verdict lines are read, not just the first, and ANY FAIL blocks. Reading only head -1
+    # would let a file whose first hit is a per-criterion PASS mask an overall FAIL further down.
+    # (0 of the 367 currently carry a FAIL line, so this strictness costs nothing today.)
+    GATE_LINES=$(sed 's/[*_`]//g' "${task_dir}/gate_passed.md" \
+                  | grep -iE '^[[:space:]]*(GATE|VERDICT|STATUS)[[:space:]]*:[[:space:]]*(PASS|FAIL|BLOCKED)' || true)
+    GATE_LINE=$(printf '%s' "$GATE_LINES" | head -1)
+    if printf '%s' "$GATE_LINES" | grep -qiE ':[[:space:]]*FAIL'; then GATE_LINE="FAIL"; fi
     if [ -z "$GATE_LINE" ]; then
-      INVALID_GATE="${INVALID_GATE}  - ${task_name}/gate_passed.md (no 'GATE: PASS' / 'GATE: FAIL' verdict line)\n"
+      INVALID_GATE="${INVALID_GATE}  - ${task_name}/gate_passed.md (no verdict line: needs 'GATE:' or 'Verdict:' followed by PASS, FAIL or BLOCKED)\n"
+    elif echo "$GATE_LINE" | grep -qiE 'BLOCKED'; then
+      BLOCKED_ON=$(sed 's/[*_`]//g' "${task_dir}/gate_passed.md" \
+                     | grep -iE '^[[:space:]]*BLOCKED-ON[[:space:]]*:[[:space:]]*\S' | head -1 || true)
+      if [ -z "$BLOCKED_ON" ]; then
+        INVALID_GATE="${INVALID_GATE}  - ${task_name}/gate_passed.md (GATE: BLOCKED with no 'BLOCKED-ON:' line naming the dependency)\n"
+      else
+        echo "NOTE: ${task_name} is BLOCKED — ${BLOCKED_ON}" >&2
+      fi
     elif echo "$GATE_LINE" | grep -qiE 'FAIL'; then
       INVALID_GATE="${INVALID_GATE}  - ${task_name}/gate_passed.md (verdict line says FAIL)\n"
     fi
