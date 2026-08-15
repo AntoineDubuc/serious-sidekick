@@ -240,11 +240,29 @@ research was already complete.
   errors; this single question would have caught both.
 - ⛔ Estimates are **floors** (this project runs 30-70% low); pre-name every split.
 - ⛔ Per-unit rollback, forward edits only. Flag every unit needing a deploy.
-- ⛔ Never offer a defer/simplify option.
+- ⛔ **Size the apparatus to the change.** A bounded change gets a bounded plan. **Every plan this
+  toolkit has shipped was 2,170–7,619 words; every plan that stalled was 10,693–60,858.** If the plan
+  is heading past ~800 lines, that is the signal to SPLIT it, not to keep writing.
+- ⛔ **Instruction in the task, argument in the Changelog** — see *Where revision argument goes*. The
+  author must not narrate what an earlier draft said inside a task section.
+- ⛔ **A defer or simplify option is ALWAYS allowed to be offered.** *(This replaces the former
+  "Never offer a defer/simplify option", withdrawn 2026-08-15.)* That rule contradicted the
+  scale-the-apparatus guidance below and made the smaller path formally unreachable — every pressure
+  in the loop added text and none removed it, measured at **+76% growth with 50 of 53 edits
+  net-positive**. Offering a smaller option is not a failure of nerve; **deciding for the user is**.
 
-**Your job after it returns:** review adversarially, send findings back, and iterate to a clean PASS.
-Do not "fix it yourself" — a fix you paste in is a draft you authored, and this gate exists because
-those fail.
+**Your job after it returns:** review adversarially and send findings back.
+
+⛔ **Do not "fix it yourself"** — a fix you paste in is a draft you authored, and this gate exists
+because those fail. **This prohibition covers CONTENT, not size.** You may always cut, split or
+re-file text without sending it back: moving revision argument to the Changelog, deleting a
+superseded paragraph, or splitting an over-long plan are editorial acts, not authorship.
+
+⛔ **Iterate toward a clean PASS, but the loop is bounded.** If two consecutive rounds fail on the
+same *class* of finding, stop and report to the user — that is the plan being the wrong shape, not
+needing another pass. **Measured: no plan in this feature converged in four rounds, and each fix pass
+had roughly a 1-in-2 chance of creating a fresh defect.** A third round on the same class is spending
+the user's time to feel thorough.
 
 Read the v6 template file first. If a `mock-ups/mock-up-summary.md` exists alongside the research, read it too — use the component inventory for task breakdown, design decisions for acceptance criteria, screen flow for navigation tasks, and responsive notes for breakpoint tasks.
 
@@ -388,6 +406,31 @@ For each task, fill in:
 - Out of scope (explicitly list what this plan does NOT cover)
 - Changelog (track plan revisions)
 - Input source (link to research.md, PRD, or note that it was generated from a description)
+
+### ⛔ Where revision argument goes — MANDATORY when fixing review findings
+
+**The task sections carry instructions. The Changelog carries history. Do not mix them.**
+
+When you fix a review finding, **two** things get written, and they go in **different places**:
+
+| What | Where it goes |
+|---|---|
+| The corrected instruction — the value, the criterion, the step an implementer follows | **The task section**, replacing the old text |
+| *Why* it changed — what the old version said, which round found it, why it was wrong | **The Changelog only** |
+
+**Never leave both in the task.** Sentences of the shape *"this was six in v3; round 2 found that
+wrong because…"* belong in the Changelog. An implementer reading the task must see **only what to
+build**, not the argument that produced it.
+
+**Why this rule exists — measured on this toolkit:** across 53 edits to one feature's plans, **50 made
+them longer and one made them shorter** — growth of **+76%**, because every fix appended its own
+justification to the instructions and nothing ever removed any. On the largest plan, roughly **a fifth
+of the words** were argument with earlier drafts of itself, sitting in the part an implementer cannot
+skip. Most defects those plans failed on were **not bad engineering — they were the plan disagreeing
+with itself**, because the same fact was restated in many places and a fix updated only some of them.
+
+**Corollary:** if a fact appears in both a task and a summary table, the task is authoritative and the
+table must be re-derived from it — never edited in parallel.
 
 ---
 

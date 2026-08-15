@@ -46,6 +46,31 @@ You will receive:
 
 Run all 10 checks in order against the plan artifact. For each check, scan the entire plan text. Record every finding with the exact text, location (section/line), and severity.
 
+### Severity and counting — read this before assigning any severity
+
+**One finding per defect CLASS, not per occurrence.** If the same defect appears at ten sites, that is
+**one** finding listing ten sites — never ten findings. Counting per occurrence makes the finding total
+scale with document *length* instead of with how broken the document is, which is why a large artifact
+can never converge: more text produces more instances produces more Criticals, round after round.
+
+**Severity is a judgement about consequence, not a count:**
+
+- **Critical** — an implementer following this plan would build the wrong thing, or the defect would
+  spend money wrongly, expose data, or destroy something. Must be fixed before code starts.
+- **Major** — real and worth fixing, but an implementer would notice it and could resolve it while
+  coding.
+- **Minor** — correct to note; costs minutes at code time.
+
+**Pervasiveness raises severity; it does not multiply findings.** One isolated instance may be Minor
+where the same defect across five tasks is Major. Check 1 below already states this idiom —
+*"Minor (isolated instances), Major (pervasive — 5+ instances across multiple tasks)"* — and it is the
+house style. Apply it to every check.
+
+**Before submitting, ask of each Critical: would this actually stop someone building the right thing?**
+If it is true but an implementer would fix it in a minute without thinking, it is Minor. Measured on
+this project: 17% of Criticals were true-but-trivial and 13% were real issues graded above their
+consequence — together, nearly a third of the blocking findings.
+
 ### Check 1: Weasel Word Scan
 
 **What it catches:** Vague qualifiers that sound reasonable but specify nothing actionable.
@@ -83,7 +108,7 @@ Run all 10 checks in order against the plan artifact. For each check, scan the e
 
 **PASS/FAIL criterion:** PASS if every task specifies files created/modified. FAIL if any task has no concrete output specification.
 
-**Severity guidance:** Major per task missing outputs.
+**Severity guidance:** Major if any task ships no concrete output — one finding listing every such task. Critical only if the plan as a whole cannot be verified.
 
 ---
 
@@ -102,7 +127,7 @@ A task with only vague acceptance criteria ("works correctly", "functions as exp
 
 **PASS/FAIL criterion:** PASS if every task has testable verification. FAIL if any task lacks testable criteria.
 
-**Severity guidance:** Critical per task with no testable verification.
+**Severity guidance:** Critical if a task's work could not be shown to be done — one finding listing every such task. Major if verification exists but is weak.
 
 ---
 
@@ -121,7 +146,7 @@ A task with only vague acceptance criteria ("works correctly", "functions as exp
 
 **PASS/FAIL criterion:** PASS if plan prose transforms research into implementation-specific language. FAIL if 3+ sections contain verbatim or near-verbatim copying.
 
-**Severity guidance:** Major per instance of significant copy-paste.
+**Severity guidance:** Major if upstream prose was reproduced instead of translated into an assertion — one finding listing every instance. Minor if attributed and followed by a real criterion.
 
 ---
 
@@ -138,7 +163,7 @@ A task with only vague acceptance criteria ("works correctly", "functions as exp
 
 **PASS/FAIL criterion:** PASS if every task traces back to stated plan scope. FAIL if any task introduces out-of-scope work.
 
-**Severity guidance:** Major per out-of-scope task.
+**Severity guidance:** Major if the plan builds beyond its stated boundary — one finding listing every out-of-scope task.
 
 ---
 
@@ -157,7 +182,7 @@ A task with only vague acceptance criteria ("works correctly", "functions as exp
 
 **PASS/FAIL criterion:** PASS if every referenced component either exists or is created by a plan task. FAIL if any phantom reference is found.
 
-**Severity guidance:** Critical per phantom reference.
+**Severity guidance:** Critical if a phantom reference would send an implementer to something that does not exist — one finding listing every phantom reference. Minor if the reference is decorative and nothing depends on it.
 
 ---
 
@@ -174,7 +199,7 @@ A task with only vague acceptance criteria ("works correctly", "functions as exp
 
 **PASS/FAIL criterion:** PASS if tasks with failure-prone operations specify error behavior. FAIL if any such task has happy-path-only specification.
 
-**Severity guidance:** Major per task with unspecified error behavior.
+**Severity guidance:** Major if failure behaviour is unspecified where it matters — one finding listing every such task. Critical only where the unhandled path loses data or money.
 
 ---
 
@@ -208,7 +233,7 @@ A task with only vague acceptance criteria ("works correctly", "functions as exp
 
 **PASS/FAIL criterion:** PASS if all ordering assumptions are backed by explicit task dependencies or sequential numbering. FAIL if implicit ordering exists.
 
-**Severity guidance:** Major per implicit ordering assumption.
+**Severity guidance:** Major if an unstated ordering assumption would break the build — one finding listing every instance.
 
 ---
 
@@ -225,7 +250,7 @@ A task with only vague acceptance criteria ("works correctly", "functions as exp
 
 **PASS/FAIL criterion:** PASS if every task's output is consumed by at least one subsequent task (or is a final deliverable). FAIL if any task's output is orphaned.
 
-**Severity guidance:** Major per dead-end task.
+**Severity guidance:** Major if a task's output is consumed by nothing — one finding listing every dead end.
 
 ---
 

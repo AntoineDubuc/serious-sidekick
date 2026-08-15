@@ -40,6 +40,29 @@ You will receive:
 
 Run all structural checks against the plan artifact. For each check, produce specific findings with locations and evidence.
 
+### Severity and counting — read this before assigning any severity
+
+**One finding per defect CLASS, not per occurrence.** If the same defect appears at ten sites, that is
+**one** finding listing ten sites — never ten findings. Counting per occurrence makes the finding total
+scale with document *length* instead of with how broken the document is, which is why a large artifact
+can never converge: more text produces more instances produces more Criticals, round after round.
+
+**Severity is a judgement about consequence, not a count:**
+
+- **Critical** — an implementer following this plan would build the wrong thing, or the defect would
+  spend money wrongly, expose data, or destroy something. Must be fixed before code starts.
+- **Major** — real and worth fixing, but an implementer would notice it and could resolve it while
+  coding.
+- **Minor** — correct to note; costs minutes at code time.
+
+**Pervasiveness raises severity; it does not multiply findings.** One isolated instance may be Minor
+where the same defect across five tasks is Major.
+
+**Before submitting, ask of each Critical: would this actually stop someone building the right thing?**
+If it is true but an implementer would fix it in a minute without thinking, it is Minor. Measured on
+this project: 17% of Criticals were true-but-trivial and 13% were real issues graded above their
+consequence — together, nearly a third of the blocking findings.
+
 ### Check 1: Task Dependency Validation
 
 **What it catches:** Circular dependencies, references to non-existent tasks, and missing prerequisite declarations.
@@ -51,7 +74,7 @@ Run all structural checks against the plan artifact. For each check, produce spe
 
 **PASS/FAIL criterion:** PASS if all dependencies reference existing tasks and no cycles exist. FAIL if any circular dependency or dangling reference is found.
 
-**Severity guidance:** Critical per circular dependency. Major per dangling reference.
+**Severity guidance:** Critical if a dependency cycle makes the task order unbuildable — one finding listing every cycle. Major if references dangle without blocking the build.
 
 ---
 
@@ -66,7 +89,7 @@ Run all structural checks against the plan artifact. For each check, produce spe
 
 **PASS/FAIL criterion:** PASS if every referenced path either exists or is explicitly marked for creation. FAIL if any path is a phantom reference.
 
-**Severity guidance:** Critical per phantom file path. Minor for relative path ambiguity.
+**Severity guidance:** Critical if a phantom path would send an implementer to something that does not exist — one finding listing every phantom path. Minor for relative-path ambiguity.
 
 ---
 
@@ -83,7 +106,7 @@ Run all structural checks against the plan artifact. For each check, produce spe
 
 **PASS/FAIL criterion:** PASS if all acceptance criteria are specific, testable, and behavioral. FAIL if any criterion is vague or untestable.
 
-**Severity guidance:** Major per untestable criterion. Minor per style issue (e.g., "should" used but meaning is clear from context).
+**Severity guidance:** Major if criteria cannot be tested as written — one finding listing every such criterion. Minor for style issues where the meaning is clear.
 
 ---
 
@@ -99,7 +122,7 @@ Run all structural checks against the plan artifact. For each check, produce spe
 
 **PASS/FAIL criterion:** PASS if dashboard and task descriptions are fully consistent. FAIL if any mismatch exists.
 
-**Severity guidance:** Major per task count mismatch. Minor per naming inconsistency.
+**Severity guidance:** Major if an index disagrees with the tasks it points at — one finding listing every mismatch. Minor for naming inconsistency.
 
 ---
 
@@ -114,7 +137,7 @@ Run all structural checks against the plan artifact. For each check, produce spe
 
 **PASS/FAIL criterion:** PASS if every task has a non-empty, specific rollback plan. FAIL if any task is missing one or has only a generic placeholder.
 
-**Severity guidance:** Major per missing rollback plan. Minor per vague rollback plan.
+**Severity guidance:** Major if a task cannot be undone — one finding listing every task lacking a rollback. Minor where a rollback exists but is vague. Critical only where the task is destructive and irreversible.
 
 ---
 
@@ -129,7 +152,7 @@ Run all structural checks against the plan artifact. For each check, produce spe
 
 **PASS/FAIL criterion:** PASS if every task has at least one evidence requirement. FAIL if any task lacks evidence requirements.
 
-**Severity guidance:** Major per task without evidence requirements.
+**Severity guidance:** Major if a task states no evidence of completion — one finding listing every such task.
 
 ---
 
@@ -144,7 +167,7 @@ Run all structural checks against the plan artifact. For each check, produce spe
 
 **PASS/FAIL criterion:** PASS if every new component has a named caller (existing, owned by a task, or explicitly deferred) and multi-component features have an integration task. FAIL if any new component is an unowned seam.
 
-**Severity guidance:** Critical per unowned seam in a multi-component feature (plan will ship dead code). Major per single new component with no named caller.
+**Severity guidance:** Critical if an unowned seam means the plan ships dead code — one finding listing every unowned seam. Major if a single new component has no named caller.
 
 ---
 

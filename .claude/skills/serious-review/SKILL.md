@@ -141,6 +141,24 @@ Read the plan's `source:` frontmatter field. Store this path — it will be pass
 
 ### 2a. Mandatory agents
 
+> **Launch order — longest work first. This is the single cheapest speed-up in the pipeline.**
+>
+> Agent runtime is dominated by how much text each reviewer must read, so the finish time of the whole
+> gate is set by whichever long-running agent was started *last*.
+>
+> 1. **Reviewing several plans (a multi-plan feature): dispatch the LARGEST plan first**, descending by
+>    line count. Do not go in plan-number order.
+> 2. **Within a plan, dispatch the two codebase-reading agents — `serious-review-correctness` and
+>    `serious-review-restraint` — before the cold-read trio.** They open source files and are reliably
+>    the slowest.
+> 3. Launch a plan's agents together in one message. They are independent; nothing is gained by
+>    spacing them out.
+>
+> **Measured on a 40-agent gate:** total 51.2 min, with the largest plan's two slowest agents launched
+> 37th and 40th of 40. 25 of the 40 agents had already *finished* before the last one started.
+> **Holding the identical dispatch cadence and merely reversing the order to longest-first: 51.2 min →
+> 28.6 min.** The gain is entirely in ordering — batching alone does not produce it.
+
 Spawn all 5 agents using the Agent tool, passing them the plan file path:
 
 1. **`serious-review-anti-slop`** — Pass: plan path, source path (from 1b), project root path
