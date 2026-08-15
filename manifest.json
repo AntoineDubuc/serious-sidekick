@@ -28,7 +28,7 @@
     ".claude/agents/serious-review-anti-slop.md": {
       "dest": "agents/serious-review-anti-slop.md",
       "ownership": "template",
-      "sha256": "f1d0410f5e1e939b92742acc056bfbb8fb25d3245ebfe7b08040ddfbaeae4fa8"
+      "sha256": "e7ddddee3c46da715e6ee7eb8e01aadd88ca9e0a2703fc1d34cc44c66d6da32b"
     },
     ".claude/agents/serious-review-correctness.md": {
       "dest": "agents/serious-review-correctness.md",
@@ -48,7 +48,7 @@
     ".claude/agents/serious-review-structural.md": {
       "dest": "agents/serious-review-structural.md",
       "ownership": "template",
-      "sha256": "e40654b9355c31cd5011d7901a5fd2fc58d1ddf0c94a1cf9146e58c4d2274d9f"
+      "sha256": "c58d3bbd90273489fd505dfe7bc2f4169fb34726c2877629ddda1e496464e36c"
     },
     ".claude/settings.json": {
       "dest": "settings.json",
@@ -208,7 +208,7 @@
     ".claude/skills/serious-code/hooks/verify-completion-gate.sh": {
       "dest": "skills/serious-code/hooks/verify-completion-gate.sh",
       "ownership": "template",
-      "sha256": "a3b343bc989e817510a25607c01c65eb8ce5404d37b8f69432eef0b57337cf5d"
+      "sha256": "6ec8f8b01974fb343d89f2cadc5c796925d663445e2b7cb5c7208bde46df2933"
     },
     ".claude/skills/serious-conversation/SKILL.md": {
       "dest": "skills/serious-conversation/SKILL.md",
@@ -343,7 +343,7 @@
     ".claude/skills/serious-plan/SKILL.md": {
       "dest": "skills/serious-plan/SKILL.md",
       "ownership": "template",
-      "sha256": "a92ece8fb3d7c852ebc5d35f8f063fa3f3ce1f3bd6b8dd903efaef644f7ef492"
+      "sha256": "5761cf56f1bf76d3489a98c561761726d99cbf2677ca441bfcd520c8b9447e45"
     },
     ".claude/skills/serious-plan/hooks/check-extraction.sh": {
       "dest": "skills/serious-plan/hooks/check-extraction.sh",
@@ -378,7 +378,7 @@
     ".claude/skills/serious-review/SKILL.md": {
       "dest": "skills/serious-review/SKILL.md",
       "ownership": "template",
-      "sha256": "ff3e5a3c70d891cdc2a1f3d5d3c1a90f816bbb8fe397b410dcd1dda2ce9bb24f"
+      "sha256": "55aaadbb250eda0d909ec69ce9dac63296c2c3349a79c14b0f9758c0a70edb37"
     },
     ".claude/skills/serious-review/_serious-review-v1-defect-capture.md": {
       "dest": "skills/serious-review/_serious-review-v1-defect-capture.md",
@@ -451,6 +451,6 @@
       "sha256": "63fb3bf5e8921e52e86affb75375a2720bfdbea04a4bf463c0c2c7f002d2234c"
     }
   },
-  "generated_from_commit": "8919b9451cdce9f31f2cd8c01d213fe670038c17",
+  "generated_from_commit": "55aff011c9308d461be00b96268f0a14f598e718",
   "version": 1
 }
